@@ -4,7 +4,7 @@ object Form1: TForm1
   Top = 194
   Width = 1190
   ActiveControl = Panel1
-  Caption = 'Form1'
+  Caption = 'Ocrivist'
   ClientHeight = 716
   ClientWidth = 1190
   OnCreate = FormCreate
@@ -43,17 +43,7 @@ object Form1: TForm1
     Width = 1190
     Align = alTop
     Caption = 'Panel1'
-    ClientHeight = 50
-    ClientWidth = 1190
     TabOrder = 3
-    object ScrollBar1: TScrollBar
-      Left = 178
-      Height = 15
-      Top = 18
-      Width = 121
-      PageSize = 0
-      TabOrder = 0
-    end
   end
   object Panel2: TPanel
     Left = 0
@@ -107,6 +97,15 @@ object Form1: TForm1
       OnClick = Button5Click
       TabOrder = 1
     end
+    object Button6: TButton
+      Left = 21
+      Height = 25
+      Top = 165
+      Width = 120
+      Caption = 'Fit to Width'
+      OnClick = Button6Click
+      TabOrder = 2
+    end
   end
   object Splitter2: TSplitter
     Left = 1015
@@ -127,7 +126,7 @@ object Form1: TForm1
     TabOrder = 9
   end
   object OpenDialog1: TOpenDialog
-    left = 494
-    top = 101
+    left = 1136
+    top = 8
   end
 end
