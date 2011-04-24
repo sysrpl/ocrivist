@@ -43,7 +43,17 @@ object Form1: TForm1
     Width = 1190
     Align = alTop
     Caption = 'Panel1'
+    ClientHeight = 50
+    ClientWidth = 1190
     TabOrder = 3
+    object Edit1: TEdit
+      Left = 222
+      Height = 25
+      Top = 21
+      Width = 80
+      TabOrder = 0
+      Text = 'Edit1'
+    end
   end
   object Panel2: TPanel
     Left = 0
