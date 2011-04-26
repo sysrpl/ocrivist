@@ -1,13 +1,15 @@
 object Form1: TForm1
-  Left = 36
+  Left = 69
   Height = 716
-  Top = 194
+  Top = 167
   Width = 1190
   ActiveControl = Panel1
   Caption = 'Ocrivist'
-  ClientHeight = 716
+  ClientHeight = 689
   ClientWidth = 1190
+  Menu = MainMenu1
   OnCreate = FormCreate
+  OnDestroy = FormDestroy
   LCLVersion = '0.9.29'
   object Button1: TButton
     Left = 40
@@ -43,22 +45,12 @@ object Form1: TForm1
     Width = 1190
     Align = alTop
     Caption = 'Panel1'
-    ClientHeight = 50
-    ClientWidth = 1190
     TabOrder = 3
-    object Edit1: TEdit
-      Left = 222
-      Height = 25
-      Top = 21
-      Width = 80
-      TabOrder = 0
-      Text = 'Edit1'
-    end
   end
   object Panel2: TPanel
     Left = 0
     Height = 50
-    Top = 666
+    Top = 639
     Width = 1190
     Align = alBottom
     Caption = 'Panel2'
@@ -66,27 +58,47 @@ object Form1: TForm1
   end
   object Panel3: TPanel
     Left = 0
-    Height = 616
+    Height = 589
     Top = 50
-    Width = 170
+    Width = 130
     Align = alLeft
     Caption = 'Panel3'
+    ClientHeight = 589
+    ClientWidth = 130
     TabOrder = 5
+    object ListBox1: TListBox
+      AnchorSideLeft.Control = Panel3
+      AnchorSideTop.Control = Panel3
+      AnchorSideRight.Control = Panel3
+      AnchorSideRight.Side = asrBottom
+      Left = 1
+      Height = 536
+      Top = 1
+      Width = 128
+      Anchors = [akTop, akLeft, akRight]
+      Items.Strings = (
+        ''
+      )
+      ItemHeight = 0
+      OnDrawItem = ListBox1DrawItem
+      Style = lbOwnerDrawVariable
+      TabOrder = 0
+    end
   end
   object Splitter1: TSplitter
-    Left = 170
-    Height = 616
+    Left = 130
+    Height = 589
     Top = 50
     Width = 5
   end
   object Panel4: TPanel
     Left = 1020
-    Height = 616
+    Height = 589
     Top = 50
     Width = 170
     Align = alRight
     Caption = 'Panel4'
-    ClientHeight = 616
+    ClientHeight = 589
     ClientWidth = 170
     TabOrder = 7
     object Button4: TButton
@@ -119,17 +131,17 @@ object Form1: TForm1
   end
   object Splitter2: TSplitter
     Left = 1015
-    Height = 616
+    Height = 589
     Top = 50
     Width = 5
     Align = alRight
     ResizeAnchor = akRight
   end
   object Panel5: TPanel
-    Left = 175
-    Height = 616
+    Left = 135
+    Height = 589
     Top = 50
-    Width = 840
+    Width = 880
     Align = alClient
     AutoSize = True
     Caption = 'Panel5'
@@ -138,5 +150,21 @@ object Form1: TForm1
   object OpenDialog1: TOpenDialog
     left = 1136
     top = 8
+  end
+  object MainMenu1: TMainMenu
+    left = 1088
+    top = 8
+    object FileMenu: TMenuItem
+      Caption = 'File'
+      object MenuItem1: TMenuItem
+        Caption = 'New Item2'
+      end
+      object MenuItem3: TMenuItem
+        Caption = '-'
+      end
+      object ExitMenuItem: TMenuItem
+        Caption = 'Exit'
+      end
+    end
   end
 end
