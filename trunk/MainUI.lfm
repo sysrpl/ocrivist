@@ -80,6 +80,7 @@ object Form1: TForm1
         ''
       )
       ItemHeight = 0
+      OnClick = ListBox1Click
       OnDrawItem = ListBox1DrawItem
       Style = lbOwnerDrawVariable
       TabOrder = 0
@@ -127,6 +128,15 @@ object Form1: TForm1
       Caption = 'Fit to Width'
       OnClick = Button6Click
       TabOrder = 2
+    end
+    object Button7: TButton
+      Left = 21
+      Height = 25
+      Top = 222
+      Width = 121
+      Caption = 'Test Save Project'
+      OnClick = Button7Click
+      TabOrder = 3
     end
   end
   object Splitter2: TSplitter
