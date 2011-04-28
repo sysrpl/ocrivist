@@ -19,6 +19,7 @@ type
     Button4: TButton;
     Button5: TButton;
     Button6: TButton;
+    Button7: TButton;
     ListBox1: TListBox;
     MainMenu1: TMainMenu;
     FileMenu: TMenuItem;
@@ -39,13 +40,16 @@ type
     procedure Button4Click ( Sender: TObject ) ;
     procedure Button5Click ( Sender: TObject ) ;
     procedure Button6Click ( Sender: TObject ) ;
+    procedure Button7Click ( Sender: TObject ) ;
     procedure FormCreate ( Sender: TObject ) ;
     procedure FormDestroy ( Sender: TObject ) ;
+    procedure ListBox1Click ( Sender: TObject ) ;
     procedure ListBox1DrawItem ( Control: TWinControl; Index: Integer;
       ARect: TRect; State: TOwnerDrawState ) ;
   private
     { private declarations }
     CurrentProject: TOcrivistProject;
+    AddingThumbnail: Boolean;
   public
     { public declarations }
     procedure PaintCanvas(Sender: TObject);
@@ -96,13 +100,17 @@ begin
                           writeln('loading');
                           ICanvas.Picture := pixRead(PChar(OpenDialog1.FileName));
                           writeln('loaded');
+                          Application.ProcessMessages;  // Draw the screen before doing some background work
+                          CurrentProject.AddPage(ICanvas.Picture);
                           thumbBMP := TBitmap.Create;
                           w := 0; //ListBox1.ClientWidth-6;
                           h := THUMBNAIL_HEIGHT;
                           thumbPIX := pixScaleToSize(ICanvas.Picture, w, h);
                           ScaleToBitmap(thumbPIX, thumbBMP, 1);
+                          AddingThumbnail := true;  //avoid triggering reload through ThumbList.Click;
                           ListBox1.Items.AddObject(IntToStr(ListBox1.Count+1), thumbBMP);
                           ListBox1.ItemIndex := ListBox1.Count-1;
+                          AddingThumbnail := false;
                           pixDestroy(@thumbPIX);
                         end;
 end;
@@ -119,6 +127,11 @@ begin
   ICanvas.Mode := vmFitToWidth;
 end;
 
+procedure TForm1.Button7Click ( Sender: TObject ) ;
+begin
+  CurrentProject.SaveToFile('/tmp/testproject.ovt');
+end;
+
 procedure TForm1.FormCreate ( Sender: TObject ) ;
 begin
   ICanvas := TPageViewer.Create(self);
@@ -129,6 +142,7 @@ begin
   ListBox1.ItemHeight := THUMBNAIL_HEIGHT + ListBox1.Canvas.TextHeight('Yy')+2;
   CurrentProject := TOcrivistProject.Create;
   CurrentProject.Title := 'Default Project';
+  AddingThumbnail := false;
 end;
 
 procedure TForm1.FormDestroy ( Sender: TObject ) ;
@@ -139,6 +153,13 @@ begin
     TBitmap(ListBox1.Items.Objects[x]).Free;
   if Assigned(CurrentProject)
     then CurrentProject.Free;
+end;
+
+procedure TForm1.ListBox1Click ( Sender: TObject ) ;
+begin
+  if AddingThumbnail then exit;
+  CurrentProject.CurrentPage := TListBox(Sender).ItemIndex;
+  ICanvas.Picture := CurrentProject.Pages[CurrentProject.CurrentPage].LoadFromTempfile;
 end;
 
 procedure TForm1.ListBox1DrawItem ( Control: TWinControl; Index: Integer;
