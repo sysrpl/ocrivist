@@ -31,12 +31,12 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="19">
+    <Units Count="30">
       <Unit0>
         <Filename Value="project1.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="project1"/>
-        <UsageCount Value="35"/>
+        <UsageCount Value="51"/>
       </Unit0>
       <Unit1>
         <Filename Value="MainUI.pas"/>
@@ -47,21 +47,19 @@
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="0"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="112"/>
-        <CursorPos X="45" Y="131"/>
-        <UsageCount Value="35"/>
+        <TopLine Value="198"/>
+        <CursorPos X="34" Y="224"/>
+        <UsageCount Value="51"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
       </Unit1>
       <Unit2>
         <Filename Value="../../Projects/lazarus_svn/lcl/controls.pp"/>
         <UnitName Value="Controls"/>
-        <EditorIndex Value="11"/>
         <WindowIndex Value="0"/>
         <TopLine Value="126"/>
         <CursorPos X="3" Y="144"/>
         <UsageCount Value="18"/>
-        <Loaded Value="True"/>
       </Unit2>
       <Unit3>
         <Filename Value="../../Projects/lazarus_svn/lcl/include/graphiccontrol.inc"/>
@@ -81,22 +79,20 @@
       <Unit5>
         <Filename Value="../../Projects/lazarus_svn/lcl/forms.pp"/>
         <UnitName Value="Forms"/>
-        <EditorIndex Value="10"/>
         <WindowIndex Value="0"/>
         <TopLine Value="63"/>
         <CursorPos X="35" Y="81"/>
-        <UsageCount Value="17"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="23"/>
       </Unit5>
       <Unit6>
         <Filename Value="../leptonica/leptonica.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="leptonica"/>
-        <EditorIndex Value="8"/>
+        <EditorIndex Value="6"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="67"/>
-        <CursorPos X="1" Y="1"/>
-        <UsageCount Value="33"/>
+        <TopLine Value="77"/>
+        <CursorPos X="19" Y="75"/>
+        <UsageCount Value="49"/>
         <Loaded Value="True"/>
       </Unit6>
       <Unit7>
@@ -105,29 +101,27 @@
         <UnitName Value="LibLeptUtils"/>
         <EditorIndex Value="9"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="1"/>
-        <CursorPos X="40" Y="10"/>
-        <UsageCount Value="33"/>
+        <TopLine Value="14"/>
+        <CursorPos X="90" Y="35"/>
+        <UsageCount Value="49"/>
         <Loaded Value="True"/>
       </Unit7>
       <Unit8>
         <Filename Value="../../Projects/lazarus_svn/lcl/include/customcontrol.inc"/>
-        <EditorIndex Value="12"/>
         <WindowIndex Value="0"/>
         <TopLine Value="102"/>
         <CursorPos X="3" Y="111"/>
         <UsageCount Value="13"/>
-        <Loaded Value="True"/>
       </Unit8>
       <Unit9>
         <Filename Value="pageviewer.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="pageviewer"/>
-        <EditorIndex Value="7"/>
+        <EditorIndex Value="4"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="1"/>
-        <CursorPos X="28" Y="8"/>
-        <UsageCount Value="26"/>
+        <TopLine Value="251"/>
+        <CursorPos X="14" Y="268"/>
+        <UsageCount Value="42"/>
         <Loaded Value="True"/>
       </Unit9>
       <Unit10>
@@ -141,47 +135,46 @@
       <Unit11>
         <Filename Value="../../Projects/lazarus_svn/lcl/lcltype.pp"/>
         <UnitName Value="LCLType"/>
-        <EditorIndex Value="6"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="1050"/>
+        <TopLine Value="1060"/>
         <CursorPos X="3" Y="1068"/>
         <UsageCount Value="12"/>
-        <Loaded Value="True"/>
       </Unit11>
       <Unit12>
         <Filename Value="OcrivistData.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="OcrivistData"/>
-        <EditorIndex Value="1"/>
+        <EditorIndex Value="2"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="22"/>
-        <CursorPos X="15" Y="99"/>
-        <UsageCount Value="23"/>
+        <TopLine Value="42"/>
+        <CursorPos X="18" Y="64"/>
+        <UsageCount Value="39"/>
         <Loaded Value="True"/>
       </Unit12>
       <Unit13>
         <Filename Value="/media/data1/fpc-2.4.0-src/rtl/inc/objpash.inc"/>
-        <EditorIndex Value="2"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="157"/>
+        <TopLine Value="158"/>
         <CursorPos X="23" Y="175"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit13>
       <Unit14>
         <Filename Value="/media/data1/fpc-2.4.0-src/rtl/inc/objpas.inc"/>
-        <EditorIndex Value="3"/>
         <WindowIndex Value="0"/>
         <TopLine Value="147"/>
         <CursorPos X="29" Y="150"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit14>
       <Unit15>
         <Filename Value="selector/selector.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="selector"/>
-        <UsageCount Value="23"/>
+        <EditorIndex Value="1"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="23"/>
+        <CursorPos X="1" Y="18"/>
+        <UsageCount Value="39"/>
+        <Loaded Value="True"/>
       </Unit15>
       <Unit16>
         <Filename Value="../../Projects/lazarus_svn/lcl/include/customlistbox.inc"/>
@@ -192,143 +185,240 @@
       </Unit16>
       <Unit17>
         <Filename Value="/media/data1/fpc-2.4.0-src/rtl/objpas/classes/classesh.inc"/>
-        <EditorIndex Value="4"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="612"/>
-        <CursorPos X="15" Y="630"/>
+        <TopLine Value="1613"/>
+        <CursorPos X="3" Y="1619"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit17>
       <Unit18>
         <Filename Value="/media/data1/fpc-2.4.0-src/rtl/objpas/classes/stringl.inc"/>
-        <EditorIndex Value="5"/>
         <WindowIndex Value="0"/>
         <TopLine Value="906"/>
         <CursorPos X="3" Y="908"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit18>
+      <Unit19>
+        <Filename Value="/media/data1/fpc-2.4.0-src/rtl/objpas/sysutils/filutilh.inc"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="51"/>
+        <CursorPos X="3" Y="57"/>
+        <UsageCount Value="10"/>
+      </Unit19>
+      <Unit20>
+        <Filename Value="/media/data1/fpc-2.4.0-src/rtl/objpas/sysutils/osutilsh.inc"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="17"/>
+        <CursorPos X="10" Y="34"/>
+        <UsageCount Value="12"/>
+      </Unit20>
+      <Unit21>
+        <Filename Value="../../Projects/leptonica-1.68/src/skew.c"/>
+        <EditorIndex Value="3"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="198"/>
+        <CursorPos X="1" Y="230"/>
+        <UsageCount Value="13"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="C++"/>
+      </Unit21>
+      <Unit22>
+        <Filename Value="../../Projects/leptonica-1.68/src/pix5.c"/>
+        <EditorIndex Value="5"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="673"/>
+        <CursorPos X="1" Y="701"/>
+        <UsageCount Value="13"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="C++"/>
+      </Unit22>
+      <Unit23>
+        <Filename Value="../../Projects/leptonica-1.68/src/boxbasic.c"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="225"/>
+        <CursorPos X="1" Y="243"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="C++"/>
+      </Unit23>
+      <Unit24>
+        <Filename Value="tessintf.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="tessintf"/>
+        <EditorIndex Value="7"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="107" Y="12"/>
+        <UsageCount Value="24"/>
+        <Loaded Value="True"/>
+      </Unit24>
+      <Unit25>
+        <Filename Value="../../Documents/tesseract-2.03/ccmain/baseapi.h"/>
+        <EditorIndex Value="8"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="1"/>
+        <UsageCount Value="12"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="C++"/>
+      </Unit25>
+      <Unit26>
+        <Filename Value="../../Documents/tesseract-2.03/ccmain/tesseractmain.cpp"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="243"/>
+        <CursorPos X="1" Y="1"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="C++"/>
+      </Unit26>
+      <Unit27>
+        <Filename Value="../../Documents/tesseract-2.03/ccmain/tesseractfull.cc"/>
+        <EditorIndex Value="10"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="3"/>
+        <CursorPos X="3" Y="37"/>
+        <UsageCount Value="12"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="C++"/>
+      </Unit27>
+      <Unit28>
+        <Filename Value="../../Documents/tesseract-2.03/libtessc/tess4pas.h"/>
+        <EditorIndex Value="11"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="18" Y="26"/>
+        <UsageCount Value="12"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="C++"/>
+      </Unit28>
+      <Unit29>
+        <Filename Value="../../Documents/tesseract-2.03/libtessc/tess4pas.cc"/>
+        <EditorIndex Value="12"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="18"/>
+        <UsageCount Value="12"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="C++"/>
+      </Unit29>
     </Units>
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
-        <Filename Value="MainUI.pas"/>
-        <Caret Line="100" Column="66" TopLine="82"/>
+        <Filename Value="../leptonica/LibLeptUtils.pas"/>
+        <Caret Line="64" Column="22" TopLine="33"/>
       </Position1>
       <Position2>
-        <Filename Value="MainUI.pas"/>
-        <Caret Line="42" Column="15" TopLine="24"/>
+        <Filename Value="../leptonica/LibLeptUtils.pas"/>
+        <Caret Line="53" Column="13" TopLine="34"/>
       </Position2>
       <Position3>
-        <Filename Value="MainUI.pas"/>
-        <Caret Line="127" Column="44" TopLine="111"/>
+        <Filename Value="../leptonica/LibLeptUtils.pas"/>
+        <Caret Line="58" Column="9" TopLine="34"/>
       </Position3>
       <Position4>
         <Filename Value="MainUI.pas"/>
-        <Caret Line="126" Column="9" TopLine="108"/>
+        <Caret Line="129" Column="3" TopLine="126"/>
       </Position4>
       <Position5>
         <Filename Value="MainUI.pas"/>
-        <Caret Line="128" Column="7" TopLine="109"/>
+        <Caret Line="75" Column="29" TopLine="55"/>
       </Position5>
       <Position6>
         <Filename Value="MainUI.pas"/>
-        <Caret Line="141" Column="3" TopLine="117"/>
+        <Caret Line="81" Column="12" TopLine="79"/>
       </Position6>
       <Position7>
         <Filename Value="MainUI.pas"/>
-        <Caret Line="126" Column="42" TopLine="121"/>
+        <Caret Line="72" Column="66" TopLine="64"/>
       </Position7>
       <Position8>
-        <Filename Value="OcrivistData.pas"/>
-        <Caret Line="10" Column="28" TopLine="1"/>
+        <Filename Value="MainUI.pas"/>
+        <Caret Line="148" Column="77" TopLine="139"/>
       </Position8>
       <Position9>
-        <Filename Value="OcrivistData.pas"/>
-        <Caret Line="11" Column="29" TopLine="1"/>
+        <Filename Value="pageviewer.pas"/>
+        <Caret Line="59" Column="36" TopLine="38"/>
       </Position9>
       <Position10>
         <Filename Value="MainUI.pas"/>
-        <Caret Line="103" Column="33" TopLine="91"/>
+        <Caret Line="148" Column="51" TopLine="131"/>
       </Position10>
       <Position11>
-        <Filename Value="MainUI.pas"/>
-        <Caret Line="22" Column="20" TopLine="4"/>
+        <Filename Value="pageviewer.pas"/>
+        <Caret Line="227" Column="85" TopLine="210"/>
       </Position11>
       <Position12>
-        <Filename Value="/media/data1/fpc-2.4.0-src/rtl/objpas/classes/classesh.inc"/>
-        <Caret Line="582" Column="53" TopLine="556"/>
+        <Filename Value="MainUI.pas"/>
+        <Caret Line="83" Column="44" TopLine="62"/>
       </Position12>
       <Position13>
-        <Filename Value="OcrivistData.pas"/>
-        <Caret Line="28" Column="38" TopLine="1"/>
+        <Filename Value="MainUI.pas"/>
+        <Caret Line="76" Column="71" TopLine="66"/>
       </Position13>
       <Position14>
-        <Filename Value="OcrivistData.pas"/>
-        <Caret Line="33" Column="60" TopLine="1"/>
+        <Filename Value="pageviewer.pas"/>
+        <Caret Line="59" Column="36" TopLine="34"/>
       </Position14>
       <Position15>
-        <Filename Value="OcrivistData.pas"/>
-        <Caret Line="36" Column="21" TopLine="18"/>
+        <Filename Value="MainUI.pas"/>
+        <Caret Line="149" Column="35" TopLine="144"/>
       </Position15>
       <Position16>
-        <Filename Value="OcrivistData.pas"/>
-        <Caret Line="20" Column="15" TopLine="17"/>
+        <Filename Value="pageviewer.pas"/>
+        <Caret Line="56" Column="25" TopLine="32"/>
       </Position16>
       <Position17>
-        <Filename Value="OcrivistData.pas"/>
-        <Caret Line="25" Column="37" TopLine="3"/>
+        <Filename Value="MainUI.pas"/>
+        <Caret Line="88" Column="26" TopLine="77"/>
       </Position17>
       <Position18>
-        <Filename Value="OcrivistData.pas"/>
-        <Caret Line="28" Column="82" TopLine="7"/>
+        <Filename Value="MainUI.pas"/>
+        <Caret Line="152" Column="25" TopLine="147"/>
       </Position18>
       <Position19>
-        <Filename Value="/media/data1/fpc-2.4.0-src/rtl/objpas/classes/stringl.inc"/>
-        <Caret Line="547" Column="8" TopLine="543"/>
+        <Filename Value="MainUI.pas"/>
+        <Caret Line="58" Column="22" TopLine="30"/>
       </Position19>
       <Position20>
-        <Filename Value="OcrivistData.pas"/>
-        <Caret Line="17" Column="19" TopLine="3"/>
+        <Filename Value="MainUI.pas"/>
+        <Caret Line="222" Column="1" TopLine="191"/>
       </Position20>
       <Position21>
-        <Filename Value="/media/data1/fpc-2.4.0-src/rtl/objpas/classes/stringl.inc"/>
-        <Caret Line="1111" Column="10" TopLine="1100"/>
+        <Filename Value="MainUI.pas"/>
+        <Caret Line="225" Column="1" TopLine="191"/>
       </Position21>
       <Position22>
-        <Filename Value="OcrivistData.pas"/>
-        <Caret Line="113" Column="27" TopLine="91"/>
+        <Filename Value="MainUI.pas"/>
+        <Caret Line="222" Column="21" TopLine="193"/>
       </Position22>
       <Position23>
-        <Filename Value="OcrivistData.pas"/>
-        <Caret Line="115" Column="8" TopLine="93"/>
+        <Filename Value="MainUI.pas"/>
+        <Caret Line="223" Column="7" TopLine="193"/>
       </Position23>
       <Position24>
         <Filename Value="OcrivistData.pas"/>
-        <Caret Line="116" Column="32" TopLine="93"/>
+        <Caret Line="63" Column="54" TopLine="32"/>
       </Position24>
       <Position25>
-        <Filename Value="OcrivistData.pas"/>
-        <Caret Line="54" Column="63" TopLine="27"/>
+        <Filename Value="pageviewer.pas"/>
+        <Caret Line="268" Column="26" TopLine="240"/>
       </Position25>
       <Position26>
-        <Filename Value="OcrivistData.pas"/>
-        <Caret Line="82" Column="33" TopLine="54"/>
+        <Filename Value="MainUI.pas"/>
+        <Caret Line="226" Column="36" TopLine="194"/>
       </Position26>
       <Position27>
-        <Filename Value="OcrivistData.pas"/>
-        <Caret Line="45" Column="20" TopLine="27"/>
+        <Filename Value="MainUI.pas"/>
+        <Caret Line="61" Column="1" TopLine="42"/>
       </Position27>
       <Position28>
-        <Filename Value="/media/data1/fpc-2.4.0-src/rtl/inc/objpas.inc"/>
-        <Caret Line="150" Column="29" TopLine="147"/>
+        <Filename Value="MainUI.pas"/>
+        <Caret Line="192" Column="22" TopLine="175"/>
       </Position28>
       <Position29>
         <Filename Value="MainUI.pas"/>
-        <Caret Line="128" Column="3" TopLine="114"/>
+        <Caret Line="193" Column="48" TopLine="176"/>
       </Position29>
       <Position30>
-        <Filename Value="OcrivistData.pas"/>
-        <Caret Line="48" Column="20" TopLine="28"/>
+        <Filename Value="MainUI.pas"/>
+        <Caret Line="224" Column="12" TopLine="198"/>
       </Position30>
     </JumpHistory>
   </ProjectOptions>

@@ -17,8 +17,10 @@ type
     FTempFile: TFilename;
     FText: TStringlist;
     FSelections: array of TSelector;
+    FModified: Boolean;
   private
     function GetSelection ( Index: Integer ) : TSelector;
+    procedure SetPageImage ( const AValue: TLeptPix ) ;
     procedure SetSelection ( Index: Integer ; const AValue: TSelector ) ;
   public
     constructor Create( pix: TLeptPix );
@@ -28,6 +30,8 @@ type
     property Text: TStringList read FText write FText;
     property Selection[ Index: Integer ]: TSelector read GetSelection write SetSelection;
     property Title: string read FTitle write FTitle;
+    property Modified: Boolean read FModified write FModified;
+    property PageImage: TLeptPix read LoadFromTempfile write SetPageImage;
   end;
 
   { TOcrivistProject }
@@ -41,6 +45,7 @@ type
     FcurrentPage: Integer;
     FPageWidth: Integer;
     FPageHeight: Integer;
+    function GetCurrentPage: TOcrivistPage;
     function GetPage ( Index: Integer ) : TOcrivistPage;
     function GetPageCount: Integer;
     procedure PutPage ( Index: Integer; const AValue: TOcrivistPage ) ;
@@ -55,7 +60,8 @@ type
     property Title: string read FTitle write FTitle;
     property Width: Integer read FPageWidth write FPageWidth;
     property Height: Integer read FPageHeight write FPageHeight;
-    property CurrentPage: integer read FcurrentPage write FcurrentPage;
+    property CurrentPage: TOcrivistPage read GetCurrentPage;
+    property ItemIndex: integer read FcurrentPage write FcurrentPage;
     property PageCount: Integer read GetPageCount;
   end;
 
@@ -69,6 +75,11 @@ begin
   if Index >=  0
      then if Index < Length(FPages)
         then Result := FPages[Index];
+end;
+
+function TOcrivistProject.GetCurrentPage: TOcrivistPage;
+begin
+  Result := FPages[FcurrentPage];
 end;
 
 function TOcrivistProject.GetPageCount: Integer;
@@ -204,6 +215,11 @@ begin
      Result := FSelections[Index];
 end;
 
+procedure TOcrivistPage.SetPageImage ( const AValue: TLeptPix ) ;
+begin
+  SaveToTempfile(AValue, '');
+end;
+
 procedure TOcrivistPage.SetSelection ( Index: Integer ; const AValue: TSelector
   ) ;
 begin
@@ -237,10 +253,12 @@ begin
         then Result := pixRead( PChar(FTempFile) );
 end;
 
+//NB: function will not work as expected if Ftempfile already exists and different Path is given
 procedure TOcrivistPage.SaveToTempfile ( Pix: TLeptPix; Path: String ) ;
 begin
+  if Length(Path)=0 then Path := GetTempDir;
   if FTempFile=''
-     then FTempFile := GetTempFileName( GetTempDir, 'PAGE' );
+     then FTempFile := GetTempFileName( Path, 'ovp' );
   pixWrite( Pchar(FTempFile), pix, IFF_TIFF_LZW);
 end;
 
