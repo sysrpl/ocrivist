@@ -6,7 +6,8 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls,
-  ExtCtrls, Menus, leptonica, LibLeptUtils, pageviewer, types, LCLType, OcrivistData;
+  ExtCtrls, Menus, leptonica, LibLeptUtils, pageviewer, types, LCLType,
+  ActnList, OcrivistData, selector;
 
 type
 
@@ -20,11 +21,15 @@ type
     Button5: TButton;
     Button6: TButton;
     Button7: TButton;
+    Button8: TButton;
     ListBox1: TListBox;
     MainMenu1: TMainMenu;
     FileMenu: TMenuItem;
     MenuItem1: TMenuItem;
     ExitMenuItem: TMenuItem;
+    FitHeightMenuItem: TMenuItem;
+    FitWidthMenuItem: TMenuItem;
+    ViewMenu: TMenuItem;
     MenuItem3: TMenuItem;
     OpenDialog1: TOpenDialog;
     Panel1: TPanel;
@@ -41,19 +46,23 @@ type
     procedure Button5Click ( Sender: TObject ) ;
     procedure Button6Click ( Sender: TObject ) ;
     procedure Button7Click ( Sender: TObject ) ;
+    procedure Button8Click ( Sender: TObject ) ;
     procedure FormCreate ( Sender: TObject ) ;
     procedure FormDestroy ( Sender: TObject ) ;
     procedure ListBox1Click ( Sender: TObject ) ;
     procedure ListBox1DrawItem ( Control: TWinControl; Index: Integer;
       ARect: TRect; State: TOwnerDrawState ) ;
+    procedure ViewMenuItemClick ( Sender: TObject ) ;
   private
     { private declarations }
     CurrentProject: TOcrivistProject;
     AddingThumbnail: Boolean;
+    procedure MakeSelection ( Sender: TObject );
   public
     { public declarations }
-    procedure PaintCanvas(Sender: TObject);
   end;
+
+
 
 const
   THUMBNAIL_HEIGHT = 100;
@@ -63,10 +72,24 @@ var
   ICanvas : TPageViewer;
   Image1:TImage;
 
+  function ScaleRect( aRect: TRect; scale: Single ): TRect;
+
 implementation
 
-{$R *.lfm}
+function ScaleRect ( aRect: TRect; scale: Single ) : TRect;
+var
+  TempRect: TRect;
+begin
+  writeln('scale is ', FormatFloat( '0.00', scale ));
+  writeln( Format('aRect: %d %d %d %d', [aRect.Top, aRect.Left, aRect.Bottom, aRect.Right]) );
+  TempRect.Top := Round(aRect.Top*scale);
+  TempRect.Left := Round(aRect.Left*scale);
+  TempRect.Bottom := Round(aRect.Bottom*scale);
+  TempRect.Right := Round(aRect.Right*scale);
+  Result := TempRect;
+end;
 
+{$R *.lfm}
 
 { TForm1 }
 
@@ -117,14 +140,16 @@ end;
 
 procedure TForm1.Button5Click ( Sender: TObject ) ;
 begin
-  ICanvas.Mode := vmFitToHeight;
+  ICanvas.SelectionMode := smCrop;
+//  InitWithLanguage(PChar('eng'));
 end;
 
 procedure TForm1.Button6Click ( Sender: TObject ) ;
-var
-  P: TOcrivistProject;
 begin
-  ICanvas.Mode := vmFitToWidth;
+  //ICanvas.SelectionMode := smSelect;
+  writeln('Button6: ', ICanvas.Scale);
+  ICanvas.Picture := CropPix(ICanvas.Picture, ScaleRect( ICanvas.Selection , 100/ICanvas.Scale));
+  ICanvas.ClearSelection;
 end;
 
 procedure TForm1.Button7Click ( Sender: TObject ) ;
@@ -132,11 +157,17 @@ begin
   CurrentProject.SaveToFile('/tmp/testproject.ovt');
 end;
 
+procedure TForm1.Button8Click ( Sender: TObject ) ;
+begin
+  ICanvas.Picture := pixDeskew(Icanvas.Picture, 0);
+end;
+
 procedure TForm1.FormCreate ( Sender: TObject ) ;
 begin
   ICanvas := TPageViewer.Create(self);
   ICanvas.Parent := Panel5;
   ICanvas.Align := alClient;
+  Icanvas.OnSelect := @MakeSelection;
   ListBox1.Clear;
   ListBox1.ItemIndex := -1;
   ListBox1.ItemHeight := THUMBNAIL_HEIGHT + ListBox1.Canvas.TextHeight('Yy')+2;
@@ -158,8 +189,8 @@ end;
 procedure TForm1.ListBox1Click ( Sender: TObject ) ;
 begin
   if AddingThumbnail then exit;
-  CurrentProject.CurrentPage := TListBox(Sender).ItemIndex;
-  ICanvas.Picture := CurrentProject.Pages[CurrentProject.CurrentPage].LoadFromTempfile;
+  CurrentProject.ItemIndex := TListBox(Sender).ItemIndex;
+  ICanvas.Picture := CurrentProject.CurrentPage.LoadFromTempfile;
 end;
 
 procedure TForm1.ListBox1DrawItem ( Control: TWinControl; Index: Integer;
@@ -178,9 +209,24 @@ begin
   TListbox(Control).Canvas.Frame(ARect);
 end;
 
-procedure TForm1.PaintCanvas ( Sender: TObject ) ;
+procedure TForm1.ViewMenuItemClick ( Sender: TObject ) ;
 begin
+  Case TWinControl(Sender).Tag of
+       0: ICanvas.Mode := vmFitToHeight;   // Fit to Height
+       1: ICanvas.Mode := vmFitToWidth;    // Fit to Width
+       end;
 end;
+
+procedure TForm1.MakeSelection ( Sender: TObject ) ;
+var
+  S: TSelector;
+begin
+  S := TSelector.Create(ICanvas);
+  S.Parent := ICanvas;
+  S.Selection := ICanvas.Selection;
+//  CurrentProject.CurrentPage.s;
+end;
+
 
 end.
 

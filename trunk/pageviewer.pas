@@ -10,6 +10,7 @@ uses
 type
 
 TViewermode = (vmFitToWindow, vmFitToWidth, vmFitToHeight, vmScaled, vmFullSize);
+TSelectionMode = (smSelect, smCrop);
 
 { TPageViewer }
 
@@ -18,7 +19,9 @@ private
   { private declarations }
   FSelectRect: TRect;
   FSelecting: Boolean;
+  FSelectionMode: TSelectionMode;
   FOnChangeBitmap: TNotifyEvent;
+  FOnSelect: TNotifyEvent;
   FCurrentPagePix: TLeptPix;
   FPageWidth: Integer;
   FPageHeight: Integer;
@@ -51,11 +54,14 @@ public
   { public declarations }
   constructor Create ( TheOwner: TComponent ) ; override;
   destructor Destroy; override;
+  procedure ClearSelection;
   property Picture: TLeptPix read FCurrentPagePix write SetPicture;
   property OnChangeBitmap: TNotifyEvent read FOnChangeBitmap write FOnChangeBitmap;
+  property OnSelect: TNotifyEvent read FOnSelect write FOnSelect;
   property Mode: TViewermode read FMode write SetMode;
   property Scale: Integer read GetScale write SetScale;
   property Selection: TRect read FSelectRect;
+  property SelectionMode: TSelectionMode read FSelectionMode write FSelectionMode;
 end;
 
 
@@ -72,7 +78,9 @@ end;
 
 function TPageViewer.GetScale: Integer;
 begin
-  Result := Integer(FScale*100);
+  writeln('GetScale(float): ', FormatFloat( '0.00', FScale ));
+  Result := round(FScale*100);
+  writeln('GetScale(int): ', Result);
 end;
 
 procedure TPageViewer.SetMode ( const AValue: TViewermode ) ;
@@ -162,7 +170,12 @@ if PictureLoaded then
         CalculateLayout;
         SourceRect := Rect(ViewOffsetX, ViewOffsetY, ViewOffsetX+Width, ViewOffsetY+Height);
         Canvas.CopyRect(FClientRect, FBitmap.Canvas, SourceRect);
-        Canvas.DrawFocusRect(FSelectRect);
+        if FSelectionMode=smSelect
+           then  Canvas.DrawFocusRect(FSelectRect)
+        else begin
+             Canvas.Brush.Style := bsClear;
+             Canvas.Rectangle(FSelectRect);
+           end;
       end;
 end;
 
@@ -216,7 +229,7 @@ begin
                        end;
     end;
     ScaleToBitmap(FCurrentPagePix, FBitmap, FScale);
-    writeln('w:', FPageWidth, '  h:', FPageHeight, ' scale:', FScale);
+    writeln('w:', FPageWidth, '  h:', FPageHeight, ' scale:', FormatFloat('0.00', FScale));
     SetupScrollbars;
     Invalidate;
   end;
@@ -232,6 +245,7 @@ begin
           FSelectRect.BottomRight := Point(X, Y);
         end;
   //inherited MouseDown ( Button, Shift, X, Y ) ;
+  writeln('MouseDown: ', x, #32, y);
   Invalidate;
 end;
 
@@ -249,6 +263,9 @@ procedure TPageViewer.MouseUp ( Button: TMouseButton; Shift: TShiftState; X,
   Y: Integer ) ;
 begin
   inherited MouseUp ( Button, Shift, X, Y ) ;
+  if FSelecting
+     then if Assigned(FOnSelect)
+        then FOnSelect( Self );
   FSelecting := false;
 end;
 
@@ -267,6 +284,7 @@ begin
   FHorzScrollBar.Left := 0;
   FHorzScrollBar.OnChange := @OnScrollBarChange;
   FMode := vmFitToWidth;
+  FSelectionMode := smSelect;
   Width := 200;
   Height := 100;
 end;
@@ -276,6 +294,16 @@ begin
   if Assigned(FBitmap)
      then FBitmap.Free;
   inherited Destroy;
+end;
+
+procedure TPageViewer.ClearSelection;
+begin
+  with FSelectRect do
+       begin
+         TopLeft := Point(0, 0);
+         BottomRight := Point(0, 0);
+       end;
+  Invalidate;
 end;
 
 
