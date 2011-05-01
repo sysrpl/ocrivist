@@ -58,6 +58,7 @@ type
     CurrentProject: TOcrivistProject;
     AddingThumbnail: Boolean;
     procedure MakeSelection ( Sender: TObject );
+    procedure SelectionChange ( Sender: TObject );
   public
     { public declarations }
   end;
@@ -73,6 +74,8 @@ var
   Image1:TImage;
 
   function ScaleRect( aRect: TRect; scale: Single ): TRect;
+  function ScaleRectToView( aRect: TRect; viewfactor: integer ): TRect;
+  function UnScaleRect( aRect: TRect; viewfactor: integer ): TRect;
 
 implementation
 
@@ -81,12 +84,25 @@ var
   TempRect: TRect;
 begin
   writeln('scale is ', FormatFloat( '0.00', scale ));
-  writeln( Format('aRect: %d %d %d %d', [aRect.Top, aRect.Left, aRect.Bottom, aRect.Right]) );
+  writeln( Format('Input rect: %d %d %d %d', [aRect.Top, aRect.Left, aRect.Bottom, aRect.Right]) );
   TempRect.Top := Round(aRect.Top*scale);
   TempRect.Left := Round(aRect.Left*scale);
   TempRect.Bottom := Round(aRect.Bottom*scale);
   TempRect.Right := Round(aRect.Right*scale);
   Result := TempRect;
+  writeln( Format('Output rect: %d %d %d %d', [TempRect.Top, TempRect.Left, TempRect.Bottom, TempRect.Right]) );
+end;
+
+function ScaleRectToView ( aRect: TRect; viewfactor: integer ) : TRect;
+begin
+  Result := ScaleRect( aRect, viewfactor/100 );
+  writeln('ScaleRectToView');
+end;
+
+function UnScaleRect ( aRect: TRect; viewfactor: integer ) : TRect;
+begin
+  Result := ScaleRect( aRect, 100/viewfactor );
+  writeln('UnScaleRect');
 end;
 
 {$R *.lfm}
@@ -117,6 +133,7 @@ var
   w: Integer;
   thumbPIX: Pointer;
   h: Integer;
+  X: Integer;
 begin
   if OpenDialog1.Execute
                         then  begin
@@ -124,6 +141,9 @@ begin
                           ICanvas.Picture := pixRead(PChar(OpenDialog1.FileName));
                           writeln('loaded');
                           Application.ProcessMessages;  // Draw the screen before doing some background work
+                          If CurrentProject.ItemIndex>=0
+                           then for X := CurrentProject.CurrentPage.SelectionCount-1 downto 0 do
+                                ICanvas.DeleteSelector(X);
                           CurrentProject.AddPage(ICanvas.Picture);
                           thumbBMP := TBitmap.Create;
                           w := 0; //ListBox1.ClientWidth-6;
@@ -187,10 +207,30 @@ begin
 end;
 
 procedure TForm1.ListBox1Click ( Sender: TObject ) ;
+var
+  X: Integer;
+  S: TSelector;
 begin
   if AddingThumbnail then exit;
+  for X := CurrentProject.CurrentPage.SelectionCount-1 downto 0 do
+    ICanvas.DeleteSelector(X);
   CurrentProject.ItemIndex := TListBox(Sender).ItemIndex;
   ICanvas.Picture := CurrentProject.CurrentPage.LoadFromTempfile;
+  Invalidate;
+  for x := 0 to CurrentProject.CurrentPage.SelectionCount-1 do
+    begin
+      S := TSelector.Create(ICanvas);
+      S.Name := Format('Selector%d', [x+1]);
+      S.Parent := ICanvas;
+      S.Selection := ScaleRectToView( CurrentProject.CurrentPage.Selection[x], ICanvas.Scale );
+      S.Color := clGreen;
+      S.Caption := IntToStr(x+1);
+      S.OnSelect := @SelectionChange;
+      //writeln(S.Name, ' (Top): ', S.Selection.Top);
+      writeln( Format('%s TLBR: %d %d %d %d', [S.Name, S.Selection.Top, S.Selection.Left, S.Selection.Bottom, S.Selection.Right]));
+      ICanvas.AddSelector(S);
+      S.Invalidate;
+    end;
 end;
 
 procedure TForm1.ListBox1DrawItem ( Control: TWinControl; Index: Integer;
@@ -223,8 +263,22 @@ var
 begin
   S := TSelector.Create(ICanvas);
   S.Parent := ICanvas;
+  S.Color := clGreen;
+  S.Name := Format('Selector%d', [CurrentProject.CurrentPage.SelectionCount+1]);
+  S.Caption := IntToStr(CurrentProject.CurrentPage.SelectionCount+1);
   S.Selection := ICanvas.Selection;
-//  CurrentProject.CurrentPage.s;
+  S.OnSelect := @SelectionChange;
+  ICanvas.AddSelector(S);
+  CurrentProject.CurrentPage.AddSelection( UnScaleRect (ICanvas.Selection, ICanvas.Scale) );
+  ICanvas.ClearSelection;
+end;
+
+procedure TForm1.SelectionChange ( Sender: TObject ) ;
+var
+  SelectionId: LongInt;
+begin
+  SelectionId := StrToInt( TSelector(Sender).Caption )-1;
+  CurrentProject.CurrentPage.Selection[SelectionId] := UnScaleRect(TSelector(Sender).Selection, ICanvas.Scale);
 end;
 
 

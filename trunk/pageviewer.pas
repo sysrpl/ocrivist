@@ -5,7 +5,7 @@ unit pageviewer;
 interface
 
 uses
-  Classes, SysUtils, Forms, Controls, StdCtrls, Graphics, leptonica, LibLeptUtils;
+  Classes, SysUtils, Forms, Controls, StdCtrls, Graphics, leptonica, LibLeptUtils, selector;
 
 type
 
@@ -20,6 +20,7 @@ private
   FSelectRect: TRect;
   FSelecting: Boolean;
   FSelectionMode: TSelectionMode;
+  Fselections: array of TSelector;
   FOnChangeBitmap: TNotifyEvent;
   FOnSelect: TNotifyEvent;
   FCurrentPagePix: TLeptPix;
@@ -55,6 +56,8 @@ public
   constructor Create ( TheOwner: TComponent ) ; override;
   destructor Destroy; override;
   procedure ClearSelection;
+  procedure AddSelector( Selector: TSelector );
+  procedure DeleteSelector ( SelIndex: Integer );
   property Picture: TLeptPix read FCurrentPagePix write SetPicture;
   property OnChangeBitmap: TNotifyEvent read FOnChangeBitmap write FOnChangeBitmap;
   property OnSelect: TNotifyEvent read FOnSelect write FOnSelect;
@@ -208,7 +211,7 @@ begin
   inherited Resize;
   FVertScrollBar.Left := Width - FVertScrollBar.Width;
   FHorzScrollBar.Top := Height - FHorzScrollBar.Height;
-  ReloadBitmap;
+//  ReloadBitmap;
 end;
 
 procedure TPageViewer.ReloadBitmap;
@@ -231,7 +234,7 @@ begin
     ScaleToBitmap(FCurrentPagePix, FBitmap, FScale);
     writeln('w:', FPageWidth, '  h:', FPageHeight, ' scale:', FormatFloat('0.00', FScale));
     SetupScrollbars;
-    Invalidate;
+ //   Invalidate;
   end;
 end;
 
@@ -290,6 +293,8 @@ begin
 end;
 
 destructor TPageViewer.Destroy;
+var
+  X: Integer;
 begin
   if Assigned(FBitmap)
      then FBitmap.Free;
@@ -304,6 +309,28 @@ begin
          BottomRight := Point(0, 0);
        end;
   Invalidate;
+end;
+
+procedure TPageViewer.AddSelector ( Selector: TSelector ) ;
+begin
+  writeln(Selector.Name, '  ', Selector.Top);
+  SetLength(Fselections, Length(Fselections)+1);
+  Fselections[ Length( Fselections )-1 ] := Selector;
+  writeln(Fselections[0].Selection.Top);
+end;
+
+procedure TPageViewer.DeleteSelector ( SelIndex: Integer ) ;
+var
+  x: LongInt;
+begin
+  if (SelIndex>=0) and (SelIndex<Length(Fselections)) then
+        begin
+          Fselections[SelIndex].Free;
+          for x := SelIndex to Length(Fselections)-2 do
+            Fselections[x] := Fselections[x+1];
+          SetLength(Fselections, Length(Fselections)-1);
+        end
+  else Raise Exception.CreateFmt('Error in DeleteSelector: Index out of range (%d)', [SelIndex]);
 end;
 
 
