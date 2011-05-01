@@ -7,7 +7,8 @@ uses
   cthreads,
   {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, MainUI, LibLeptUtils, leptonica, pageviewer, OcrivistData, selector
+  Forms, MainUI, LibLeptUtils, leptonica, pageviewer, OcrivistData, selector,
+  tessintf
   { you can add units after this };
 
 {$R *.res}

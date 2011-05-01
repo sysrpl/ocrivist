@@ -62,6 +62,8 @@ TSelector = class (TGraphicControl)
     property OnSelect: TNotifyEvent read FOnSelect write FOnSelect;
   end;
 
+PSelector = ^TSelector;
+
 const
   CAPTIONPADDING =  2;
   HANDLESIZE     = 10;
@@ -105,7 +107,7 @@ procedure TSelector.Paint;
 begin
 //  inherited Paint;
     //Canvas.pen.Mode := pm;
-    fCaptionHeight := Canvas.TextHeight('Yy');
+  writeln('painting ', Self.Name);
     with fClientRect do
          begin
            Top := fCaptionHeight + CAPTIONPADDING;
@@ -185,9 +187,9 @@ var
   R: TRect;
 begin
   R.Top := Top + fCaptionHeight + CAPTIONPADDING;
-  R.Bottom := Top + fClientRect.Bottom;
+  R.Bottom := Top + Height;
   R.Left := Left +1;
-  R.Right := R.Left + fClientRect.Right;
+  R.Right := R.Left + Width;
   Result := R;
 end;
 
@@ -306,7 +308,8 @@ end;
 
 procedure TSelector.SetSelection ( const AValue: TRect ) ;
 begin
-  Top := AValue.Top - fCaptionHeight - CAPTIONPADDING;
+  fCaptionHeight := Canvas.TextHeight('Yy');
+  Self.Top := AValue.Top - fCaptionHeight - CAPTIONPADDING;
   Left := AValue.Left;
   Height := AValue.Bottom - AValue.Top + fCaptionHeight + CAPTIONPADDING;
   Width := AValue.Right - AValue.Left;
