@@ -25,10 +25,17 @@ type
     ListBox1: TListBox;
     MainMenu1: TMainMenu;
     FileMenu: TMenuItem;
-    MenuItem1: TMenuItem;
+    SaveAsMenuItem: TMenuItem;
+    SaveProjectDialog: TSaveDialog;
+    SaveProjectMenuItem: TMenuItem;
+    OpenProjectMenuItem: TMenuItem;
     ExitMenuItem: TMenuItem;
     FitHeightMenuItem: TMenuItem;
     FitWidthMenuItem: TMenuItem;
+    View25MenuItem: TMenuItem;
+    View100MenuItem: TMenuItem;
+    View75MenuItem: TMenuItem;
+    View50MenuItem: TMenuItem;
     ViewMenu: TMenuItem;
     MenuItem3: TMenuItem;
     OpenDialog1: TOpenDialog;
@@ -52,10 +59,11 @@ type
     procedure ListBox1Click ( Sender: TObject ) ;
     procedure ListBox1DrawItem ( Control: TWinControl; Index: Integer;
       ARect: TRect; State: TOwnerDrawState ) ;
+    procedure SaveAsMenuItemClick ( Sender: TObject ) ;
     procedure ViewMenuItemClick ( Sender: TObject ) ;
   private
     { private declarations }
-    CurrentProject: TOcrivistProject;
+    Project: TOcrivistProject;
     AddingThumbnail: Boolean;
     procedure MakeSelection ( Sender: TObject );
     procedure SelectionChange ( Sender: TObject );
@@ -73,39 +81,9 @@ var
   ICanvas : TPageViewer;
   Image1:TImage;
 
-  function ScaleRect( aRect: TRect; scale: Single ): TRect;
-  function ScaleRectToView( aRect: TRect; viewfactor: integer ): TRect;
-  function UnScaleRect( aRect: TRect; viewfactor: integer ): TRect;
+ implementation
 
-implementation
-
-function ScaleRect ( aRect: TRect; scale: Single ) : TRect;
-var
-  TempRect: TRect;
-begin
-  writeln('scale is ', FormatFloat( '0.00', scale ));
-  writeln( Format('Input rect: %d %d %d %d', [aRect.Top, aRect.Left, aRect.Bottom, aRect.Right]) );
-  TempRect.Top := Round(aRect.Top*scale);
-  TempRect.Left := Round(aRect.Left*scale);
-  TempRect.Bottom := Round(aRect.Bottom*scale);
-  TempRect.Right := Round(aRect.Right*scale);
-  Result := TempRect;
-  writeln( Format('Output rect: %d %d %d %d', [TempRect.Top, TempRect.Left, TempRect.Bottom, TempRect.Right]) );
-end;
-
-function ScaleRectToView ( aRect: TRect; viewfactor: integer ) : TRect;
-begin
-  Result := ScaleRect( aRect, viewfactor/100 );
-  writeln('ScaleRectToView');
-end;
-
-function UnScaleRect ( aRect: TRect; viewfactor: integer ) : TRect;
-begin
-  Result := ScaleRect( aRect, 100/viewfactor );
-  writeln('UnScaleRect');
-end;
-
-{$R *.lfm}
+  {$R *.lfm}
 
 { TForm1 }
 
@@ -141,10 +119,10 @@ begin
                           ICanvas.Picture := pixRead(PChar(OpenDialog1.FileName));
                           writeln('loaded');
                           Application.ProcessMessages;  // Draw the screen before doing some background work
-                          If CurrentProject.ItemIndex>=0
-                           then for X := CurrentProject.CurrentPage.SelectionCount-1 downto 0 do
+                          If Project.ItemIndex>=0
+                           then for X := Project.CurrentPage.SelectionCount-1 downto 0 do
                                 ICanvas.DeleteSelector(X);
-                          CurrentProject.AddPage(ICanvas.Picture);
+                          Project.AddPage(ICanvas.Picture);
                           thumbBMP := TBitmap.Create;
                           w := 0; //ListBox1.ClientWidth-6;
                           h := THUMBNAIL_HEIGHT;
@@ -174,7 +152,7 @@ end;
 
 procedure TForm1.Button7Click ( Sender: TObject ) ;
 begin
-  CurrentProject.SaveToFile('/tmp/testproject.ovt');
+  Project.SaveToFile('/tmp/testproject.ovt');
 end;
 
 procedure TForm1.Button8Click ( Sender: TObject ) ;
@@ -191,8 +169,8 @@ begin
   ListBox1.Clear;
   ListBox1.ItemIndex := -1;
   ListBox1.ItemHeight := THUMBNAIL_HEIGHT + ListBox1.Canvas.TextHeight('Yy')+2;
-  CurrentProject := TOcrivistProject.Create;
-  CurrentProject.Title := 'Default Project';
+  Project := TOcrivistProject.Create;
+  Project.Title := 'Default Project';
   AddingThumbnail := false;
 end;
 
@@ -202,8 +180,8 @@ var
 begin
   for x := 0 to ListBox1.Items.Count-1 do
     TBitmap(ListBox1.Items.Objects[x]).Free;
-  if Assigned(CurrentProject)
-    then CurrentProject.Free;
+  if Assigned(Project)
+    then Project.Free;
 end;
 
 procedure TForm1.ListBox1Click ( Sender: TObject ) ;
@@ -212,25 +190,13 @@ var
   S: TSelector;
 begin
   if AddingThumbnail then exit;
-  for X := CurrentProject.CurrentPage.SelectionCount-1 downto 0 do
+  for X := Project.CurrentPage.SelectionCount-1 downto 0 do
     ICanvas.DeleteSelector(X);
-  CurrentProject.ItemIndex := TListBox(Sender).ItemIndex;
-  ICanvas.Picture := CurrentProject.CurrentPage.LoadFromTempfile;
+  Project.ItemIndex := TListBox(Sender).ItemIndex;
+  ICanvas.Picture := Project.CurrentPage.LoadFromTempfile;
   Invalidate;
-  for x := 0 to CurrentProject.CurrentPage.SelectionCount-1 do
-    begin
-      S := TSelector.Create(ICanvas);
-      S.Name := Format('Selector%d', [x+1]);
-      S.Parent := ICanvas;
-      S.Selection := ScaleRectToView( CurrentProject.CurrentPage.Selection[x], ICanvas.Scale );
-      S.Color := clGreen;
-      S.Caption := IntToStr(x+1);
-      S.OnSelect := @SelectionChange;
-      //writeln(S.Name, ' (Top): ', S.Selection.Top);
-      writeln( Format('%s TLBR: %d %d %d %d', [S.Name, S.Selection.Top, S.Selection.Left, S.Selection.Bottom, S.Selection.Right]));
-      ICanvas.AddSelector(S);
-      S.Invalidate;
-    end;
+  for x := 0 to Project.CurrentPage.SelectionCount-1 do
+      ICanvas.AddSelection(Project.CurrentPage.Selection[x]);
 end;
 
 procedure TForm1.ListBox1DrawItem ( Control: TWinControl; Index: Integer;
@@ -238,7 +204,6 @@ procedure TForm1.ListBox1DrawItem ( Control: TWinControl; Index: Integer;
 var
   LeftOffset: Integer;
 begin
-//  writeln(Index);
   if not assigned(TListbox(Control).Items.Objects[Index]) then exit;
   LeftOffset := (TListbox(Control).ClientWidth-TBitmap(TListbox(Control).Items.Objects[Index]).Width) div 2;
   if LeftOffset<2 then LeftOffset := 2;
@@ -249,11 +214,19 @@ begin
   TListbox(Control).Canvas.Frame(ARect);
 end;
 
+procedure TForm1.SaveAsMenuItemClick ( Sender: TObject ) ;
+begin
+  if SaveProjectDialog.Execute
+    then Project.SaveToFile(SaveProjectDialog.FileName);
+end;
+
 procedure TForm1.ViewMenuItemClick ( Sender: TObject ) ;
 begin
   Case TWinControl(Sender).Tag of
        0: ICanvas.Mode := vmFitToHeight;   // Fit to Height
        1: ICanvas.Mode := vmFitToWidth;    // Fit to Width
+       else
+         ICanvas.Scale := TMenuItem(Sender).Tag;
        end;
 end;
 
@@ -261,16 +234,8 @@ procedure TForm1.MakeSelection ( Sender: TObject ) ;
 var
   S: TSelector;
 begin
-  S := TSelector.Create(ICanvas);
-  S.Parent := ICanvas;
-  S.Color := clGreen;
-  S.Name := Format('Selector%d', [CurrentProject.CurrentPage.SelectionCount+1]);
-  S.Caption := IntToStr(CurrentProject.CurrentPage.SelectionCount+1);
-  S.Selection := ICanvas.Selection;
-  S.OnSelect := @SelectionChange;
-  ICanvas.AddSelector(S);
-  CurrentProject.CurrentPage.AddSelection( UnScaleRect (ICanvas.Selection, ICanvas.Scale) );
-  ICanvas.ClearSelection;
+  ICanvas.AddSelection(UnScaleRect(ICanvas.Selection, ICanvas.Scale));
+  Project.CurrentPage.AddSelection( UnScaleRect (ICanvas.Selection, ICanvas.Scale) )
 end;
 
 procedure TForm1.SelectionChange ( Sender: TObject ) ;
@@ -278,7 +243,7 @@ var
   SelectionId: LongInt;
 begin
   SelectionId := StrToInt( TSelector(Sender).Caption )-1;
-  CurrentProject.CurrentPage.Selection[SelectionId] := UnScaleRect(TSelector(Sender).Selection, ICanvas.Scale);
+  Project.CurrentPage.Selection[SelectionId] := UnScaleRect(TSelector(Sender).Selection, ICanvas.Scale);
 end;
 
 

@@ -107,7 +107,7 @@ procedure TSelector.Paint;
 begin
 //  inherited Paint;
     //Canvas.pen.Mode := pm;
-  writeln('painting ', Self.Name);
+//  writeln('painting ', Self.Name);
     with fClientRect do
          begin
            Top := fCaptionHeight + CAPTIONPADDING;
