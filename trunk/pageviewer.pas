@@ -12,6 +12,10 @@ type
 TViewermode = (vmFitToWindow, vmFitToWidth, vmFitToHeight, vmScaled, vmFullSize);
 TSelectionMode = (smSelect, smCrop);
 
+TRealSelection = record
+  Selection: TRect;
+end;
+
 { TPageViewer }
 
 TPageViewer = class (TCustomControl)
@@ -20,7 +24,8 @@ private
   FSelectRect: TRect;
   FSelecting: Boolean;
   FSelectionMode: TSelectionMode;
-  Fselections: array of TSelector;
+  FSelections: array of TSelector;
+  FRealSelections: array of TRect;
   FOnChangeBitmap: TNotifyEvent;
   FOnSelect: TNotifyEvent;
   FCurrentPagePix: TLeptPix;
@@ -33,6 +38,7 @@ private
   FVertScrollBar: TScrollBar;
   FHorzScrollBar: TScrollBar;
   function GetScale: Integer;
+  function GetSelection: TRect;
   procedure SetBitmap ( const AValue: TBitmap ) ;
   procedure SetMode ( const AValue: TViewermode ) ;
   procedure SetPicture ( const AValue: TLeptPix ) ;
@@ -51,6 +57,8 @@ protected
   procedure MouseMove ( Shift: TShiftState; X, Y: Integer ) ; override;
   procedure MouseUp ( Button: TMouseButton; Shift: TShiftState; X, Y: Integer ) ;
     override;
+  procedure SelectionChange ( Sender: TObject ) ;
+  procedure ResizeSelections;
 public
   { public declarations }
   constructor Create ( TheOwner: TComponent ) ; override;
@@ -63,13 +71,59 @@ public
   property OnSelect: TNotifyEvent read FOnSelect write FOnSelect;
   property Mode: TViewermode read FMode write SetMode;
   property Scale: Integer read GetScale write SetScale;
-  property Selection: TRect read FSelectRect;
+  procedure AddSelection( Selection: TRect );
+  property Selection: TRect read GetSelection;
   property SelectionMode: TSelectionMode read FSelectionMode write FSelectionMode;
 end;
 
 
+  function ScaleRect( aRect: TRect; scale: Single ): TRect;
+  function ScaleRectToView( aRect: TRect; viewfactor: integer ): TRect;
+  function UnScaleRect( aRect: TRect; viewfactor: integer ): TRect;
+  function ScaleAndOffsetRect(ARect: TRect; scalexy: single; offsetX, offsetY: Integer): TRect;
+
 implementation
 
+function ScaleRect ( aRect: TRect; scale: Single ) : TRect;
+var
+  TempRect: TRect;
+begin
+  writeln('scale is ', FormatFloat( '0.00', scale ));
+  writeln( Format('Input rect: %d %d %d %d', [aRect.Top, aRect.Left, aRect.Bottom, aRect.Right]) );
+  TempRect.Top := Round(aRect.Top*scale);
+  TempRect.Left := Round(aRect.Left*scale);
+  TempRect.Bottom := Round(aRect.Bottom*scale);
+  TempRect.Right := Round(aRect.Right*scale);
+  Result := TempRect;
+  writeln( Format('Output rect: %d %d %d %d', [TempRect.Top, TempRect.Left, TempRect.Bottom, TempRect.Right]) );
+end;
+
+function ScaleRectToView ( aRect: TRect; viewfactor: integer ) : TRect;
+begin
+  Result := ScaleRect( aRect, viewfactor/100 );
+  writeln('ScaleRectToView');
+end;
+
+function UnScaleRect ( aRect: TRect; viewfactor: integer ) : TRect;
+begin
+  Result := ScaleRect( aRect, 100/viewfactor );
+  writeln('UnScaleRect');
+end;
+
+function ScaleAndOffsetRect(ARect: TRect; scalexy: single; offsetX, offsetY: Integer): TRect;
+var
+  TempRect: TRect;
+begin
+  TempRect.Left := Round(ARect.Left*scalexy) - offsetX;
+  TempRect.Top := Round(ARect.Top*scalexy) - offsetY;
+  TempRect.Right := Round(ARect.Right*scalexy) - offsetX;
+  TempRect.Bottom := Round(ARect.Bottom*scalexy)- offsetY;
+  Result := TempRect;
+end;
+
+
+
+{ TPageViewer }
 procedure TPageViewer.SetBitmap ( const AValue: TBitmap ) ;
 begin
   if Assigned(FBitmap)
@@ -86,6 +140,14 @@ begin
   writeln('GetScale(int): ', Result);
 end;
 
+function TPageViewer.GetSelection: TRect;
+begin
+  Result.Top := FVertScrollBar.Position + FSelectRect.Top;
+  Result.Left := FHorzScrollBar.Position + FSelectRect.Left;
+  Result.Bottom := FVertScrollBar.Position + FSelectRect.Bottom;
+  Result.Right := FHorzScrollBar.Position + FSelectRect.Right;
+end;
+
 procedure TPageViewer.SetMode ( const AValue: TViewermode ) ;
 begin
   if AValue<>FMode then
@@ -97,12 +159,19 @@ begin
 end;
 
 procedure TPageViewer.SetPicture ( const AValue: TLeptPix ) ;
+var
+  x: Integer;
 begin
   if AValue<>FCurrentPagePix then
         begin
           FCurrentPagePix := AValue;
           if pixGetDimensions(FCurrentPagePix, @FPageWidth, @FPageHeight, nil)<>0
               then WriteLn('Error when getting image dimensions');
+          For x := Length(FSelections)-1 downto 0 do
+            FSelections[x].Free;
+          SetLength(FSelections, 0);
+          SetLength(FRealSelections, 0);
+          ClearSelection;
           ReloadBitmap;
         end;
 end;
@@ -149,7 +218,11 @@ begin
 end;
 
 procedure TPageViewer.OnScrollBarChange ( Sender: TObject ) ;
+var
+  x: Integer;
 begin
+  for x := 0 to Length(FRealSelections)-1 do
+    FSelections[x].Selection := ScaleAndOffsetRect(FRealSelections[x], FScale, FHorzScrollBar.Position, FVertScrollBar.Position);
   Invalidate;
 end;
 
@@ -234,6 +307,7 @@ begin
     ScaleToBitmap(FCurrentPagePix, FBitmap, FScale);
     writeln('w:', FPageWidth, '  h:', FPageHeight, ' scale:', FormatFloat('0.00', FScale));
     SetupScrollbars;
+    ResizeSelections;
  //   Invalidate;
   end;
 end;
@@ -270,6 +344,19 @@ begin
      then if Assigned(FOnSelect)
         then FOnSelect( Self );
   FSelecting := false;
+end;
+
+procedure TPageViewer.SelectionChange(Sender: TObject);
+begin
+  FRealSelections[ TSelector(Sender).Tag ] := UnScaleRect(TSelector(Sender).Selection, Scale);
+end;
+
+procedure TPageViewer.ResizeSelections;
+var
+  x: Integer;
+begin
+  for x := 0 to Length(FSelections)-1 do
+    FSelections[x].Selection := ScaleRect(FRealSelections[x], FScale);
 end;
 
 constructor TPageViewer.Create ( TheOwner: TComponent ) ;
@@ -331,6 +418,23 @@ begin
           SetLength(Fselections, Length(Fselections)-1);
         end
   else Raise Exception.CreateFmt('Error in DeleteSelector: Index out of range (%d)', [SelIndex]);
+end;
+
+procedure TPageViewer.AddSelection(Selection: TRect);
+var
+  S: TSelector;
+begin
+  S := TSelector.Create(Self);
+  S.Parent := Self;
+  S.Color := clGreen;
+  S.Selection := ScaleRect(Selection, FScale);
+  S.OnSelect := @SelectionChange;
+  S.Tag := Length(FSelections);
+  S.Name := 'Selector' + IntToStr(Length(FSelections)+1);
+  SetLength(FRealSelections, Length(FRealSelections)+1);
+  FRealSelections[Length(FRealSelections)-1] := Selection;
+  SetLength(FSelections, Length(FSelections)+1);
+  FSelections[ Length( FSelections )-1 ] := S;
 end;
 
 

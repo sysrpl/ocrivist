@@ -1,12 +1,12 @@
 object Form1: TForm1
-  Left = 20
+  Left = 86
   Height = 716
-  Top = 239
-  Width = 1190
+  Top = 125
+  Width = 1186
   ActiveControl = Panel1
   Caption = 'Ocrivist'
   ClientHeight = 689
-  ClientWidth = 1190
+  ClientWidth = 1186
   Menu = MainMenu1
   OnCreate = FormCreate
   OnDestroy = FormDestroy
@@ -42,7 +42,7 @@ object Form1: TForm1
     Left = 0
     Height = 50
     Top = 0
-    Width = 1190
+    Width = 1186
     Align = alTop
     Caption = 'Panel1'
     TabOrder = 3
@@ -51,7 +51,7 @@ object Form1: TForm1
     Left = 0
     Height = 50
     Top = 639
-    Width = 1190
+    Width = 1186
     Align = alBottom
     Caption = 'Panel2'
     TabOrder = 4
@@ -93,7 +93,7 @@ object Form1: TForm1
     Width = 5
   end
   object Panel4: TPanel
-    Left = 1020
+    Left = 1016
     Height = 589
     Top = 50
     Width = 170
@@ -149,7 +149,7 @@ object Form1: TForm1
     end
   end
   object Splitter2: TSplitter
-    Left = 1015
+    Left = 1011
     Height = 589
     Top = 50
     Width = 5
@@ -160,23 +160,30 @@ object Form1: TForm1
     Left = 135
     Height = 589
     Top = 50
-    Width = 880
+    Width = 876
     Align = alClient
     AutoSize = True
     Caption = 'Panel5'
     TabOrder = 9
   end
   object OpenDialog1: TOpenDialog
-    left = 1136
-    top = 8
+    left = 40
+    top = 136
   end
   object MainMenu1: TMainMenu
-    left = 1088
-    top = 8
+    left = 40
+    top = 80
     object FileMenu: TMenuItem
       Caption = 'File'
-      object MenuItem1: TMenuItem
-        Caption = 'New Item2'
+      object OpenProjectMenuItem: TMenuItem
+        Caption = 'Open'
+      end
+      object SaveProjectMenuItem: TMenuItem
+        Caption = 'Save'
+      end
+      object SaveAsMenuItem: TMenuItem
+        Caption = 'Save As ...'
+        OnClick = SaveAsMenuItemClick
       end
       object MenuItem3: TMenuItem
         Caption = '-'
@@ -196,6 +203,32 @@ object Form1: TForm1
         Caption = 'Fit to Width'
         OnClick = ViewMenuItemClick
       end
+      object View100MenuItem: TMenuItem
+        Tag = 100
+        Caption = '100%'
+        OnClick = ViewMenuItemClick
+      end
+      object View75MenuItem: TMenuItem
+        Tag = 75
+        Caption = '75%'
+        OnClick = ViewMenuItemClick
+      end
+      object View50MenuItem: TMenuItem
+        Tag = 50
+        Caption = '50%'
+        OnClick = ViewMenuItemClick
+      end
+      object View25MenuItem: TMenuItem
+        Caption = '25%'
+        OnClick = ViewMenuItemClick
+      end
     end
+  end
+  object SaveProjectDialog: TSaveDialog
+    Title = 'Save project as'
+    DefaultExt = '.ovp'
+    Filter = 'Ocrivist Projects|*.ovp|All Files|*'
+    left = 40
+    top = 200
   end
 end
