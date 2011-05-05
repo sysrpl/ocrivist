@@ -1,0 +1,255 @@
+object ScannerForm: TScannerForm
+  Left = 176
+  Height = 515
+  Top = 79
+  Width = 893
+  HorzScrollBar.Page = 892
+  VertScrollBar.Page = 514
+  ActiveControl = Panel3
+  Caption = 'PascalSane Demo'
+  ClientHeight = 515
+  ClientWidth = 893
+  OnCreate = FormCreate
+  LCLVersion = '0.9.29'
+  object Panel1: TPanel
+    Left = 0
+    Height = 98
+    Top = 417
+    Width = 893
+    Align = alBottom
+    ClientHeight = 98
+    ClientWidth = 893
+    TabOrder = 0
+    object GroupBox3: TGroupBox
+      Left = 11
+      Height = 76
+      Top = 11
+      Width = 605
+      Align = alClient
+      BorderSpacing.Around = 10
+      ClientHeight = 72
+      ClientWidth = 601
+      TabOrder = 0
+      object FileNameEdit: TEdit
+        Left = 221
+        Height = 25
+        Top = 18
+        Width = 183
+        TabOrder = 0
+        Text = '~/test.pnm'
+      end
+      object ScanFileButton: TButton
+        Left = 13
+        Height = 25
+        Top = 16
+        Width = 184
+        Caption = 'Scan to file'
+        Enabled = False
+        OnClick = ScanFileButtonClick
+        TabOrder = 1
+      end
+    end
+    object GroupBox5: TGroupBox
+      Left = 626
+      Height = 76
+      Top = 11
+      Width = 256
+      Align = alRight
+      BorderSpacing.Around = 10
+      ClientHeight = 72
+      ClientWidth = 252
+      TabOrder = 1
+      object ScanToScreenButton: TButton
+        Left = 13
+        Height = 25
+        Top = 16
+        Width = 176
+        Caption = 'Scan to screen'
+        Enabled = False
+        OnClick = ScanToScreenButtonClick
+        TabOrder = 0
+      end
+    end
+  end
+  object Panel2: TPanel
+    Left = 616
+    Height = 417
+    Top = 0
+    Width = 277
+    Align = alRight
+    ClientHeight = 417
+    ClientWidth = 277
+    TabOrder = 1
+    object GroupBox4: TGroupBox
+      Left = 10
+      Height = 395
+      Top = 11
+      Width = 256
+      Align = alRight
+      BorderSpacing.Around = 10
+      ClientHeight = 391
+      ClientWidth = 252
+      TabOrder = 0
+      object Image1: TImage
+        Left = 13
+        Height = 284
+        Top = 65
+        Width = 218
+        Stretch = True
+      end
+      object ProgressLabel: TLabel
+        Left = 13
+        Height = 1
+        Top = 41
+        Width = 1
+        ParentColor = False
+      end
+      object ScanButton: TButton
+        Left = 13
+        Height = 25
+        Top = 9
+        Width = 176
+        Caption = 'Scan Preview'
+        Enabled = False
+        OnClick = ScanButtonClick
+        TabOrder = 0
+      end
+    end
+  end
+  object Panel3: TPanel
+    Left = 0
+    Height = 417
+    Top = 0
+    Width = 616
+    Align = alClient
+    ClientHeight = 417
+    ClientWidth = 616
+    TabOrder = 2
+    object GroupBox1: TGroupBox
+      Left = 11
+      Height = 152
+      Top = 11
+      Width = 594
+      Align = alTop
+      BorderSpacing.Around = 10
+      ClientHeight = 148
+      ClientWidth = 590
+      TabOrder = 0
+      object Label3: TLabel
+        Left = 8
+        Height = 18
+        Top = 16
+        Width = 112
+        Caption = 'Detected devices'
+        ParentColor = False
+      end
+      object Label2: TLabel
+        Left = 213
+        Height = 18
+        Top = 94
+        Width = 36
+        Caption = 'Mode'
+        ParentColor = False
+      end
+      object Label1: TLabel
+        Left = 8
+        Height = 18
+        Top = 94
+        Width = 66
+        Caption = 'Resolution'
+        ParentColor = False
+      end
+      object UnsupportedLabel: TLabel
+        Left = 94
+        Height = 18
+        Top = 94
+        Width = 84
+        Caption = 'Unsupported'
+        ParentColor = False
+        Visible = False
+      end
+      object RefreshButton: TButton
+        Left = 429
+        Height = 25
+        Top = 40
+        Width = 144
+        Caption = 'Refresh Devices'
+        OnClick = RefreshButtonClick
+        TabOrder = 0
+      end
+      object ComboBox2: TComboBox
+        Left = 269
+        Height = 27
+        Top = 89
+        Width = 152
+        ItemHeight = 0
+        TabOrder = 1
+      end
+      object ResolutionEdit: TSpinEdit
+        Left = 96
+        Height = 25
+        Top = 91
+        Width = 74
+        TabOrder = 2
+        Value = 1
+      end
+      object ComboBox1: TComboBox
+        Left = 9
+        Height = 27
+        Top = 40
+        Width = 412
+        ItemHeight = 0
+        OnChange = ComboBox1Change
+        TabOrder = 3
+        Text = 'Refresh Devices to detect scanners'
+      end
+      object ResolutionCombo: TComboBox
+        Left = 96
+        Height = 27
+        Top = 89
+        Width = 100
+        ItemHeight = 0
+        TabOrder = 4
+        Text = 'ResolutionCombo'
+        Visible = False
+      end
+      object SaneTestCheck: TCheckBox
+        Left = 435
+        Height = 21
+        Top = 13
+        Width = 122
+        Caption = 'Show sane-test'
+        TabOrder = 5
+      end
+    end
+    object GroupBox2: TGroupBox
+      Left = 11
+      Height = 233
+      Top = 173
+      Width = 594
+      Align = alClient
+      BorderSpacing.Around = 10
+      ClientHeight = 229
+      ClientWidth = 590
+      TabOrder = 1
+      OnResize = GroupBox2Resize
+      object OptionsButton: TButton
+        Left = 461
+        Height = 25
+        Top = 9
+        Width = 117
+        Caption = 'List options'
+        Enabled = False
+        OnClick = OptionsButtonClick
+        TabOrder = 0
+      end
+      object Memo1: TMemo
+        Left = 9
+        Height = 191
+        Top = 9
+        Width = 439
+        TabOrder = 1
+      end
+    end
+  end
+end
