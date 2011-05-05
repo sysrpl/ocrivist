@@ -1,7 +1,7 @@
 object Form1: TForm1
-  Left = 86
+  Left = 21
   Height = 716
-  Top = 125
+  Top = 331
   Width = 1186
   ActiveControl = Panel1
   Caption = 'Ocrivist'
@@ -103,9 +103,9 @@ object Form1: TForm1
     ClientWidth = 170
     TabOrder = 7
     object Button4: TButton
-      Left = 20
+      Left = 21
       Height = 25
-      Top = 71
+      Top = 70
       Width = 120
       Caption = 'Test Load Image'
       OnClick = Button4Click
@@ -147,6 +147,15 @@ object Form1: TForm1
       OnClick = Button8Click
       TabOrder = 4
     end
+    object Button9: TButton
+      Left = 27
+      Height = 25
+      Top = 300
+      Width = 114
+      Caption = 'Analyse page'
+      OnClick = Button9Click
+      TabOrder = 5
+    end
   end
   object Splitter2: TSplitter
     Left = 1011
@@ -174,9 +183,10 @@ object Form1: TForm1
     left = 40
     top = 80
     object FileMenu: TMenuItem
-      Caption = 'File'
+      Caption = '&File'
       object OpenProjectMenuItem: TMenuItem
         Caption = 'Open'
+        OnClick = OpenProjectMenuItemClick
       end
       object SaveProjectMenuItem: TMenuItem
         Caption = 'Save'
@@ -190,17 +200,33 @@ object Form1: TForm1
       end
       object ExitMenuItem: TMenuItem
         Caption = 'Exit'
+        OnClick = ExitMenuItemClick
+      end
+    end
+    object PageMenu: TMenuItem
+      Caption = '&Page'
+      object ScanPageMenuItem: TMenuItem
+        Caption = 'Scan'
+        OnClick = ScanPageMenuItemClick
+      end
+      object LoadPageMenuItem: TMenuItem
+        Caption = 'Load'
+        OnClick = LoadPageMenuItemClick
+      end
+      object DelPageMenuItem: TMenuItem
+        Caption = 'Delete'
+        OnClick = DelPageMenuItemClick
       end
     end
     object ViewMenu: TMenuItem
-      Caption = 'View'
+      Caption = '&View'
       object FitHeightMenuItem: TMenuItem
-        Caption = 'Fit to Height'
+        Caption = 'Fit to &Height'
         OnClick = ViewMenuItemClick
       end
       object FitWidthMenuItem: TMenuItem
         Tag = 1
-        Caption = 'Fit to Width'
+        Caption = 'Fit to &Width'
         OnClick = ViewMenuItemClick
       end
       object View100MenuItem: TMenuItem
