@@ -12,10 +12,6 @@ type
 TViewermode = (vmFitToWindow, vmFitToWidth, vmFitToHeight, vmScaled, vmFullSize);
 TSelectionMode = (smSelect, smCrop);
 
-TRealSelection = record
-  Selection: TRect;
-end;
-
 { TPageViewer }
 
 TPageViewer = class (TCustomControl)
