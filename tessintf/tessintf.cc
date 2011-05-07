@@ -32,7 +32,7 @@ extern void EXPORTCALL tesseract_ReadConfigFile(tessHandle APIHandle, const char
   APIHandle->ReadConfigFile(filename, global_only);
 }
 
-extern void EXPORTCALL tesseract_SetImage(tessHandle APIHandle, const Pix *pix){
+extern void EXPORTCALL tesseract_SetImage(tessHandle APIHandle, const Pix* pix){
 APIHandle->SetImage( pix );  
 }
 
@@ -44,7 +44,7 @@ extern char* EXPORTCALL tesseract_GetUTF8Text(tessHandle APIHandle){
    return APIHandle->GetUTF8Text();
 }
 
-extern Pix EXPORTCALL *tesseract_GetThresholdedImage(tessHandle APIHandle){
+extern Pix* EXPORTCALL tesseract_GetThresholdedImage(tessHandle APIHandle){
   return APIHandle->GetThresholdedImage();
 }
 
