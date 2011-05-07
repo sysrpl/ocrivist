@@ -52,6 +52,10 @@ type
   PLeptPix = ^TLeptPix;
   PPLeptPix = ^PLeptPix;
 
+  TPixArray = Pointer;
+  PPixArray = ^TPixArray;
+
+  PPointArray = ^TPointArray;
   TPointArray = record
     n: Integer;             //* actual number of pts
     nalloc: Integer;        //* size of allocated arrays
@@ -59,8 +63,8 @@ type
     x, y: Array of Single;  //* arrays of floats
   end;
 
-  PPointArray = ^TPointArray;
 
+  PNumArray = ^TNumArray;
   TNumArray = record
     nalloc:         Integer;           //* size of allocated number array
     n:              Integer;           //* number of numbers saved
@@ -70,18 +74,29 @@ type
     numarray:       array of Single;   //* number array
   end;
 
-  PNumArray = ^TNumArray;
+  PLBox = ^TLBox;
+ // TLBox = Pointer;
+  TLBox = record
+    x:         Longint;
+    y:         Longint;
+    w:         Longint;
+    h:         Longint;
+    refcount:  Cardinal; //reference count (1 if no clones)
+  end;
 
+  TBoxArray = array of TLBox;
+  PBoxArray = ^ TBoxArray;
 
-  function pixRead ( filename: PChar ): PLeptPix; cdecl; external LIBLEPT;
+  function pixRead ( filename: PChar ): TLeptPix; cdecl; external LIBLEPT;
   function pixCreate( w, h, format: Integer ): TLeptPix; cdecl; external LIBLEPT;
+  function pixClone ( pixs: TLeptPix ): TLeptPix; cdecl; external LIBLEPT;
   procedure pixDestroy ( pix: PLeptPix ); cdecl; external LIBLEPT;
   procedure numaDestroy ( pna: PNumArray ); cdecl; external LIBLEPT;
   procedure ptaDestroy ( pta: PPointArray ); cdecl; external LIBLEPT;
-  function pixGetInputFormat ( Pix: PLeptPix ): Integer; cdecl; external LIBLEPT;
-  function pixGetXRes ( Pix: PLeptPix ): Integer; cdecl; external LIBLEPT;
-  function pixGetYRes ( Pix: PLeptPix ): Integer; cdecl; external LIBLEPT;
-  function pixGetText ( Pix: PLeptPix ): PChar; cdecl; external LIBLEPT;
+  function pixGetInputFormat ( Pix: TLeptPix ): Integer; cdecl; external LIBLEPT;
+  function pixGetXRes ( Pix: TLeptPix ): Integer; cdecl; external LIBLEPT;
+  function pixGetYRes ( Pix: TLeptPix ): Integer; cdecl; external LIBLEPT;
+  function pixGetText ( Pix: TLeptPix ): PChar; cdecl; external LIBLEPT;
   function pixWriteStream( fp: Pointer; pix: TLeptPix; imagefileformat: Integer): Integer; cdecl; external LIBLEPT;
   function pixRotate90 (pixs: TLeptPix; rotatedirection: Integer ): TLeptPix; cdecl; external LIBLEPT;
   function pixSobelEdgeFilter ( pixs: PLeptPix; orientflag: Integer ): TleptPix;  cdecl; external LIBLEPT;
@@ -92,6 +107,7 @@ type
 
   function pixScale( pix: PLeptPix; pw, ph: Single): TLeptPix; cdecl; external LIBLEPT;
   function pixScaleSmooth( pix: PLeptPix; pw, ph: Single): TLeptPix; cdecl; external LIBLEPT;
+  function pixGetDepth( pix: TLeptPix): Integer; cdecl; external LIBLEPT;
 
  {
   function pixScaleToSize( pix: PLeptPix; wd, hd: Integer): TLeptPix;
@@ -100,7 +116,10 @@ type
   function pixReadHeader( filename: PChar; pformat, pw, ph, pbps, pspp, piscmap: PInteger): Integer;
   function findFileFormat( filename: PChar; pformat: PInteger): Integer;
   function findFileFormatBuffer(buf: PByte ; pformat: PInteger): Integer;
-  function pixReadMem(data: PByte; size: PCardinal): PLeptPix;
+  function pixReadMem(data: PByte; size: PCardinal): TLeptPix;
+  function pixDeskew( pixs: TLeptPix; redsearch: Integer ): TLeptPix;
+  function pixDeskewGeneral( pixs: TLeptPix; redsweep: integer; sweeprange, sweepdelta: Single;
+                           redsearch, thresh: Integer; pangle, pconf: PSingle ): TLeptPix;
  }
 
 {*!
@@ -355,7 +374,7 @@ function pixGenHalftoneMask( pixs: PLeptPix; ppixtext: PPLeptPix; phtfound: PInt
  *      (3) Both the input image and the returned textline mask
  *          are at the same resolution.
  *}
-function pixGenTextlineMask( pixs: PLeptPix; ppixvws: PPLeptPix; ptlfound: PInteger; debug: Integer = 0): PLeptPix; cdecl; external LIBLEPT;
+function pixGenTextlineMask( pixs: PLeptPix; ppixvws: PPLeptPix; ptlfound: PInteger; debug: Integer = 0): TLeptPix; cdecl; external LIBLEPT;
 
 {/*------------------------------------------------------------------*
  *       Simple (pixelwise) binarization with fixed threshold       *
@@ -371,7 +390,7 @@ function pixGenTextlineMask( pixs: PLeptPix; ppixvws: PPLeptPix; ptlfound: PInte
  *      (1) If the source pixel is less than the threshold value,
  *          the dest will be 1; otherwise, it will be 0
  *}
-function pixThresholdToBinary( pixs: TLeptPix; thresh: Integer): PLeptPix; cdecl; external LIBLEPT;
+function pixThresholdToBinary( pixs: TLeptPix; thresh: Integer): TLeptPix; cdecl; external LIBLEPT;
 
 {*!
  *  pixWrite()
@@ -420,6 +439,189 @@ function pixWrite( filename: PChar; pix: TLeptPix; format: Integer): Integer; cd
  *          jpeg for 8 and 32 bpp).
  *}
 function pixWriteMem(pdata: Pointer{array of byte}; psize: PInteger; pix: PLeptPix; imageformat: Integer): Integer; cdecl; external LIBLEPT;
+
+{*-----------------------------------------------------------------------*
+ *                       Top-level deskew interfaces                     *
+ *-----------------------------------------------------------------------*/
+/*!
+ *  pixDeskew()
+ *
+ *      Input:  pixs (any depth)
+ *              redsearch (for binary search: reduction factor = 1, 2 or 4;
+ *                         use 0 for default)
+ *      Return: pixd (deskewed pix), or null on error
+ *
+ *  Notes:
+ *      (1) This binarizes if necessary and finds the skew angle.  If the
+ *          angle is large enough and there is sufficient confidence,
+ *          it returns a deskewed image; otherwise, it returns a clone.
+ *}
+function pixDeskew( pixs: TLeptPix; redsearch: Integer ): TLeptPix; cdecl; external LIBLEPT;
+
+{*!
+ *  pixDeskewGeneral()
+ *
+ *      Input:  pixs  (any depth)
+ *              redsweep  (for linear search: reduction factor = 1, 2 or 4;
+ *                         use 0 for default)
+ *              sweeprange (in degrees in each direction from 0;
+ *                          use 0.0 for default)
+ *              sweepdelta (in degrees; use 0.0 for default)
+ *              redsearch  (for binary search: reduction factor = 1, 2 or 4;
+ *                          use 0 for default;)
+ *              thresh (for binarizing the image; use 0 for default)
+ *              &angle   (<optional return> angle required to deskew,
+ *                        in degrees; use NULL to skip)
+ *              &conf    (<optional return> conf value is ratio
+ *                        of max/min scores; use NULL to skip)
+ *      Return: pixd (deskewed pix), or null on error
+ *
+ *  Notes:
+ *      (1) This binarizes if necessary and finds the skew angle.  If the
+ *          angle is large enough and there is sufficient confidence,
+ *          it returns a deskewed image; otherwise, it returns a clone.
+ *}
+function pixDeskewGeneral( pixs: TLeptPix; redsweep: integer; sweeprange, sweepdelta: Single;
+                           redsearch, thresh: Integer; pangle, pconf: PSingle ): TLeptPix; cdecl; external LIBLEPT;
+
+{*-------------------------------------------------------------*
+ *                Extract rectangular region                   *
+ *-------------------------------------------------------------*/
+/*!
+ *  pixClipRectangle()
+ *
+ *      Input:  pixs
+ *              box  (requested clipping region; const)
+ *              &boxc (<optional return> actual box of clipped region)
+ *      Return: clipped pix, or null on error or if rectangle
+ *              doesn't intersect pixs
+ *
+ *  Notes:
+ *
+ *  This should be simple, but there are choices to be made.
+ *  The box is defined relative to the pix coordinates.  However,
+ *  if the box is not contained within the pix, we have two choices:
+ *
+ *      (1) clip the box to the pix
+ *      (2) make a new pix equal to the full box dimensions,
+ *          but let rasterop do the clipping and positioning
+ *          of the src with respect to the dest
+ *
+ *  Choice (2) immediately brings up the problem of what pixel values
+ *  to use that were not taken from the src.  For example, on a grayscale
+ *  image, do you want the pixels not taken from the src to be black
+ *  or white or something else?  To implement choice 2, one needs to
+ *  specify the color of these extra pixels.
+ *
+ *  So we adopt (1), and clip the box first, if necessary,
+ *  before making the dest pix and doing the rasterop.  But there
+ *  is another issue to consider.  If you want to paste the
+ *  clipped pix back into pixs, it must be properly aligned, and
+ *  it is necessary to use the clipped box for alignment.
+ *  Accordingly, this function has a third (optional) argument, which is
+ *  the input box clipped to the src pix.
+ *}
+function pixClipRectangle( pixs: TLeptPix; box: TLBox; pboxc: Pointer {BOX- set as nil}): TLeptPix; cdecl; external LIBLEPT;
+
+{*---------------------------------------------------------------------*
+ *                  Box creation, destruction and copy                 *
+ *---------------------------------------------------------------------*/
+/*!
+ *  boxCreate()
+ *
+ *      Input:  x, y, w, h
+ *      Return: box, or null on error
+ *
+ *  Notes:
+ *      (1) This clips the box to the +quad.  If no part of the
+ *          box is in the +quad, this returns NULL.
+ *      (2) We allow you to make a box with w = 0 and/or h = 0.
+ *          This does not represent a valid region, but it is useful
+ *          as a placeholder in a boxa for which the index of the
+ *          box in the boxa is important.  This is an atypical
+ *          situation; usually you want to put only valid boxes with
+ *          nonzero width and height in a boxa.  If you have a boxa
+ *          with invalid boxes, the accessor boxaGetValidBox()
+ *          will return NULL on each invalid box.
+ *      (3) If you want to create only valid boxes, use boxCreateValid(),
+ *          which returns NULL if either w or h is 0.
+ *}
+function boxCreate(x, y, w, h: longint): TLBox; cdecl; external LIBLEPT;
+
+{*!
+ *  boxCreateValid()
+ *
+ *      Input:  x, y, w, h
+ *      Return: box, or null on error
+ *
+ *  Notes:
+ *      (1) This returns NULL if either w = 0 or h = 0.
+ *}
+function boxCreateValid(x, y, w, h: longint): TLBox; cdecl; external LIBLEPT;
+
+{*!
+ *  boxDestroy()
+ *
+ *      Input:  &box (<will be set to null before returning>)
+ *      Return: void
+ *
+ *  Notes:
+ *      (1) Decrements the ref count and, if 0, destroys the box.
+ *      (2) Always nulls the input ptr.
+ *}
+procedure boxDestroy( pbox: PLBox ); cdecl; external LIBLEPT;
+
+{*-----------------------------------------------------------------------*
+ *                Bounding boxes of 4 Connected Components               *
+ *-----------------------------------------------------------------------*/
+/*!
+ *  pixConnComp()
+ *
+ *      Input:  pixs (1 bpp)
+ *              &pixa   (<optional return> pixa of each c.c.)
+ *              connectivity (4 or 8)
+ *      Return: boxa, or null on error
+ *
+ *  Notes:
+ *      (1) This is the top-level call for getting bounding boxes or
+ *          a pixa of the components, and it can be used instead
+ *          of either pixConnCompBB() or pixConnCompPixa(), rsp.
+ *}
+function pixConnComp( pixs: TLeptPix; ppixa: PPixArray; connectivity: Integer ): TBoxArray; cdecl; external LIBLEPT;
+
+{*!
+ *  boxaWrite()
+ *
+ *      Input:  filename
+ *              boxa
+ *      Return: 0 if OK, 1 on error
+ *}
+function boxaWrite(filename: Pchar; boxa: TBoxArray): Integer; cdecl; external LIBLEPT;
+
+function boxaGetCount( boxa: TBoxArray): Integer; cdecl; external LIBLEPT;
+
+procedure boxaDestroy( pboxa: PBoxArray); cdecl; external LIBLEPT;
+
+function boxaGetBox( boxa: TBoxArray; index: Integer; accessflag: Integer): TLBox; cdecl; external LIBLEPT;
+
+function boxaGetBoxGeometry ( boxa: TBoxArray; index: Integer; px, py, pw, ph: PInteger): Integer; cdecl; external LIBLEPT;
+
+{*!
+ *  pixGetData()
+ *
+ *  Notes:
+ *      (1) This gives a new handle for the data.  The data is still
+ *          owned by the pix, so do not call FREE() on it.
+ *}
+function pixGetData( pix: TLeptPix ): Pointer; cdecl; external LIBLEPT;
+
+function pixGetWpl( pix: TLeptPix ):Integer; cdecl; external LIBLEPT;
+
+function pixDestroyColormap( pix: TLeptPix ): Integer; cdecl; external LIBLEPT;
+
+
+
+
 
 
 implementation
