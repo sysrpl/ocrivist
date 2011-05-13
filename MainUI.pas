@@ -184,12 +184,12 @@ end;
 
 procedure TForm1.Button9Click ( Sender: TObject ) ;
 var
-  BinaryPix: PLeptPix;
-  TextMask: PLeptPix;
+  BinaryPix: PLPix;
+  TextMask: PLPix;
   B: PBoxArray;
   x, y, w, h: Integer;
   count: Integer;
-  p: PleptPix;
+  p: PLPix;
 begin
   Textmask := nil;
   if pixGetDepth(ICanvas.Picture) > 1
