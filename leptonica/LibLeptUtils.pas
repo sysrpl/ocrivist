@@ -1,3 +1,23 @@
+{ LibLeptUtils.pas
+  Utilities for working with Leptonica's liblept image processing library
+
+  Copyright (C) 2011 Malcolm Poole <mgpoole@users.sourceforge.net>
+
+  This library is free software; you can redistribute it and/or modify it
+  under the terms of the GNU Library General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or (at your
+  option) any later version.
+
+  This program is distributed in the hope that it will be useful, but WITHOUT
+  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  FITNESS FOR A PARTICULAR PURPOSE. See the GNU Library General Public License
+  for more details.
+
+  You should have received a copy of the GNU Library General Public License
+  along with this library; if not, write to the Free Software Foundation,
+  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+}
+
 unit LibLeptUtils;
 
 {$mode objfpc}{$H+}
@@ -15,17 +35,17 @@ const
   //BUFFERSIZE = 32768;
   BUFFERSIZE = 512000;
 
-function ScaleToBitmap( pix: TLeptPix;  bmp: TBitmap; scalexy: Single ): integer;
-function CropPix( pix: TLeptPix; cropRect: TRect ): TLeptPix;
-function CropPix( pix: TLeptPix; x, y, w, h: longint ): TLeptPix;
-function ScanToPix( h: SANE_Handle; resolution: integer; scanmode: string; progresscb: TProgressCallback ): TLeptPix;
+function ScaleToBitmap( pix: PLPix;  bmp: TBitmap; scalexy: Single ): integer;
+function CropPix( pix: PLPix; cropRect: TRect ): PLPix;
+function CropPix( pix: PLPix; x, y, w, h: longint ): PLPix;
+function ScanToPix( h: SANE_Handle; resolution: integer; scanmode: string; progresscb: TProgressCallback ): PLPix;
 
 implementation
 
-function ScaleToBitmap ( pix: TLeptPix;  bmp: TBitmap; scalexy: Single ) : integer;
+function ScaleToBitmap ( pix: PLPix;  bmp: TBitmap; scalexy: Single ) : integer;
 var
   ms: TMemoryStream;
-  tempPix: TLeptPix;
+  tempPix: PLPix;
   buf: PByteArray;
   bytecount: Integer;
 begin
@@ -48,15 +68,15 @@ begin
      end;
 end;
 
-function CropPix ( pix: TLeptPix; cropRect: TRect ) : TLeptPix;
+function CropPix ( pix: PLPix; cropRect: TRect ) : PLPix;
 begin
   Result := CropPix(pix, cropRect.Left, cropRect.Top, cropRect.Right-cropRect.Left+1, cropRect.Bottom-cropRect.Top+1);
 end;
 
-function CropPix ( pix: TLeptPix; x, y, w, h: longint ) : TLeptPix;
+function CropPix ( pix: PLPix; x, y, w, h: longint ) : PLPix;
 var
   BoxRect: TLBox;
-  pixB: Pointer;
+  pixB: PLPix;
 begin
 //  writeln( Format('box: %d %d %d %d', [x, y, w, h]) );
   BoxRect := boxCreateValid(x, y, w, h);
@@ -71,7 +91,7 @@ begin
   boxDestroy(@BoxRect);
 end;
 
-function ScanToPix ( h: SANE_Handle; resolution: integer; scanmode: string; progresscb: TProgressCallback ) : TLeptPix;
+function ScanToPix ( h: SANE_Handle; resolution: integer; scanmode: string; progresscb: TProgressCallback ) : PLPix;
 var
   fileheader: String;
   status: SANE_Status;

@@ -1,3 +1,23 @@
+{*====================================================================*
+   Leptonica.pas provides Pascal bindings for liblept
+   Author: Malcolm Poole <mgpoole@users.sourceforge.net> 2011
+ *====================================================================*}
+
+{*====================================================================*
+ -  Copyright (C) 2001 Leptonica.  All rights reserved.
+ -  This software is distributed in the hope that it will be
+ -  useful, but with NO WARRANTY OF ANY KIND.
+ -  No author or distributor accepts responsibility to anyone for the
+ -  consequences of using this software, or for whether it serves any
+ -  particular purpose or works at all, unless he or she says so in
+ -  writing.  Everyone is granted permission to copy, modify and
+ -  redistribute this source code, for commercial or non-commercial
+ -  purposes, with the following restrictions: (1) the origin of this
+ -  source code must not be misrepresented; (2) modified versions must
+ -  be plainly marked as such; and (3) this notice may not be removed
+ -  or altered from any source or modified source distribution.
+ *====================================================================*}
+
 unit leptonica;
 
 {$mode objfpc}{$H+}
@@ -48,12 +68,52 @@ const
       IFF_SPIX           = 18;
 
 type
-  TLeptPix = Pointer;
-  PLeptPix = ^TLeptPix;
-  PPLeptPix = ^PLeptPix;
 
-  TPixArray = Pointer;
+  PLPix = ^TLPix;
+  TLPix = record
+     w:             Integer;           // width in pixels
+     h:             Integer;           // height in pixels
+     d:             Integer;           // depth in bits
+     wpl:           Cardinal;          // 32-bit words/line
+     refcount:      Cardinal;          // reference count (1 if no clones)
+     xres:          Integer;           // image res (ppi) in x direction
+                                       // (use 0 if unknown)
+     yres:          Integer;           // image res (ppi) in y direction
+                                       // (use 0 if unknown)
+     informat:      Integer;           // input file format, IFF_*
+     text:          PChar;             // text string associated with pix
+     colormap:      Pointer;           // to colormap (may be null)
+     data:          PCardinal;         // the image data
+  end;
+
+  PPLPix = ^PLPix;
+
+  PLBox = ^TLBox;
+  TLBox = record
+    x:         Longint;
+    y:         Longint;
+    w:         Longint;
+    h:         Longint;
+    refcount:  Cardinal; //reference count (1 if no clones)
+  end;
+
+ PBoxArray = ^TBoxArray;
+ TBoxArray = record
+    n:        integer;             // number of box in ptr array
+    nalloc:   integer;             // number of box ptrs allocated
+    refcount: Cardinal;            // reference count (1 if no clones)
+    box:      array of PLBox;      // box ptr array
+  end;
+
+
   PPixArray = ^TPixArray;
+  TPixArray = record
+    n:       Integer;            // number of Pix in ptr array
+    nalloc:  Integer;            // number of Pix ptrs allocated
+    refcount:Cardinal;            // reference count (1 if no clones)
+    pix:     array of PLPix;           // the array of ptrs to pix
+    boxa:    array of TLBox;          // array of boxes
+  end;
 
   PPointArray = ^TPointArray;
   TPointArray = record
@@ -74,52 +134,55 @@ type
     numarray:       array of Single;   //* number array
   end;
 
-  PLBox = ^TLBox;
- // TLBox = Pointer;
-  TLBox = record
-    x:         Longint;
-    y:         Longint;
-    w:         Longint;
-    h:         Longint;
-    refcount:  Cardinal; //reference count (1 if no clones)
+  PPta = ^TPta;
+  TPta = record
+     n:          Integer;             // actual number of pts
+     nalloc:     Integer;             // size of allocated arrays
+     refcount:   Integer;             // reference count (1 if no clones)
+     x, y:       Single;              // arrays of floats
   end;
 
-  TBoxArray = array of TLBox;
-  PBoxArray = ^ TBoxArray;
+  PPtaArray = ^TPtaArray;
+  TPtaArray = record
+     n:          Integer;           // number of pta in ptr array
+     nalloc:     Integer;           // number of pta ptrs allocated
+     pta:        array of PPta;     // pta ptr array
+  end;
 
-  function pixRead ( filename: PChar ): TLeptPix; cdecl; external LIBLEPT;
-  function pixCreate( w, h, format: Integer ): TLeptPix; cdecl; external LIBLEPT;
-  function pixClone ( pixs: TLeptPix ): TLeptPix; cdecl; external LIBLEPT;
-  procedure pixDestroy ( pix: PLeptPix ); cdecl; external LIBLEPT;
+  function pixRead ( filename: PChar ): PLPix; cdecl; external LIBLEPT;
+  function pixCreate( w, h, format: Integer ): TLPix; cdecl; external LIBLEPT;
+  function pixClone ( pixs: PLPix ): PLPix; cdecl; external LIBLEPT;
+  procedure pixDestroy ( pix: PLPix ); cdecl; external LIBLEPT;
   procedure numaDestroy ( pna: PNumArray ); cdecl; external LIBLEPT;
   procedure ptaDestroy ( pta: PPointArray ); cdecl; external LIBLEPT;
-  function pixGetInputFormat ( Pix: TLeptPix ): Integer; cdecl; external LIBLEPT;
-  function pixGetXRes ( Pix: TLeptPix ): Integer; cdecl; external LIBLEPT;
-  function pixGetYRes ( Pix: TLeptPix ): Integer; cdecl; external LIBLEPT;
-  function pixGetText ( Pix: TLeptPix ): PChar; cdecl; external LIBLEPT;
-  function pixWriteStream( fp: Pointer; pix: TLeptPix; imagefileformat: Integer): Integer; cdecl; external LIBLEPT;
-  function pixRotate90 (pixs: TLeptPix; rotatedirection: Integer ): TLeptPix; cdecl; external LIBLEPT;
-  function pixSobelEdgeFilter ( pixs: PLeptPix; orientflag: Integer ): TleptPix;  cdecl; external LIBLEPT;
-  function pixFindBaselines(pixs : TLeptPix; Appta: PPointArray; debug: integer): Pointer; cdecl; external LIBLEPT;
+  function pixGetInputFormat ( Pix: TLPix ): Integer; cdecl; external LIBLEPT;
+  function pixGetXRes ( Pix: PLPix ): Integer; cdecl; external LIBLEPT;
+  function pixGetYRes ( Pix: PLPix ): Integer; cdecl; external LIBLEPT;
+  function pixGetText ( Pix: PLPix ): PChar; cdecl; external LIBLEPT;
+  function pixWriteStream( fp: Pointer; pix: PLPix; imagefileformat: Integer): Integer; cdecl; external LIBLEPT;
+  function pixRotate90 (pixs: PLPix; rotatedirection: Integer ): PLPix; cdecl; external LIBLEPT;
+  function pixSobelEdgeFilter ( pixs: PLPix; orientflag: Integer ): PLPix;  cdecl; external LIBLEPT;
   function ptaWriteStream ( fp: pointer; pta: PPointArray; nktype: integer ): integer; cdecl; external LIBLEPT;
   function ptaWrite (  filename: PChar; pta: PPointArray; nktype: integer ): integer; cdecl; external LIBLEPT;
-  function pixGetDimensions( pix: TLeptPix; pw, ph, pd: PInteger): Integer; cdecl; external LIBLEPT;
+  function pixGetDimensions( pix: PLPix; pw, ph, pd: PInteger): Integer; cdecl; external LIBLEPT;
 
-  function pixScale( pix: PLeptPix; pw, ph: Single): TLeptPix; cdecl; external LIBLEPT;
-  function pixScaleSmooth( pix: PLeptPix; pw, ph: Single): TLeptPix; cdecl; external LIBLEPT;
-  function pixGetDepth( pix: TLeptPix): Integer; cdecl; external LIBLEPT;
+  function pixScale( pix: PLPix; pw, ph: Single): PLPix; cdecl; external LIBLEPT;
+  function pixScaleSmooth( pix: PLPix; pw, ph: Single): PLPix; cdecl; external LIBLEPT;
+  function pixGetDepth( pix: PLPix): Integer; cdecl; external LIBLEPT;
 
  {
-  function pixScaleToSize( pix: PLeptPix; wd, hd: Integer): TLeptPix;
-  function pixScaleBySampling( pix: PLeptPix; pw, ph: Single): TLeptPix;
-  function pixScaleRGBToGrayFast( pix: PLeptPix; pw, ph: Single): TLeptPix;
+  function pixScaleToSize( pix: PLPix; wd, hd: Integer): PLPix;
+  function pixScaleBySampling( pix: PLPix; pw, ph: Single): PLPix;
+  function pixScaleRGBToGrayFast( pix: PLPix; pw, ph: Single): PLPix;
   function pixReadHeader( filename: PChar; pformat, pw, ph, pbps, pspp, piscmap: PInteger): Integer;
   function findFileFormat( filename: PChar; pformat: PInteger): Integer;
   function findFileFormatBuffer(buf: PByte ; pformat: PInteger): Integer;
-  function pixReadMem(data: PByte; size: PCardinal): TLeptPix;
-  function pixDeskew( pixs: TLeptPix; redsearch: Integer ): TLeptPix;
-  function pixDeskewGeneral( pixs: TLeptPix; redsweep: integer; sweeprange, sweepdelta: Single;
-                           redsearch, thresh: Integer; pangle, pconf: PSingle ): TLeptPix;
+  function pixReadMem(data: PByte; size: PCardinal): PLPix;
+  function pixReadHeaderMem( data: PByte; size: PCardinal; pformat, pw, ph, pbps, pspp, piscmap: PInteger): Integer;
+  function pixDeskew( pixs: PLPix; redsearch: Integer ): PLPix;
+  function pixDeskewLocal( pixs: PLPix; nslices, redsweep, redsearch: Integer; sweeprange, sweepdelta, minbsdelta: Single): PLPix;
+  function pixDeskewGeneral( pixs: PLPix; redsweep: integer; sweeprange, sweepdelta: Single;
+                           redsearch, thresh: Integer; pangle, pconf: PSingle ): PLPix;
  }
 
 {*!
@@ -139,7 +202,7 @@ type
  *             (in general, anisotropically) to that size.
  *           - It is an error to set both @wd and @hd to 0.
  *}
- function pixScaleToSize( pix: PLeptPix; wd, hd: Integer): TLeptPix; cdecl; external LIBLEPT;
+ function pixScaleToSize( pix: PLPix; wd, hd: Integer): PLPix; cdecl; external LIBLEPT;
 
 
   {*------------------------------------------------------------------*
@@ -158,7 +221,7 @@ type
    *          subsampling (@scalex and/or @scaley < 1.0).
    *      (2) If @scalex == 1.0 and @scaley == 1.0, returns a copy.
    *}
-  function pixScaleBySampling( pix: PLeptPix; pw, ph: Single): TLeptPix; cdecl; external LIBLEPT;
+  function pixScaleBySampling( pix: PLPix; pw, ph: Single): PLPix; cdecl; external LIBLEPT;
 
 {*------------------------------------------------------------------*
  *            Fast integer factor subsampling RGB to gray           *
@@ -179,7 +242,7 @@ type
  *          RGB image.  This would typically be used for image analysis.
  *      (3) The standard color byte order (RGBA) is assumed.
  *}
-  function pixScaleRGBToGrayFast( pix: PLeptPix; pw, ph: Single): TLeptPix; cdecl; external LIBLEPT;
+  function pixScaleRGBToGrayFast( pix: PLPix; pw, ph: Single): PLPix; cdecl; external LIBLEPT;
 
 
 
@@ -228,7 +291,7 @@ type
  *          Attempts to read those formats will fail at runtime.
  *      (3) findFileFormatBuffer() requires up to 8 bytes to decide on
  *          the format.  That determines the constraint here.}
-  function pixReadMem(data: PByte; size: PCardinal): PLeptPix; cdecl; external LIBLEPT;
+  function pixReadMem(data: PByte; size: Cardinal): PLPix; cdecl; external LIBLEPT;
 
   { *  pixReadHeaderMem()
    *
@@ -240,7 +303,7 @@ type
    *              &spp <optional return> samples/pixel (1, 3 or 4)
    *              &iscmap (<optional return> 1 if cmap exists; 0 otherwise)
    *      Return: 0 if OK, 1 on error }
-  function pixReadHeaderMem( data: PByte; size: PCardinal; pformat, pw, ph, pbps, pspp, piscmap: PInteger): Integer; cdecl; external LIBLEPT;
+  function pixReadHeaderMem( data: PByte; size: Cardinal; pformat, pw, ph, pbps, pspp, piscmap: PInteger): Integer; cdecl; external LIBLEPT;
 
   {/*---------------------------------------------------------------------*
  *               Projective transform to remove local skew             *
@@ -280,7 +343,7 @@ type
  *          by rotating or horizontally shearing it.
  *          Typically, this can be achieved by vertically aligning
  *          the page edge.}
-  function pixDeskewLocal( pixs: PLeptPix; nslices, redsweep, redsearch: Integer; sweeprange, sweepdelta, minbsdelta: Single): PLeptPix; cdecl; external LIBLEPT;
+  function pixDeskewLocal( pixs: PLPix; nslices, redsweep, redsearch: Integer; sweeprange, sweepdelta, minbsdelta: Single): PLPix; cdecl; external LIBLEPT;
 
 {*---------------------------------------------------------------------*
  *                    Locate text baselines in an image                *
@@ -319,7 +382,7 @@ type
  *      (6) There are various debug sections that can be turned on
  *          with the debug flag.
  }
-   function pixFindBaselines( pixs: PLeptPix; ppta: PPointArray; debug: Integer = 0): PNumArray; cdecl; external LIBLEPT;
+   function pixFindBaselines( pixs: PLPix; ppta: PPointArray; debug: Integer = 0): PNumArray; cdecl; external LIBLEPT;
 
 {*------------------------------------------------------------------*
  *                     Top level page segmentation                  *
@@ -340,7 +403,7 @@ type
  *          are included to show how to generate and save/display
  *          these results.
  *}
-   function pixGetRegionsBinary ( pixs: PLeptPix; ppixhm, ppixtm, ppixtb: PPLeptPix; debug: Integer=0): Integer; cdecl; external LIBLEPT;
+   function pixGetRegionsBinary ( pixs: PLPix; ppixhm, ppixtm, ppixtb: PPLPix; debug: Integer=0): Integer; cdecl; external LIBLEPT;
 
 {/*------------------------------------------------------------------*
  *                    Halftone region extraction                    *
@@ -354,7 +417,7 @@ type
  *              debug (flag: 1 for debug output)
  *      Return: pixd (halftone mask), or null on error
  *}
-function pixGenHalftoneMask( pixs: PLeptPix; ppixtext: PPLeptPix; phtfound: PInteger; debug: Integer = 0): PLeptPix; cdecl; external LIBLEPT;
+function pixGenHalftoneMask( pixs: PLPix; ppixtext: PPLPix; phtfound: PInteger; debug: Integer = 0): PLPix; cdecl; external LIBLEPT;
 
 {/*------------------------------------------------------------------*
  *                         Textline extraction                      *
@@ -374,7 +437,7 @@ function pixGenHalftoneMask( pixs: PLeptPix; ppixtext: PPLeptPix; phtfound: PInt
  *      (3) Both the input image and the returned textline mask
  *          are at the same resolution.
  *}
-function pixGenTextlineMask( pixs: PLeptPix; ppixvws: PPLeptPix; ptlfound: PInteger; debug: Integer = 0): TLeptPix; cdecl; external LIBLEPT;
+function pixGenTextlineMask( pixs: PLPix; ppixvws: PPLPix; ptlfound: PInteger; debug: Integer = 0): PLPix; cdecl; external LIBLEPT;
 
 {/*------------------------------------------------------------------*
  *       Simple (pixelwise) binarization with fixed threshold       *
@@ -390,7 +453,7 @@ function pixGenTextlineMask( pixs: PLeptPix; ppixvws: PPLeptPix; ptlfound: PInte
  *      (1) If the source pixel is less than the threshold value,
  *          the dest will be 1; otherwise, it will be 0
  *}
-function pixThresholdToBinary( pixs: TLeptPix; thresh: Integer): TLeptPix; cdecl; external LIBLEPT;
+function pixThresholdToBinary( pixs: PLPix; thresh: Integer): PLPix; cdecl; external LIBLEPT;
 
 {*!
  *  pixWrite()
@@ -417,7 +480,7 @@ function pixThresholdToBinary( pixs: TLeptPix; thresh: Integer): TLeptPix; cdecl
  *          that filenames on Windows have an extension that matches
  *          the image compression.  However, this is not the default.
  *}
-function pixWrite( filename: PChar; pix: TLeptPix; format: Integer): Integer; cdecl; external LIBLEPT;
+function pixWrite( filename: PChar; pix: PLPix; format: Integer): Integer; cdecl; external LIBLEPT;
 
 {*---------------------------------------------------------------------*
  *                            Write to memory                          *
@@ -438,7 +501,7 @@ function pixWrite( filename: PChar; pix: TLeptPix; format: Integer): Integer; cd
  *          Most printers support level 2 compression (tiff_g4 for 1 bpp,
  *          jpeg for 8 and 32 bpp).
  *}
-function pixWriteMem(pdata: Pointer{array of byte}; psize: PInteger; pix: PLeptPix; imageformat: Integer): Integer; cdecl; external LIBLEPT;
+function pixWriteMem(pdata: Pointer{array of byte}; psize: PInteger; pix: PLPix; imageformat: Integer): Integer; cdecl; external LIBLEPT;
 
 {*-----------------------------------------------------------------------*
  *                       Top-level deskew interfaces                     *
@@ -456,7 +519,7 @@ function pixWriteMem(pdata: Pointer{array of byte}; psize: PInteger; pix: PLeptP
  *          angle is large enough and there is sufficient confidence,
  *          it returns a deskewed image; otherwise, it returns a clone.
  *}
-function pixDeskew( pixs: TLeptPix; redsearch: Integer ): TLeptPix; cdecl; external LIBLEPT;
+function pixDeskew( pixs: PLPix; redsearch: Integer ): PLPix; cdecl; external LIBLEPT;
 
 {*!
  *  pixDeskewGeneral()
@@ -481,8 +544,8 @@ function pixDeskew( pixs: TLeptPix; redsearch: Integer ): TLeptPix; cdecl; exter
  *          angle is large enough and there is sufficient confidence,
  *          it returns a deskewed image; otherwise, it returns a clone.
  *}
-function pixDeskewGeneral( pixs: TLeptPix; redsweep: integer; sweeprange, sweepdelta: Single;
-                           redsearch, thresh: Integer; pangle, pconf: PSingle ): TLeptPix; cdecl; external LIBLEPT;
+function pixDeskewGeneral( pixs: PLPix; redsweep: integer; sweeprange, sweepdelta: Single;
+                           redsearch, thresh: Integer; pangle, pconf: PSingle ): PLPix; cdecl; external LIBLEPT;
 
 {*-------------------------------------------------------------*
  *                Extract rectangular region                   *
@@ -521,7 +584,7 @@ function pixDeskewGeneral( pixs: TLeptPix; redsweep: integer; sweeprange, sweepd
  *  Accordingly, this function has a third (optional) argument, which is
  *  the input box clipped to the src pix.
  *}
-function pixClipRectangle( pixs: TLeptPix; box: TLBox; pboxc: Pointer {BOX- set as nil}): TLeptPix; cdecl; external LIBLEPT;
+function pixClipRectangle( pixs: PLPix; box: TLBox; pboxc: Pointer {BOX- set as nil}): PLPix; cdecl; external LIBLEPT;
 
 {*---------------------------------------------------------------------*
  *                  Box creation, destruction and copy                 *
@@ -587,7 +650,9 @@ procedure boxDestroy( pbox: PLBox ); cdecl; external LIBLEPT;
  *          a pixa of the components, and it can be used instead
  *          of either pixConnCompBB() or pixConnCompPixa(), rsp.
  *}
-function pixConnComp( pixs: TLeptPix; ppixa: PPixArray; connectivity: Integer ): TBoxArray; cdecl; external LIBLEPT;
+function pixConnComp( pixs: PLPix; ppixa: PPixArray; connectivity: Integer ): PBoxArray; cdecl; external LIBLEPT;
+
+function pixConnCompBB( pixs: PLPix; connectivity: Integer ): PBoxArray; cdecl; external LIBLEPT;
 
 {*!
  *  boxaWrite()
@@ -596,15 +661,15 @@ function pixConnComp( pixs: TLeptPix; ppixa: PPixArray; connectivity: Integer ):
  *              boxa
  *      Return: 0 if OK, 1 on error
  *}
-function boxaWrite(filename: Pchar; boxa: TBoxArray): Integer; cdecl; external LIBLEPT;
+function boxaWrite(filename: Pchar; boxa: PBoxArray): Integer; cdecl; external LIBLEPT;
 
-function boxaGetCount( boxa: TBoxArray): Integer; cdecl; external LIBLEPT;
+function boxaGetCount( boxa: PBoxArray): Integer; cdecl; external LIBLEPT;
 
 procedure boxaDestroy( pboxa: PBoxArray); cdecl; external LIBLEPT;
 
-function boxaGetBox( boxa: TBoxArray; index: Integer; accessflag: Integer): TLBox; cdecl; external LIBLEPT;
+function boxaGetBox( boxa: PBoxArray; index: Integer; accessflag: Integer): PLBox; cdecl; external LIBLEPT;
 
-function boxaGetBoxGeometry ( boxa: TBoxArray; index: Integer; px, py, pw, ph: PInteger): Integer; cdecl; external LIBLEPT;
+function boxaGetBoxGeometry ( boxa: PBoxArray; index: Integer; px, py, pw, ph: PInteger): Integer; cdecl; external LIBLEPT;
 
 {*!
  *  pixGetData()
@@ -613,14 +678,98 @@ function boxaGetBoxGeometry ( boxa: TBoxArray; index: Integer; px, py, pw, ph: P
  *      (1) This gives a new handle for the data.  The data is still
  *          owned by the pix, so do not call FREE() on it.
  *}
-function pixGetData( pix: TLeptPix ): Pointer; cdecl; external LIBLEPT;
+function pixGetData( pix: PLPix ): Pointer; cdecl; external LIBLEPT;
 
-function pixGetWpl( pix: TLeptPix ):Integer; cdecl; external LIBLEPT;
+function pixGetWpl( pix: PLPix ):Integer; cdecl; external LIBLEPT;
 
-function pixDestroyColormap( pix: TLeptPix ): Integer; cdecl; external LIBLEPT;
+function pixDestroyColormap( pix: PLPix ): Integer; cdecl; external LIBLEPT;
+
+{*!
+ *  pixGetWordsInTextlines()
+ *
+ *      Input:  pixs (1 bpp, 300 ppi)
+ *              reduction (1 for full res; 2 for half-res)
+ *              minwidth, minheight (of saved components; smaller are discarded)
+ *              maxwidth, maxheight (of saved components; larger are discarded)
+ *              &boxad (<return> word boxes sorted in textline line order)
+ *              &pixad (<return> word images sorted in textline line order)
+ *              &naindex (<return> index of textline for each word)
+ *      Return: 0 if OK, 1 on error
+ *
+ *  Notes:
+ *      (1) The input should be at a resolution of about 300 ppi.
+ *          The word masks can be computed at either 150 ppi or 300 ppi.
+ *          For the former, set reduction = 2.
+ *      (2) The four size constraints on saved components are all
+ *          used at 2x reduction.
+ *      (3) The result are word images (and their b.b.), extracted in
+ *          textline order, all at 2x reduction, and with a numa giving
+ *          the textline index for each word.
+ *      (4) The pixa and boxa interfaces should make this type of
+ *          application simple to put together.  The steps are:
+ *           - generate first estimate of word masks
+ *           - get b.b. of these, and remove the small and big ones
+ *           - extract pixa of the word mask from these boxes
+ *           - extract pixa of the actual word images, using word masks
+ *           - sort actual word images in textline order (2d)
+ *           - flatten them to a pixa (1d), saving the textline index
+ *             for each pix
+ *      (5) In an actual application, it may be desirable to pre-filter
+ *          the input image to remove large components, to extract
+ *          single columns of text, and to deskew them.  For example,
+ *          to remove both large components and small noisy components
+ *          that can interfere with the statistics used to estimate
+ *          parameters for segmenting by words, but still retain text lines,
+ *          the following image preprocessing can be done:
+ *                Pix *pixt = pixMorphSequence(pixs, "c40.1", 0);
+ *                Pix *pixf = pixSelectBySize(pixt, 0, 60, 8,
+ *                                     L_SELECT_HEIGHT, L_SELECT_IF_LT, NULL);
+ *                pixAnd(pixf, pixf, pixs);  // the filtered image
+ *          The closing turns text lines into long blobs, but does not
+ *          significantly increase their height.  But if there are many
+ *          small connected components in a dense texture, this is likely
+ *          to generate tall components that will be eliminated in pixf.
+ *}
+function pixGetWordsInTextlines( pixs: PLPix; reduction, minwidth, minheight, maxwidth, maxheight: Integer;
+                       pboxad: PBoxArray; ppixad: PPixArray; pnai: PNumArray): Integer; cdecl; external LIBLEPT;
 
 
+{*------------------------------------------------------------------*
+ *                       Textblock extraction                       *
+ *------------------------------------------------------------------*/
+/*!
+ *  pixGenTextblockMask()
+ *
+ *      Input:  pixs (1 bpp, textline mask, assumed to be 150 to 200 ppi)
+ *              pixvws (vertical white space mask)
+ *              debug (flag: 1 for debug output)
+ *      Return: pixd (textblock mask), or null on error
+ *
+ *  Notes:
+ *      (1) Both the input masks (textline and vertical white space) and
+ *          the returned textblock mask are at the same resolution.
+ *      (2) The result is somewhat noisy, in that small "blocks" of
+ *          text may be included.  These can be removed by post-processing,
+ *          using, e.g.,
+ *             pixSelectBySize(pix, 60, 60, 4, L_SELECT_IF_EITHER,
+ *                             L_SELECT_IF_GTE, NULL);
+ *}
+function pixGenTextblockMask( pixs: PLPix; pixvws: PLPix; debug: Integer): PLPix; cdecl; external LIBLEPT;
 
+{*!
+ *  pixGetTextlineCenters()
+ *
+ *      Input:  pixs (1 bpp)
+ *              debugflag (1 for debug output)
+ *      Return: ptaa (of center values of textlines)
+ *
+ *  Notes:
+ *      (1) This in general does not have a point for each value
+ *          of x, because there will be gaps between words.
+ *          It doesn't matter because we will fit a quadratic to the
+ *          points that we do have.
+ *}
+function pixGetTextlineCenters( pixs: PLPix; debugflag: longint): PPtaArray;  cdecl; external LIBLEPT;
 
 
 
