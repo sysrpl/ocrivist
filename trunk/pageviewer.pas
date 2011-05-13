@@ -24,7 +24,7 @@ private
   FRealSelections: array of TRect;
   FOnChangeBitmap: TNotifyEvent;
   FOnSelect: TNotifyEvent;
-  FCurrentPagePix: PLeptPix;
+  FCurrentPagePix: PLPix;
   FPageWidth: Integer;
   FPageHeight: Integer;
   FBitmap: TBitmap;
@@ -37,7 +37,7 @@ private
   function GetSelection: TRect;
   procedure SetBitmap ( const AValue: TBitmap ) ;
   procedure SetMode ( const AValue: TViewermode ) ;
-  procedure SetPicture ( const AValue: PLeptPix ) ;
+  procedure SetPicture ( const AValue: PLPix ) ;
   procedure SetScale ( const AValue: Integer ) ;
   procedure SetupScrollbars;
   procedure OnScrollBarChange( Sender: TObject );
@@ -62,7 +62,7 @@ public
   procedure ClearSelection;
   procedure AddSelector( Selector: TSelector );
   procedure DeleteSelector ( SelIndex: Integer );
-  property Picture: PLeptPix read FCurrentPagePix write SetPicture;
+  property Picture: PLPix read FCurrentPagePix write SetPicture;
   property OnChangeBitmap: TNotifyEvent read FOnChangeBitmap write FOnChangeBitmap;
   property OnSelect: TNotifyEvent read FOnSelect write FOnSelect;
   property Mode: TViewermode read FMode write SetMode;
@@ -154,7 +154,7 @@ begin
         end;
 end;
 
-procedure TPageViewer.SetPicture ( const AValue: PLeptPix ) ;
+procedure TPageViewer.SetPicture ( const AValue: PLPix ) ;
 var
   x: Integer;
 begin

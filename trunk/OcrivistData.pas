@@ -21,13 +21,13 @@ type
   private
     function GetSelection ( aIndex: Integer ) : TRect;
     function GetSelectionCount: Integer;
-    procedure SetPageImage ( const AValue: PLeptPix ) ;
+    procedure SetPageImage ( const AValue: PLPix ) ;
     procedure SetSelection ( aIndex: Integer ; const AValue: TRect ) ;
   public
-    constructor Create( pix: PLeptPix );
+    constructor Create( pix: PLPix );
     destructor Destroy; override;
-    function LoadFromTempfile: PLeptPix;
-    procedure SaveToTempfile ( Pix: PLeptPix; Path: String );
+    function LoadFromTempfile: PLPix;
+    procedure SaveToTempfile ( Pix: PLPix; Path: String );
     procedure AddSelection ( Sel: TRect );
     procedure DeleteSelection ( aIndex: Integer );
     property Text: TStringList read FText write FText;
@@ -35,7 +35,7 @@ type
     property SelectionCount: Integer read GetSelectionCount;
     property Title: string read FTitle write FTitle;
     property Modified: Boolean read FModified write FModified;
-    property PageImage: PLeptPix read LoadFromTempfile write SetPageImage;
+    property PageImage: PLPix read LoadFromTempfile write SetPageImage;
   end;
 
   { TOcrivistProject }
@@ -59,7 +59,7 @@ type
     procedure SaveToFile( FileName: TFilename );
     function LoadfromFile( FileName: TFilename ): integer;
     procedure DeletePage( aIndex: Integer );
-    procedure AddPage( Pix: PLeptPix );
+    procedure AddPage( Pix: PLPix );
     property Pages[aIndex: Integer]: TOcrivistPage read GetPage write PutPage;
     property Title: string read FTitle write FTitle;
     property Width: Integer read FPageWidth write FPageWidth;
@@ -124,7 +124,7 @@ var
   page: Integer;
   aPage: TOcrivistPage;
   bytecount: Integer;
-  pageImage: PLeptPix;
+  pageImage: PLPix;
 begin
   if FileExists(FileName)
      then DeleteFile(FileName);
@@ -196,7 +196,7 @@ begin
      else Raise Exception.Create('Page index out of range (' + IntToStr(aIndex) + ')');
 end;
 
-procedure TOcrivistProject.AddPage ( Pix: PLeptPix ) ;
+procedure TOcrivistProject.AddPage ( Pix: PLPix ) ;
 var
   P: TOcrivistPage;
 begin
@@ -223,7 +223,7 @@ begin
   Result := Length(FSelections);
 end;
 
-procedure TOcrivistPage.SetPageImage ( const AValue: PLeptPix ) ;
+procedure TOcrivistPage.SetPageImage ( const AValue: PLPix ) ;
 begin
   SaveToTempfile(AValue, '');
 end;
@@ -236,7 +236,7 @@ begin
      else Raise Exception.CreateFmt('Error in SetSelection: Index out of range (%d)', [aIndex]);
 end;
 
-constructor TOcrivistPage.Create( pix: PLeptPix );
+constructor TOcrivistPage.Create( pix: PLPix );
 begin
   FText := TStringList.Create;
   if pix <> nil
@@ -253,7 +253,7 @@ begin
   inherited Destroy;
 end;
 
-function TOcrivistPage.LoadFromTempfile: PLeptPix;
+function TOcrivistPage.LoadFromTempfile: PLPix;
 begin
   Result := nil;
   if Length(FTempFile)>0
@@ -262,7 +262,7 @@ begin
 end;
 
 //NB: function will not work as expected if Ftempfile already exists and different Path is given
-procedure TOcrivistPage.SaveToTempfile ( Pix: PLeptPix; Path: String ) ;
+procedure TOcrivistPage.SaveToTempfile ( Pix: PLPix; Path: String ) ;
 begin
   if Length(Path)=0 then Path := GetTempDir;
   if FTempFile=''
