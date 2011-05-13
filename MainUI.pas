@@ -87,6 +87,7 @@ type
     procedure MakeSelection ( Sender: TObject );
     procedure SelectionChange ( Sender: TObject );
     procedure ShowScanProgress(progress: Single);
+    procedure LoadPage( newpage: PLPix );
   public
     { public declarations }
   end;
@@ -307,33 +308,13 @@ end;
 
 procedure TForm1.LoadPageMenuItemClick ( Sender: TObject ) ;
 var
-  thumbBMP: TBitmap;
-  w: Integer;
-  thumbPIX: Pointer;
-  h: Integer;
-  X: Integer;
+  newpage: PLPix;
 begin
   if OpenDialog1.Execute
-                        then  begin
-                          writeln('loading');
-                          ICanvas.Picture := pixRead(PChar(OpenDialog1.FileName));
-                          writeln('loaded');
-                          Application.ProcessMessages;  // Draw the screen before doing some background work
-                          If Project.ItemIndex>=0
-                           then for X := Project.CurrentPage.SelectionCount-1 downto 0 do
-                                ICanvas.DeleteSelector(X);
-                          Project.AddPage(ICanvas.Picture);
-                          thumbBMP := TBitmap.Create;
-                          w := 0; //ListBox1.ClientWidth-6;
-                          h := THUMBNAIL_HEIGHT;
-                          thumbPIX := pixScaleToSize(ICanvas.Picture, w, h);
-                          ScaleToBitmap(thumbPIX, thumbBMP, 1);
-                          AddingThumbnail := true;  //avoid triggering reload through ThumbList.Click;
-                          ListBox1.Items.AddObject(IntToStr(ListBox1.Count+1), thumbBMP);
-                          ListBox1.ItemIndex := ListBox1.Count-1;
-                          AddingThumbnail := false;
-                          pixDestroy(@thumbPIX);
-                        end;
+       then  newpage := pixRead(PChar(OpenDialog1.FileName));
+  if newpage<>nil
+   then LoadPage(newpage)
+   else ShowMessage('Load page failed');
 end;
 
 procedure TForm1.OpenProjectMenuItemClick ( Sender: TObject ) ;
@@ -350,36 +331,22 @@ end;
 
 procedure TForm1.ScanPageMenuItemClick ( Sender: TObject ) ;
 var
-  X: Integer;
-  thumbBMP: TBitmap;
-  w: Integer;
-  h: Integer;
-  thumbPIX: Pointer;
+  newpage: PLPix;
 begin
   if ScannerHandle<>nil then
      begin
        writeln('ScannerHandle OK');
-       ICanvas.Picture := ScanToPix(ScannerHandle, ScannerForm.GetResolution, ScannerForm.GetColorMode, @ShowScanProgress);
-       If Project.ItemIndex>=0
-        then for X := Project.CurrentPage.SelectionCount-1 downto 0 do
-             ICanvas.DeleteSelector(X);
-       Project.AddPage(ICanvas.Picture);
-       thumbBMP := TBitmap.Create;
-       w := 0; //ListBox1.ClientWidth-6;
-       h := THUMBNAIL_HEIGHT;
-       thumbPIX := pixScaleToSize(ICanvas.Picture, w, h);
-       ScaleToBitmap(thumbPIX, thumbBMP, 1);
-       AddingThumbnail := true;  //avoid triggering reload through ThumbList.Click;
-       ListBox1.Items.AddObject(IntToStr(ListBox1.Count+1), thumbBMP);
-       ListBox1.ItemIndex := ListBox1.Count-1;
-       AddingThumbnail := false;
-       pixDestroy(@thumbPIX);
+       newpage := ScanToPix(ScannerHandle, ScannerForm.GetResolution, ScannerForm.GetColorMode, nil {@ShowScanProgress});
+       if newpage<>nil
+        then LoadPage(newpage)
+        else ShowMessage('Scan page failed');
      end;
 end;
 
 procedure TForm1.SetScannerMenuItemClick ( Sender: TObject ) ;
 begin
-  ScannerForm.ShowModal;
+ if ScannerHandle=nil then ScannerForm.FormCreate(nil);
+ ScannerForm.ShowModal;
 end;
 
 procedure TForm1.TestDJVUButtonClick ( Sender: TObject ) ;
@@ -484,7 +451,7 @@ end;
 
 procedure TForm1.ViewMenuItemClick ( Sender: TObject ) ;
 begin
-  Case TWinControl(Sender).Tag of
+  Case TMenuItem(Sender).Tag of
        0: ICanvas.Mode := vmFitToHeight;   // Fit to Height
        1: ICanvas.Mode := vmFitToWidth;    // Fit to Width
        else
@@ -511,6 +478,32 @@ end;
 procedure TForm1.ShowScanProgress ( progress: Single ) ;
 begin
   writeln( FormatFloat('0.00', progress));
+end;
+
+procedure TForm1.LoadPage ( newpage: PLPix ) ;
+var
+  X: Integer;
+  thumbBMP: TBitmap;
+  w: Integer;
+  h: Integer;
+  thumbPIX: PLPix;
+begin
+ ICanvas.Picture := newpage;
+ Application.ProcessMessages;  // Draw the screen before doing some background work
+ If Project.ItemIndex>=0
+  then for X := Project.CurrentPage.SelectionCount-1 downto 0 do
+       ICanvas.DeleteSelector(X);
+ Project.AddPage(ICanvas.Picture);
+ thumbBMP := TBitmap.Create;
+ w := 0; //ListBox1.ClientWidth-6;
+ h := THUMBNAIL_HEIGHT;
+ thumbPIX := pixScaleToSize(ICanvas.Picture, w, h);
+ ScaleToBitmap(thumbPIX, thumbBMP, 1);
+ AddingThumbnail := true;  //avoid triggering reload through ThumbList.Click;
+ ListBox1.Items.AddObject(IntToStr(ListBox1.Count+1), thumbBMP);
+ ListBox1.ItemIndex := ListBox1.Count-1;
+ AddingThumbnail := false;
+ pixDestroy(@thumbPIX);
 end;
 
 
