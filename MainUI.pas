@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls,
   ExtCtrls, Menus, leptonica, LibLeptUtils, pageviewer, types, LCLType,
-  ActnList, OcrivistData, selector, Sane;
+  ActnList, OcrivistData, selector, Sane, tessintf;
 
 type
 
@@ -15,6 +15,10 @@ type
 
   TForm1 = class ( TForm )
     Button1: TButton;
+    SetScannerMenuItem: TMenuItem;
+    MenuItem2: TMenuItem;
+    TestDJVUButton: TButton;
+    TestTesseractButton: TButton;
     Button2: TButton;
     Button3: TButton;
     Button4: TButton;
@@ -64,6 +68,7 @@ type
     procedure ExitMenuItemClick ( Sender: TObject ) ;
     procedure FormCreate ( Sender: TObject ) ;
     procedure FormDestroy ( Sender: TObject ) ;
+    procedure UpdateScannerStatus ( Sender: TObject ) ;
     procedure ListBox1Click ( Sender: TObject ) ;
     procedure ListBox1DrawItem ( Control: TWinControl; Index: Integer;
       ARect: TRect; State: TOwnerDrawState ) ;
@@ -71,6 +76,9 @@ type
     procedure OpenProjectMenuItemClick ( Sender: TObject ) ;
     procedure SaveAsMenuItemClick ( Sender: TObject ) ;
     procedure ScanPageMenuItemClick ( Sender: TObject ) ;
+    procedure SetScannerMenuItemClick ( Sender: TObject ) ;
+    procedure TestDJVUButtonClick ( Sender: TObject ) ;
+    procedure TestTesseractButtonClick ( Sender: TObject ) ;
     procedure ViewMenuItemClick ( Sender: TObject ) ;
   private
     { private declarations }
@@ -81,7 +89,6 @@ type
     procedure ShowScanProgress(progress: Single);
   public
     { public declarations }
-    ScannerHandle: SANE_Handle;
   end;
 
 
@@ -95,6 +102,8 @@ var
   Image1:TImage;
 
  implementation
+
+  uses DjvuUtils, scanner;
 
   {$R *.lfm}
 
@@ -175,28 +184,33 @@ end;
 
 procedure TForm1.Button9Click ( Sender: TObject ) ;
 var
-  BinaryPix: TLeptPix;
-  TextMask: TLeptPix;
-  B: TBoxArray;
+  BinaryPix: PLeptPix;
+  TextMask: PLeptPix;
+  B: PBoxArray;
   x, y, w, h: Integer;
   count: Integer;
+  p: PleptPix;
 begin
-  writeln ('DEPTH: ', pixGetDepth(ICanvas.Picture));
+  Textmask := nil;
   if pixGetDepth(ICanvas.Picture) > 1
      then BinaryPix := pixThresholdToBinary(ICanvas.Picture, 50)
      else BinaryPix := pixClone(ICanvas.Picture);
-  if pixGetRegionsBinary(BinaryPix, nil, nil, @TextMask)= 0 then
+  if pixGetRegionsBinary(BinaryPix, nil, nil, @TextMask, 0) = 0 then
      begin
-       pixWrite('/tmp/test.png', TextMask, IFF_PNG);
-       B := pixConnComp(TextMask, nil, 4);
+       B := pixConnComp(TextMask, nil, 8);
+       try
        boxaWrite('/tmp/boxes.txt', B);
-       pixDestroy(@TextMask);
-       for count := 0 to boxaGetCount(B) do
+       for count := 0 to boxaGetCount(B)-1 do
             begin
               boxaGetBoxGeometry(B, count, @x, @y, @w, @h);
-              ICanvas.AddSelection(Rect(x, y, x+w, y+h));
+              ICanvas.AddSelection(Rect(x-10, y-5, x+w+5, y+h{+20}));
             end;
-       boxaDestroy(@B);
+       finally
+         if B<>nil then
+         boxaDestroy(@B);
+         if Textmask <> nil then
+         pixDestroy(@TextMask);
+       end;
      end;
   pixDestroy(@BinaryPix);
 end;
@@ -209,13 +223,13 @@ var
 
 begin
   ms := TMemoryStream.Create;
-  ms.LoadFromFile('/tmp/image.pnm');
+  ms.LoadFromFile('/home/malcolm/lazarus/ocrivist2/kscan_0025.bmp');
   s := ms.Size;
   writeln(s);
   Getmem(buf, s);
   ms.Read(buf^, s);
   //writeln(length(buf^));
-  ICanvas.Picture := pixReadMem(buf, @s);
+  ICanvas.Picture := pixReadMem(buf, s);
   ms.Free;
   Freemem(buf, s);
 end;
@@ -237,9 +251,6 @@ begin
   Project := TOcrivistProject.Create;
   Project.Title := 'Default Project';
   AddingThumbnail := false;
-  ScannerHandle := nil;
-  if sane_init(nil, nil) = SANE_STATUS_GOOD then
-     sane_open(PChar('hpaio:/usb/psc_1200_series?serial=UA4C1GB2WJT0'), @ScannerHandle);
 end;
 
 procedure TForm1.FormDestroy ( Sender: TObject ) ;
@@ -250,8 +261,18 @@ begin
     TBitmap(ListBox1.Items.Objects[x]).Free;
   if Assigned(Project)
     then Project.Free;
-  sane_close(ScannerHandle);
-  sane_exit;
+  if Assigned(ScannerHandle) then
+      begin
+        sane_close(ScannerHandle);
+        sane_exit;
+      end;
+end;
+
+procedure TForm1.UpdateScannerStatus ( Sender: TObject ) ;
+begin
+  ScanPageMenuItem.Enabled := ScannerHandle<>nil;
+  if ScannerHandle=nil then writeln('ScannerHandle is nil')
+  else writeln('ScannerHandle ok');;
 end;
 
 procedure TForm1.ListBox1Click ( Sender: TObject ) ;
@@ -337,7 +358,8 @@ var
 begin
   if ScannerHandle<>nil then
      begin
-       ICanvas.Picture := ScanToPix(ScannerHandle, 300, 'Gray', @ShowScanProgress);
+       writeln('ScannerHandle OK');
+       ICanvas.Picture := ScanToPix(ScannerHandle, ScannerForm.GetResolution, ScannerForm.GetColorMode, @ShowScanProgress);
        If Project.ItemIndex>=0
         then for X := Project.CurrentPage.SelectionCount-1 downto 0 do
              ICanvas.DeleteSelector(X);
@@ -353,6 +375,111 @@ begin
        AddingThumbnail := false;
        pixDestroy(@thumbPIX);
      end;
+end;
+
+procedure TForm1.SetScannerMenuItemClick ( Sender: TObject ) ;
+begin
+  ScannerForm.ShowModal;
+end;
+
+procedure TForm1.TestDJVUButtonClick ( Sender: TObject ) ;
+var
+  p: Pointer;
+  d: LongInt;
+  fn: String;
+begin
+  p := ICanvas.Picture;
+  d := pixGetDepth(p);
+  if d=1
+     then fn := '/tmp/test/pnm'
+     else fn := '/tmp/test.pbm';
+  pixWrite(PChar(fn), p, IFF_PNM);
+  writeln( djvumakepage(fn, '/tmp/test.djvu') );
+end;
+
+procedure TForm1.TestTesseractButtonClick ( Sender: TObject ) ;
+var
+  t: Pointer;
+  BinaryPix: Pointer;
+  pa: PPixArray;
+  ba: PBoxArray;
+  na: PNumArray;
+  x: Integer;
+  lineindex: Single;
+  linecount: Integer;
+  ra : array[0..255] of TRect;
+  R: TRect;
+  n: Integer;
+begin
+  t := tesseract_new(nil, nil);
+  if t=nil then writeln('tessearct_new failed :(');
+//  tesseract_SetImage(t, ICanvas.Picture);
+  if pixGetDepth(ICanvas.Picture) > 1
+     then BinaryPix := pixThresholdToBinary(ICanvas.Picture, 150)
+     else BinaryPix := pixClone(ICanvas.Picture);
+ tesseract_SetImage(t, ICanvas.Picture);
+
+ // R := ICanvas.Selection;
+ writeln( pixGetWordsInTextlines(BinaryPix, 1, 20, 20, 200, 500, @ba, @pa, @na) );
+ writeln('Pixarray.n: ', pa^.n);
+ writeln('Pixarray.n: ', pa^.refcount);
+ //tesseract_SetPageSegMode(t, PSM_SINGLE_LINE);
+ lineindex := na^.numarray[0];
+ linecount := 0;
+ //writeln(lineindex);
+ n := 0;
+ while n<ba^.n do
+ begin
+ Inc(linecount);
+ R.Left := 20;
+ R.Top := ba^.box[n]^.h + ba^.box[n]^.y;
+ while na^.numarray[n]=lineindex do
+       begin
+         if ba^.box[n]^.y < R.Top then R.Top := ba^.box[n]^.y;
+         if ba^.box[n]^.h + ba^.box[n]^.y > R.Bottom then R.Bottom := ba^.box[n]^.h + ba^.box[n]^.y;
+         if ba^.box[n]^.x + ba^.box[n]^.w > R.Right then R.Right := ba^.box[n]^.x + ba^.box[n]^.w;
+         Inc(n);
+         //writeln( FormatFloat('0.00', lineindex));
+       end;
+ x := R.Bottom-R.Top;
+ x := 0;
+ R.Top := R.Top-x;
+ R.Bottom := R.Bottom+x;
+ //ICanvas.AddSelection(R);
+ x := trunc(lineindex);
+ ra[x] := R;
+ lineindex := na^.numarray[n];
+ writeln( FormatFloat('0.00', lineindex));
+ end;
+
+ writeln( FormatFloat('0.00', lineindex));
+// n := Trunc(lineindex)-1;
+ writeln(linecount);
+ for x := 0 to linecount-1 do
+      begin
+        R := ra[x];
+        tesseract_SetRectangle(t, R.Left, R.Top, R.Right-R.Left, R.Bottom-R.Top);
+        ICanvas.AddSelection(R);
+        Application.ProcessMessages;
+        WriteLn(tesseract_GetUTF8Text(t));
+      end;
+
+
+ {for x := 0 to pa^.n-1 do
+      begin
+        //pixWrite(Pchar('/tmp/test'+IntToStr(x) +'.bmp'), pa^.pix[x], IFF_BMP);
+        //tesseract_SetImage(t, pa^.pix[x]);
+        //tesseract_SetRectangle(t, ba^.box[x]^.x, ba^.box[x]^.y, ba^.box[x]^.w, ba^.box[x]^.h);
+        ICanvas.AddSelection( Rect(ba^.box[x]^.x, ba^.box[x]^.y, ba^.box[x]^.w + ba^.box[x]^.x, ba^.box[x]^.h + ba^.box[x]^.y) );
+        //Write(tesseract_GetUTF8Text(t), #32);
+      end;  }
+
+
+  //tesseract_GetUTF8Text(t);
+  //WriteLn(tesseract_GetBoxText(t, 0));
+  pixDestroy(@BinaryPix);
+  tesseract_destroy(t);
+
 end;
 
 procedure TForm1.ViewMenuItemClick ( Sender: TObject ) ;
