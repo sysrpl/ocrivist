@@ -46,7 +46,7 @@ function ScaleToBitmap ( pix: PLPix;  bmp: TBitmap; scalexy: Single ) : integer;
 var
   ms: TMemoryStream;
   tempPix: PLPix;
-  buf: PByteArray;
+  buf: PByte;
   bytecount: Integer;
 begin
   Result := 1;
@@ -54,10 +54,10 @@ begin
   ms := TMemoryStream.Create;
   tempPix := pixScaleSmooth(pix, scalexy, scalexy);
   if tempPix<>nil then
+    if pixWriteMem(@buf, @bytecount, tempPix, IFF_BMP)=0 then
      try
-       WriteLn( pixWriteMem(@buf, @bytecount, tempPix, IFF_BMP) );
        writeln(bytecount);
-       ms.Write(buf^[0], bytecount);
+       ms.Write(buf[0], bytecount);
        ms.Position := 0;
       if bmp <> nil then
        bmp.LoadFromStream(ms) else Raise Exception.Create('bitmap is nil in ScaleToBitmap');
@@ -95,14 +95,16 @@ function ScanToPix ( h: SANE_Handle; resolution: integer; scanmode: string; prog
 var
   fileheader: String;
   status: SANE_Status;
-  data: array[0..BUFFERSIZE-1] of char;
+  data:PByte;
   l : SANE_Int;
   par: SANE_Parameters;
-  ms: TMemoryStream;
   byteswritten: Cardinal;
   pixeltotal: Integer;
+  byt: Integer;
+  pixImage: PLPix;
 begin
   Result := nil;
+  data := nil;
      if h<>nil then
         try
           // Set selected resolution
@@ -112,43 +114,37 @@ begin
           // set selected scan mode
           SaneSetOption(h, SANE_NAME_SCAN_MODE, scanmode) ;
           writeln('mode set');
-
-{          if Pos('~/', FileNameEdit.Text) = 1
-             then filename := GetEnvironmentVariable('HOME') + Copy(FileNameEdit.Text, 2, MaxInt)
-             else filename := FileNameEdit.Text;
-          f := FileCreate(filename);  }
           writeln('start scan');
           status := sane_start(h);  // start scanning
-          ms := TMemoryStream.Create;
           if status = SANE_STATUS_GOOD then
-             begin
+             try
                 if sane_get_parameters(h, @par) = SANE_STATUS_GOOD then // we know the image dimensions and depth
                   SetPNMHeader(par.depth, par.pixels_per_line, par.lines, par.format, fileheader);
                 pixeltotal := par.lines * par.pixels_per_line * par.depth div 8;
                 if par.format>SANE_FRAME_GRAY then pixeltotal := pixeltotal*3;
-                writeln('depth: ', par.depth);
-                byteswritten := ms.Write(fileheader[1], Length(fileheader));
+                Getmem(data, Length(fileheader)+pixeltotal+1);
+                for byt := 0 to Length(fileheader)-1 do
+                    data[byt] := byte(fileheader[byt+1]);
+                byteswritten := byt+1;;
                 writeln('par format: ', par.format);
                 while status = SANE_STATUS_GOOD do
                   begin
-                    status := sane_read(h, @data, BUFFERSIZE, @l );    //read data stream from scanner
-                    byteswritten := byteswritten + ms.Write(data[0], l);
-                    //writeln('byteswritten: ', byteswritten);
+                    status := sane_read(h, @data[byteswritten], BUFFERSIZE, @l );    //read data stream from scanner
+                    byteswritten := byteswritten+l;
                     if Assigned(progresscb) then progresscb( byteswritten / pixeltotal );
                   end;
-                data[0] := #0;
-                byteswritten := byteswritten + ms.Write(data[0], 1);
+             finally
+               //if data<>nil then Freemem(data);  //causes a crash - memory space acquired by liblept?
+               //sane_cancel(h);
              end
           else writeln('Scan failed: ' + sane_strstatus(status));
           writeln('scan done');
-          ms.SaveToFile('/tmp/image.pnm');
-          writeln('file saved');
-          //Result := pixReadMem(ms.Memory, @byteswritten)
-          Result := pixRead(Pchar('/tmp/image.pnm'));
+          pixImage := pixReadMem(data, byteswritten);
+          pixSetResolution(pixImage, resolution, resolution);
+          Result := pixImage;
           writeln('file loaded');
         finally
-          sane_cancel(h);
-          ms.Free;
+
         end;
 end;
 

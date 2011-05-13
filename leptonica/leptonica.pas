@@ -159,6 +159,7 @@ type
   function pixGetXRes ( Pix: PLPix ): Integer; cdecl; external LIBLEPT;
   function pixGetYRes ( Pix: PLPix ): Integer; cdecl; external LIBLEPT;
   function pixGetText ( Pix: PLPix ): PChar; cdecl; external LIBLEPT;
+  function pixSetResolution ( pix: PLPix; xres, yres: Integer ): Integer; cdecl; external LIBLEPT;
   function pixWriteStream( fp: Pointer; pix: PLPix; imagefileformat: Integer): Integer; cdecl; external LIBLEPT;
   function pixRotate90 (pixs: PLPix; rotatedirection: Integer ): PLPix; cdecl; external LIBLEPT;
   function pixSobelEdgeFilter ( pixs: PLPix; orientflag: Integer ): PLPix;  cdecl; external LIBLEPT;
