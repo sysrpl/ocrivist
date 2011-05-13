@@ -7,9 +7,9 @@ using namespace tesseract;
 
 extern "C"{
 
-tessHandle EXPORTCALL tesseract_new(char* language){
+tessHandle EXPORTCALL tesseract_new(const char* datapath, const char* language){
 TessBaseAPI* Tess = new TessBaseAPI;
-if (Tess->Init(NULL, language, NULL, 0, 1)!=0){
+if (Tess->Init(datapath, language, NULL, 0, 1)!=0){
   delete Tess;
   return NULL;
   }
@@ -19,13 +19,12 @@ else {
 };
 
 extern void EXPORTCALL tesseract_destroy(tessHandle APIHandle){
-  APIHandle->End();
-  delete APIHandle;  
+  delete APIHandle;
 }
 
 extern int EXPORTCALL tesseract_init(tessHandle APIHandle, const char* datapath, const char* language,
            char **configs, int configs_size, bool configs_global_only){
-return APIHandle->Init(datapath, language, configs, configs_size, configs_global_only);  
+  return APIHandle->Init(datapath, language, configs, configs_size, configs_global_only);
 }
 
 extern void EXPORTCALL tesseract_ReadConfigFile(tessHandle APIHandle, const char* filename, bool global_only){
@@ -33,11 +32,11 @@ extern void EXPORTCALL tesseract_ReadConfigFile(tessHandle APIHandle, const char
 }
 
 extern void EXPORTCALL tesseract_SetImage(tessHandle APIHandle, const Pix* pix){
-APIHandle->SetImage( pix );  
+   APIHandle->SetImage( pix );
 }
 
 extern void EXPORTCALL tesseract_SetRectangle(tessHandle APIHandle, int left, int top, int width, int height){
-APIHandle->SetRectangle(left, top, width, height);
+   APIHandle->SetRectangle(left, top, width, height);
 }
 
 extern char* EXPORTCALL tesseract_GetUTF8Text(tessHandle APIHandle){
@@ -48,16 +47,130 @@ extern Pix* EXPORTCALL tesseract_GetThresholdedImage(tessHandle APIHandle){
   return APIHandle->GetThresholdedImage();
 }
 
-extern char* EXPORTCALL tesseract_GetBoxText(tessHandle APIHandle, int page_number){
-  return APIHandle->GetBoxText( page_number );
-}
-
+  /**
+   * Free up recognition results and any stored image data, without actually
+   * freeing any recognition data that would be time-consuming to reload.
+   * Afterwards, you must call SetImage or TesseractRect before doing
+   * any Recognize or Get* operation.
+   */
 extern void EXPORTCALL tesseract_Clear(tessHandle APIHandle){
   APIHandle->Clear();
 }
 
 extern void EXPORTCALL tesseract_ClearAdaptiveClassifier(tessHandle APIHandle){
   APIHandle->ClearAdaptiveClassifier();
+}
+
+// Set the value of an internal "variable" (of either old or new types).
+// Supply the name of the variable and the value as a string, just as
+// you would in a config file.
+// Returns false if the name lookup failed.
+// SetVariable may be used before Init, to set things that control
+// initialization, but note that on End all settings are lost and
+// the next Init will use the defaults unless SetVariable is used again.
+extern bool EXPORTCALL tesseract_SetVariable(tessHandle APIHandle, const char* variable, const char* value){
+   return APIHandle->SetVariable(variable, value) ;
+}
+
+// Set the current page segmentation mode. Defaults to PSM_AUTO.
+// The mode is stored as an INT_VARIABLE so it can also be modified by
+// ReadConfigFile or SetVariable("tessedit_pageseg_mode", mode as string).
+extern void EXPORTCALL tesseract_SetPageSegMode(tessHandle APIHandle, int mode){
+   PageSegMode segmode = (PageSegMode)mode;
+   APIHandle->SetPageSegMode(segmode);
+}
+
+extern int EXPORTCALL tesseract_GetPageSegMode(tessHandle APIHandle){
+   return (int)APIHandle->GetPageSegMode();
+}
+
+  /**
+   * Set the hint for trading accuracy against speed.
+   * Default is AVS_FASTEST, which is the old behaviour.
+   * Note that this is only a hint. Depending on the language and/or
+   * build configuration, speed and accuracy may not be tradeable.
+   * Also note that despite being an enum, any value in the range
+   * AVS_FASTEST to AVS_MOST_ACCURATE can be provided, and may or may not
+   * have an effect, depending on the implementation.
+   * The mode is stored as an INT_VARIABLE so it can also be modified by
+   * ReadConfigFile or SetVariable("tessedit_accuracyvspeed", mode as string).
+   */
+extern void EXPORTCALL tesseract_SetAccuracyVSpeed(tessHandle APIHandle, int mode){
+  APIHandle->SetAccuracyVSpeed((AccuracyVSpeed)mode);
+}
+
+  /**
+   * Get the result of page layout analysis as a leptonica-style
+   * Boxa, Pixa pair, in reading order.
+   * Can be called before or after Recognize.
+   */
+extern Boxa* EXPORTCALL tesseract_GetRegions(tessHandle APIHandle, Pixa** pixa){
+  return APIHandle->GetRegions(pixa);
+}
+
+  /**
+   * Get the textlines as a leptonica-style
+   * Boxa, Pixa pair, in reading order.
+   * Can be called before or after Recognize.
+   * If blockids is not NULL, the block-id of each line is also returned as an
+   * array of one element per line. delete [] after use.
+   */
+extern Boxa* EXPORTCALL tesseract_GetTextLines(tessHandle APIHandle, Pixa** pixa, int** blockids){
+   return APIHandle->GetTextlines(pixa, blockids);
+}
+
+  /**
+   * Get the words as a leptonica-style
+   * Boxa, Pixa pair, in reading order.
+   * Can be called before or after Recognize.
+   */
+extern Boxa* EXPORTCALL tesseract_GetWords(tessHandle APIHandle, Pixa** pixa){
+   return APIHandle->GetWords(pixa);
+}
+
+    /**
+   * Make a HTML-formatted string with hOCR markup from the internal
+   * data structures.
+   * STL removed from original patch submission and refactored by rays.
+   * page_id is 1-based and will appear in the output.
+   */
+ extern char* EXPORTCALL tesseract_GetHOCRText(tessHandle APIHandle, int page_id){
+    return APIHandle->GetHOCRText(page_id);
+ }
+
+  /**
+   * The recognized text is returned as a char* which is coded in the same
+   * format as a box file used in training. Returned string must be freed with
+   * the delete [] operator.
+   * Constructs coordinates in the original image - not just the rectangle.
+   * page_number is a 0-base page index that will appear in the box file.
+   */
+ extern char* EXPORTCALL tesseract_GetBoxText(tessHandle APIHandle, int page_number){
+    return APIHandle->GetBoxText(page_number);
+ }
+
+  /**
+   * The recognized text is returned as a char* which is coded
+   * as UNLV format Latin-1 with specific reject and suspect codes
+   * and must be freed with the delete [] operator.
+   */
+extern char* EXPORTCALL tesseract_GetUNLVText(tessHandle APIHandle){
+   return APIHandle->GetUNLVText();
+}
+
+  /** Returns the (average) confidence value between 0 and 100. */
+extern int EXPORTCALL tesseract_MeanTextConf(tessHandle APIHandle){
+   return APIHandle->MeanTextConf();
+}
+
+  /**
+   * Returns all word confidences (between 0 and 100) in an array, terminated
+   * by -1.  The calling function must delete [] after use.
+   * The number of confidences should correspond to the number of space-
+   * delimited words in GetUTF8Text.
+   */
+extern int* EXPORTCALL tesseract_AllWordConfidences(tessHandle APIHandle){
+   return APIHandle->AllWordConfidences();
 }
 
 

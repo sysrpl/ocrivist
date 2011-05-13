@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////
 // File:        tessintf.h
 // Description: C interface to the tesseract API .
-// Author:      Malcolm Poole
+// Author:      Malcolm Poole <mgpoole@
 //
 // The Tesseract API is (C) Copyright 2006, Google Inc.
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 ///////////////////////////////////////////////////////////////////////
-#ifndef TESSI_H
+#ifndef TESSINTF_H
 #define TESSINTF_H
 
 #ifdef __cplusplus
@@ -26,6 +26,9 @@ typedef tesseract::TessBaseAPI *tessHandle;
 typedef int bool;
 typedef struct tesseract_t *tessHandle;
 typedef void* Pix ;
+typedef void* Boxa ;
+typedef void* Pixa ;
+typedef int PageSegMode;
 #define EXPORTCALL
 #endif
 
@@ -39,7 +42,7 @@ extern "C"
 
 typedef unsigned int U_Int;
 
-extern tessHandle EXPORTCALL tesseract_new(char* language);
+extern tessHandle EXPORTCALL tesseract_new(const char* datapath, const char* language);
 
 extern void EXPORTCALL tesseract_destroy(tessHandle APIHandle);
 
@@ -56,8 +59,6 @@ extern char* EXPORTCALL tesseract_GetUTF8Text(tessHandle APIHandle);
 
 extern Pix* EXPORTCALL tesseract_GetThresholdedImage(tessHandle APIHandle);
 
-extern char* EXPORTCALL tesseract_GetBoxText(tessHandle APIHandle, int page_number);
-
   /**
    * Free up recognition results and any stored image data, without actually
    * freeing any recognition data that would be time-consuming to reload.
@@ -72,6 +73,29 @@ extern void EXPORTCALL tesseract_Clear(tessHandle APIHandle);
    */
 extern void EXPORTCALL tesseract_ClearAdaptiveClassifier(tessHandle APIHandle);
 
+extern bool EXPORTCALL tesseract_SetVariable(tessHandle APIHandle, const char* variable, const char* value);
+
+extern void EXPORTCALL tesseract_SetPageSegMode(tessHandle APIHandle, int mode);
+
+extern int EXPORTCALL tesseract_GetPageSegMode(tessHandle APIHandle);
+
+extern void EXPORTCALL tesseract_SetAccuracyVSpeed(tessHandle APIHandle, int mode);
+
+extern Boxa* EXPORTCALL tesseract_GetRegions(tessHandle APIHandle, Pixa** pixa);
+
+extern Boxa* EXPORTCALL tesseract_GetTextLines(tessHandle APIHandle, Pixa** pixa, int** blockids);
+
+extern Boxa* EXPORTCALL tesseract_GetWords(tessHandle APIHandle, Pixa** pixa);
+
+extern char* EXPORTCALL tesseract_GetHOCRText(tessHandle APIHandle, int page_id);
+
+extern char* EXPORTCALL tesseract_GetBoxText(tessHandle APIHandle, int page_number);
+
+extern char* EXPORTCALL tesseract_GetUNLVText(tessHandle APIHandle);
+
+extern int EXPORTCALL tesseract_MeanTextConf(tessHandle APIHandle);
+
+extern int* EXPORTCALL tesseract_AllWordConfidences(tessHandle APIHandle);
 
 #ifdef __cplusplus
 }
