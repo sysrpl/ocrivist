@@ -309,11 +309,16 @@ end;
 procedure TForm1.LoadPageMenuItemClick ( Sender: TObject ) ;
 var
   newpage: PLPix;
+  pagename: String;
 begin
   if OpenDialog1.Execute
        then  newpage := pixRead(PChar(OpenDialog1.FileName));
-  if newpage<>nil
-   then LoadPage(newpage)
+  if newpage<>nil then
+     begin
+       pagename :=  ExtractFileNameOnly(OpenDialog1.FileName);
+       newpage^.text := PChar(pagename);
+       LoadPage(newpage)
+     end
    else ShowMessage('Load page failed');
 end;
 
@@ -332,11 +337,14 @@ end;
 procedure TForm1.ScanPageMenuItemClick ( Sender: TObject ) ;
 var
   newpage: PLPix;
+  nametext: String;
 begin
   if ScannerHandle<>nil then
      begin
        writeln('ScannerHandle OK');
        newpage := ScanToPix(ScannerHandle, ScannerForm.GetResolution, ScannerForm.GetColorMode, nil {@ShowScanProgress});
+       nametext := Format('scan_%.4d', [ScannerForm.GetNextCounterValue]);
+       newpage^.text := Pchar(nametext);
        if newpage<>nil
         then LoadPage(newpage)
         else ShowMessage('Scan page failed');
@@ -500,7 +508,7 @@ begin
  thumbPIX := pixScaleToSize(ICanvas.Picture, w, h);
  ScaleToBitmap(thumbPIX, thumbBMP, 1);
  AddingThumbnail := true;  //avoid triggering reload through ThumbList.Click;
- ListBox1.Items.AddObject(IntToStr(ListBox1.Count+1), thumbBMP);
+ ListBox1.Items.AddObject(newpage^.text, thumbBMP);
  ListBox1.ItemIndex := ListBox1.Count-1;
  AddingThumbnail := false;
  pixDestroy(@thumbPIX);
