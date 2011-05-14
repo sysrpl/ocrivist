@@ -14,6 +14,7 @@ uses
 {$R *.res}
 
 begin
+  Application.Title := 'Ocrivist';
   Application.Initialize;
   Application.CreateForm ( TForm1, Form1 ) ;
   Application.CreateForm ( TScannerForm, ScannerForm ) ;
