@@ -13,17 +13,30 @@ type
   { TScannerForm }
 
   TScannerForm = class ( TForm )
+    PaperFormatBox: TComboBox;
+    DeviceComboBox: TComboBox;
     Label1: TLabel;
     Label2: TLabel;
     Label3: TLabel;
-    ResolutionComboBox: TComboBox;
-    OKButton: TBitBtn;
+    Label4: TLabel;
+    Label5: TLabel;
+    Label6: TLabel;
     ModeComboBox: TComboBox;
-    DeviceComboBox: TComboBox;
+    OKButton: TBitBtn;
+    PageControl1: TPageControl;
+    ResolutionComboBox: TComboBox;
+    ScanSheet1: TTabSheet;
+    ScanSheet2: TTabSheet;
+    WidthSpinEdit: TSpinEdit;
+    HeightSpinEdit: TSpinEdit;
+    procedure PaperFormatBoxChange ( Sender: TObject ) ;
     procedure DeviceComboBoxChange ( Sender: TObject ) ;
     procedure FormCreate ( Sender: TObject ) ;
+    procedure PaperSideEditChange ( Sender: TObject ) ;
   private
     { private declarations }
+    MaxPageHeight: Integer;
+    MaxPageWidth: Integer;
   public
     { public declarations }
     OnChangeScanner: TNotifyEvent;
@@ -32,6 +45,8 @@ type
     function GetColorMode: string;
     function GetResolution: Integer;
   end;
+
+  TPaperformats =(pfCustom, pfA3, pfA4, pfA5, pfB4, pfB5, pfB6, pfLetter, pfExecutive);
 
 var
   ScannerForm: TScannerForm;
@@ -66,7 +81,12 @@ begin
            DeviceComboBoxChange(nil);
          end;
      end;
+ PaperFormatBoxChange(nil);
+end;
 
+procedure TScannerForm.PaperSideEditChange ( Sender: TObject ) ;
+begin
+  PaperFormatBox.ItemIndex := 0;
 end;
 
 procedure TScannerForm.InitResolution ( saneoption: SANE_Option_Descriptor ) ;
@@ -162,6 +182,29 @@ var
   scanmode: SANE_Option_Descriptor;
   scanres: SANE_Option_Descriptor;
   DevName: PChar;
+  option: SANE_Option_Descriptor;
+
+  function GetMaxValue(opt: SANE_Option_Descriptor): Integer;
+  var
+    range: pSANE_Range;
+  begin
+    Result := 0;
+    case opt.constraint_type of
+        SANE_CONSTRAINT_RANGE:      begin
+                                       range := opt.prange;
+                                       case opt.option_type of
+                                            SANE_TYPE_INT :
+                                                  begin
+                                                     result := range^.max;
+                                                  end;
+                                            SANE_TYPE_FIXED :
+                                                  begin
+                                                     result := Trunc( SANE_UNFIX( range^.max));
+                                                  end;
+                                            end;
+                                    end;
+    end;
+  end;
 begin
   if ScannerHandle<>nil then sane_close(ScannerHandle) ;
   if DeviceComboBox.ItemIndex>-1 then
@@ -171,9 +214,30 @@ begin
           begin
             InitResolution(SaneGetOption(ScannerHandle, SANE_NAME_SCAN_RESOLUTION));
             InitMode(SaneGetOption(ScannerHandle, SANE_NAME_SCAN_MODE));
+            option := SaneGetOption(ScannerHandle, SANE_NAME_SCAN_BR_X);
+            WidthSpinEdit.MaxValue := GetMaxValue(option);
+            option := SaneGetOption(ScannerHandle, SANE_NAME_SCAN_BR_Y);
+            HeightSpinEdit.MaxValue := GetMaxValue(option);
           end;
      end;
  if Assigned(OnChangeScanner) then OnChangeScanner(Self);
+end;
+
+procedure TScannerForm.PaperFormatBoxChange ( Sender: TObject ) ;
+var
+  papersize: TPaperformats;
+begin
+ papersize := TPaperformats(PaperFormatBox.ItemIndex);
+ Case papersize of
+       pfA3:   begin WidthSpinEdit.Value := 297; HeightSpinEdit.Value := 420; end;
+       pfA4:   begin WidthSpinEdit.Value := 210; HeightSpinEdit.Value := 297; end;
+       pfA5:   begin WidthSpinEdit.Value := 148; HeightSpinEdit.Value := 210; end;
+       pfB4:   begin WidthSpinEdit.Value := 250; HeightSpinEdit.Value := 353; end;
+       pfB5:   begin WidthSpinEdit.Value := 176; HeightSpinEdit.Value := 250; end;
+       pfB6:   begin WidthSpinEdit.Value := 125; HeightSpinEdit.Value := 176; end;
+       pfLetter:   begin WidthSpinEdit.Value := 216; HeightSpinEdit.Value := 279; end;
+       pfExecutive:   begin WidthSpinEdit.Value := 190; HeightSpinEdit.Value := 254; end;
+  end;
 end;
 
 end.
