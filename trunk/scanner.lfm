@@ -1,11 +1,11 @@
 object ScannerForm: TScannerForm
-  Left = 604
-  Height = 274
-  Top = 65
+  Left = 213
+  Height = 299
+  Top = 179
   Width = 320
   ActiveControl = PageControl1
   Caption = 'Scanner settings'
-  ClientHeight = 274
+  ClientHeight = 299
   ClientWidth = 320
   OnCreate = FormCreate
   Position = poMainFormCenter
@@ -16,7 +16,7 @@ object ScannerForm: TScannerForm
     AnchorSideBottom.Side = asrBottom
     Left = 123
     Height = 30
-    Top = 232
+    Top = 257
     Width = 75
     Anchors = [akLeft, akBottom]
     Caption = '&OK'
@@ -27,7 +27,7 @@ object ScannerForm: TScannerForm
   end
   object PageControl1: TPageControl
     Left = 0
-    Height = 216
+    Height = 241
     Top = 0
     Width = 320
     ActivePage = ScanSheet1
@@ -36,12 +36,12 @@ object ScannerForm: TScannerForm
     TabOrder = 1
     object ScanSheet1: TTabSheet
       Caption = 'Scanner'
-      ClientHeight = 189
+      ClientHeight = 214
       ClientWidth = 318
       object ModeComboBox: TComboBox
         Left = 155
         Height = 27
-        Top = 88
+        Top = 86
         Width = 148
         Anchors = [akTop, akLeft, akRight]
         Enabled = False
@@ -83,7 +83,7 @@ object ScannerForm: TScannerForm
         AnchorSideRight.Control = ModeComboBox
         Left = 106
         Height = 18
-        Top = 92
+        Top = 90
         Width = 34
         Anchors = [akTop, akRight]
         BorderSpacing.Right = 15
@@ -103,10 +103,31 @@ object ScannerForm: TScannerForm
         Caption = 'Resolution'
         ParentColor = False
       end
+      object Label7: TLabel
+        AnchorSideTop.Control = CounterSpinEdit
+        AnchorSideTop.Side = asrCenter
+        AnchorSideRight.Control = CounterSpinEdit
+        Left = 88
+        Height = 18
+        Top = 177
+        Width = 52
+        Anchors = [akTop, akRight]
+        BorderSpacing.Right = 15
+        Caption = 'Counter'
+        ParentColor = False
+      end
+      object CounterSpinEdit: TSpinEdit
+        Left = 155
+        Height = 25
+        Top = 174
+        Width = 148
+        MaxValue = 30000
+        TabOrder = 3
+      end
     end
     object ScanSheet2: TTabSheet
       Caption = 'Page size'
-      ClientHeight = 189
+      ClientHeight = 214
       ClientWidth = 318
       object Label3: TLabel
         AnchorSideTop.Control = WidthSpinEdit
