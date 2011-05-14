@@ -7,21 +7,26 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls,
   ExtCtrls, Menus, leptonica, LibLeptUtils, pageviewer, types, LCLType,
-  ActnList, OcrivistData, selector, Sane, tessintf;
+  ActnList, Buttons, ComCtrls, OcrivistData, selector, Sane, tessintf;
 
 type
 
   { TForm1 }
 
   TForm1 = class ( TForm )
-    Button1: TButton;
+    DelSelectButton: TSpeedButton;
+    MenuItem1: TMenuItem;
+    RotateRMenuItem: TMenuItem;
+    RotateLMenuItem: TMenuItem;
     SetScannerMenuItem: TMenuItem;
     MenuItem2: TMenuItem;
+    RotateLeftButton: TSpeedButton;
+    RotateRightButton: TSpeedButton;
+    SelTextButton: TSpeedButton;
+    CropButton: TSpeedButton;
+    StatusBar1: TStatusBar;
     TestDJVUButton: TButton;
     TestTesseractButton: TButton;
-    Button2: TButton;
-    Button3: TButton;
-    Button4: TButton;
     Button5: TButton;
     Button6: TButton;
     Button7: TButton;
@@ -49,16 +54,11 @@ type
     MenuItem3: TMenuItem;
     OpenDialog1: TOpenDialog;
     Panel1: TPanel;
-    Panel2: TPanel;
     Panel3: TPanel;
     Panel4: TPanel;
     Panel5: TPanel;
     Splitter1: TSplitter;
     Splitter2: TSplitter;
-    procedure Button1Click ( Sender: TObject ) ;
-    procedure Button2Click ( Sender: TObject ) ;
-    procedure Button3Click ( Sender: TObject ) ;
-    procedure Button4Click ( Sender: TObject ) ;
     procedure Button5Click ( Sender: TObject ) ;
     procedure Button6Click ( Sender: TObject ) ;
     procedure Button7Click ( Sender: TObject ) ;
@@ -68,6 +68,7 @@ type
     procedure ExitMenuItemClick ( Sender: TObject ) ;
     procedure FormCreate ( Sender: TObject ) ;
     procedure FormDestroy ( Sender: TObject ) ;
+    procedure RotateButtonClick ( Sender: TObject ) ;
     procedure UpdateScannerStatus ( Sender: TObject ) ;
     procedure ListBox1Click ( Sender: TObject ) ;
     procedure ListBox1DrawItem ( Control: TWinControl; Index: Integer;
@@ -110,54 +111,6 @@ var
 
 { TForm1 }
 
-procedure TForm1.Button1Click ( Sender: TObject ) ;
-begin
-  ICanvas := TPageViewer.Create(self);
-  ICanvas.Parent := Self;
-  ICanvas.Top := 100;
-end;
-
-procedure TForm1.Button2Click ( Sender: TObject ) ;
-begin
-  if OpenDialog1.Execute
-                        then Image1.Picture.LoadFromFile(OpenDialog1.FileName);
-end;
-
-procedure TForm1.Button3Click ( Sender: TObject ) ;
-begin
-  ICanvas.Height := ICanvas.Height+10;
-end;
-
-procedure TForm1.Button4Click ( Sender: TObject ) ;
-var
-  thumbBMP: TBitmap;
-  w: Integer;
-  thumbPIX: Pointer;
-  h: Integer;
-  X: Integer;
-begin
-  if OpenDialog1.Execute
-                        then  begin
-                          writeln('loading');
-                          ICanvas.Picture := pixRead(PChar(OpenDialog1.FileName));
-                          writeln('loaded');
-                          Application.ProcessMessages;  // Draw the screen before doing some background work
-                          If Project.ItemIndex>=0
-                           then for X := Project.CurrentPage.SelectionCount-1 downto 0 do
-                                ICanvas.DeleteSelector(X);
-                          Project.AddPage(ICanvas.Picture);
-                          thumbBMP := TBitmap.Create;
-                          w := 0; //ListBox1.ClientWidth-6;
-                          h := THUMBNAIL_HEIGHT;
-                          thumbPIX := pixScaleToSize(ICanvas.Picture, w, h);
-                          ScaleToBitmap(thumbPIX, thumbBMP, 1);
-                          AddingThumbnail := true;  //avoid triggering reload through ThumbList.Click;
-                          ListBox1.Items.AddObject(IntToStr(ListBox1.Count+1), thumbBMP);
-                          ListBox1.ItemIndex := ListBox1.Count-1;
-                          AddingThumbnail := false;
-                          pixDestroy(@thumbPIX);
-                        end;
-end;
 
 procedure TForm1.Button5Click ( Sender: TObject ) ;
 begin
@@ -267,6 +220,31 @@ begin
         sane_close(ScannerHandle);
         sane_exit;
       end;
+end;
+
+procedure TForm1.RotateButtonClick ( Sender: TObject ) ;
+var
+  newpix: PLPix;
+  oldpix: PLPix;
+  direction: LongInt;
+begin
+ direction := 0;
+ newpix := nil;
+ if Sender is TSpeedButton
+    then direction := TSpeedButton(Sender).Tag
+ else if Sender is TMenuItem
+    then direction := TMenuItem(Sender).Tag;
+ if direction<>0 then
+   begin
+     oldpix := Project.CurrentPage.PageImage;
+     newpix := pixRotate90(oldpix, direction);
+     if newpix<>nil then
+        begin
+          pixDestroy(@oldpix);
+          Project.CurrentPage.PageImage := newpix;
+          ICanvas.Picture := newpix;
+        end;
+   end;
 end;
 
 procedure TForm1.UpdateScannerStatus ( Sender: TObject ) ;
@@ -506,10 +484,13 @@ begin
  w := 0; //ListBox1.ClientWidth-6;
  h := THUMBNAIL_HEIGHT;
  thumbPIX := pixScaleToSize(ICanvas.Picture, w, h);
- ScaleToBitmap(thumbPIX, thumbBMP, 1);
+ pixWrite('/tmp/tmp.bmp', thumbPIX, IFF_BMP);
+ //ScaleToBitmap(thumbPIX, thumbBMP, 1);
  AddingThumbnail := true;  //avoid triggering reload through ThumbList.Click;
  ListBox1.Items.AddObject(newpage^.text, thumbBMP);
- ListBox1.ItemIndex := ListBox1.Count-1;
+ //thumbBMP.SaveToFile('/tmp/tmp/bmp');
+ thumbBMP.LoadFromFile('/tmp/tmp.bmp');
+ //ListBox1.ItemIndex := ListBox1.Count-1;
  AddingThumbnail := false;
  pixDestroy(@thumbPIX);
 end;
