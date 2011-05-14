@@ -24,6 +24,7 @@ type
     RotateRightButton: TSpeedButton;
     SelTextButton: TSpeedButton;
     CropButton: TSpeedButton;
+    DjvuButton: TSpeedButton;
     StatusBar1: TStatusBar;
     TestDJVUButton: TButton;
     TestTesseractButton: TButton;
@@ -69,6 +70,7 @@ type
     procedure FormCreate ( Sender: TObject ) ;
     procedure FormDestroy ( Sender: TObject ) ;
     procedure RotateButtonClick ( Sender: TObject ) ;
+    procedure DjvuButtonClick ( Sender: TObject ) ;
     procedure UpdateScannerStatus ( Sender: TObject ) ;
     procedure ListBox1Click ( Sender: TObject ) ;
     procedure ListBox1DrawItem ( Control: TWinControl; Index: Integer;
@@ -245,6 +247,32 @@ begin
           ICanvas.Picture := newpix;
         end;
    end;
+end;
+
+procedure TForm1.DjvuButtonClick ( Sender: TObject ) ;
+var
+  p: PLPix;
+  d: LongInt;
+  fn: String;
+  x: Integer;
+begin
+  if SaveProjectDialog.Execute then
+     for x := 0 to Project.PageCount-1 do
+        try
+          p := Project.Pages[x].PageImage;
+          d := pixGetDepth(p);
+          if d=1
+             then fn := '/tmp/test.pnm'
+             else fn := '/tmp/test.pbm';
+          StatusBar1.Panels[1].Text := 'Processing page ' + IntToStr(x+1);
+          Application.ProcessMessages;
+          pixWrite(PChar(fn), p, IFF_PNM);
+          if djvumakepage(fn, '/tmp/test.djvu')=0
+             then djvuaddpage(SaveProjectDialog.FileName, '/tmp/test.djvu')
+             else ShowMessage('Error when encoding page ' + IntToStr(x+1));
+        finally
+          StatusBar1.Panels[1].Text := '';
+        end;
 end;
 
 procedure TForm1.UpdateScannerStatus ( Sender: TObject ) ;

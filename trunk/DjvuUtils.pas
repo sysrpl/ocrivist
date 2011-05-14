@@ -11,20 +11,21 @@ type
   Tdjvuencoder = (encC44, encCJB2);
 
 function djvumakepage( sourceimage, dest: TFilename ): Integer;
+function djvuaddpage( docname, pagename: TFilename ): Integer;
 
 implementation
 
 function djvumakepage ( sourceimage, dest: TFilename ) : Integer;
 var
   Encoder: TProcess;
-  workfolder: String;
+ //workfolder: String;
   cmd: String;
   encformat: Tdjvuencoder;
 begin
   Result := -1;
   Encoder := TProcess.Create(nil);
   Encoder.Options := Encoder.Options + [poWaitOnExit];
-  workfolder := ExtractFileDir(sourceimage);
+  //workfolder := ExtractFileDir(sourceimage);
   if ExtractFileExt(sourceimage)='pbm'
      then encformat := encCJB2
      else encformat := encC44;
@@ -33,6 +34,23 @@ begin
        encCJB2: cmd := 'cjb2 ';
   end;
   Encoder.CommandLine := cmd + sourceimage + #32 + dest;
+  Encoder.Execute;
+  Result := Encoder.ExitStatus;
+  Encoder.Free;
+end;
+
+function djvuaddpage ( docname, pagename: TFilename ) : Integer;
+var
+  Encoder: TProcess;
+  cmd: String;
+begin
+  Result := -1;
+  Encoder := TProcess.Create(nil);
+  Encoder.Options := Encoder.Options + [poWaitOnExit];
+  if FileExists(docname)
+     then cmd := 'djvm -i "' + docname + '" "' + pagename + '"'
+     else cmd := 'djvm -c "' + docname + '" "' + pagename + '"';
+  Encoder.CommandLine := cmd;
   Encoder.Execute;
   Result := Encoder.ExitStatus;
   Encoder.Free;
