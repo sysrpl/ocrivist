@@ -16,6 +16,7 @@ type
   TForm1 = class ( TForm )
     DelSelectButton: TSpeedButton;
     MenuItem1: TMenuItem;
+    DeskewMenuItem: TMenuItem;
     RotateRMenuItem: TMenuItem;
     RotateLMenuItem: TMenuItem;
     SetScannerMenuItem: TMenuItem;
@@ -25,13 +26,10 @@ type
     SelTextButton: TSpeedButton;
     CropButton: TSpeedButton;
     DjvuButton: TSpeedButton;
+    DeskewButton: TSpeedButton;
     StatusBar1: TStatusBar;
-    TestDJVUButton: TButton;
     TestTesseractButton: TButton;
-    Button5: TButton;
     Button6: TButton;
-    Button7: TButton;
-    Button8: TButton;
     Button9: TButton;
     ListBox1: TListBox;
     MainMenu1: TMainMenu;
@@ -60,17 +58,18 @@ type
     Panel5: TPanel;
     Splitter1: TSplitter;
     Splitter2: TSplitter;
-    procedure Button5Click ( Sender: TObject ) ;
     procedure Button6Click ( Sender: TObject ) ;
-    procedure Button7Click ( Sender: TObject ) ;
-    procedure Button8Click ( Sender: TObject ) ;
     procedure Button9Click ( Sender: TObject ) ;
+    procedure CropButtonClick ( Sender: TObject ) ;
     procedure DelPageMenuItemClick ( Sender: TObject ) ;
+    procedure DelSelectButtonClick ( Sender: TObject ) ;
     procedure ExitMenuItemClick ( Sender: TObject ) ;
     procedure FormCreate ( Sender: TObject ) ;
     procedure FormDestroy ( Sender: TObject ) ;
     procedure RotateButtonClick ( Sender: TObject ) ;
     procedure DjvuButtonClick ( Sender: TObject ) ;
+    procedure DeskewButtonClick ( Sender: TObject ) ;
+    procedure SelTextButtonClick ( Sender: TObject ) ;
     procedure UpdateScannerStatus ( Sender: TObject ) ;
     procedure ListBox1Click ( Sender: TObject ) ;
     procedure ListBox1DrawItem ( Control: TWinControl; Index: Integer;
@@ -80,7 +79,6 @@ type
     procedure SaveAsMenuItemClick ( Sender: TObject ) ;
     procedure ScanPageMenuItemClick ( Sender: TObject ) ;
     procedure SetScannerMenuItemClick ( Sender: TObject ) ;
-    procedure TestDJVUButtonClick ( Sender: TObject ) ;
     procedure TestTesseractButtonClick ( Sender: TObject ) ;
     procedure ViewMenuItemClick ( Sender: TObject ) ;
   private
@@ -114,12 +112,6 @@ var
 { TForm1 }
 
 
-procedure TForm1.Button5Click ( Sender: TObject ) ;
-begin
-  ICanvas.SelectionMode := smCrop;
-//  InitWithLanguage(PChar('eng'));
-end;
-
 procedure TForm1.Button6Click ( Sender: TObject ) ;
 begin
   //ICanvas.SelectionMode := smSelect;
@@ -128,15 +120,6 @@ begin
   ICanvas.ClearSelection;
 end;
 
-procedure TForm1.Button7Click ( Sender: TObject ) ;
-begin
-  Project.SaveToFile('/tmp/testproject.ovt');
-end;
-
-procedure TForm1.Button8Click ( Sender: TObject ) ;
-begin
-  ICanvas.Picture := pixDeskew(Icanvas.Picture, 0);
-end;
 
 procedure TForm1.Button9Click ( Sender: TObject ) ;
 var
@@ -171,6 +154,11 @@ begin
   pixDestroy(@BinaryPix);
 end;
 
+procedure TForm1.CropButtonClick ( Sender: TObject ) ;
+begin
+  ICanvas.SelectionMode := smCrop;  writeln('crop button');
+end;
+
 procedure TForm1.DelPageMenuItemClick ( Sender: TObject ) ;
 var
   ms: TMemoryStream;
@@ -188,6 +176,11 @@ begin
   ICanvas.Picture := pixReadMem(buf, s);
   ms.Free;
   Freemem(buf, s);
+end;
+
+procedure TForm1.DelSelectButtonClick ( Sender: TObject ) ;
+begin
+  ICanvas.SelectionMode := smDelete;
 end;
 
 procedure TForm1.ExitMenuItemClick ( Sender: TObject ) ;
@@ -275,6 +268,27 @@ begin
         end;
 end;
 
+procedure TForm1.DeskewButtonClick ( Sender: TObject ) ;
+var
+  oldpix: PLPix;
+  newpix: PLPix;
+begin
+  newpix := nil;
+  oldpix := Project.CurrentPage.PageImage;
+  newpix := pixDeskew(oldpix, 0);
+  if newpix<>nil then
+     begin
+       ICanvas.Picture := newpix;
+       Project.CurrentPage.PageImage := newpix;
+       pixDestroy(@oldpix);
+     end;
+end;
+
+procedure TForm1.SelTextButtonClick ( Sender: TObject ) ;
+begin
+  ICanvas.SelectionMode := smSelect;
+end;
+
 procedure TForm1.UpdateScannerStatus ( Sender: TObject ) ;
 begin
   ScanPageMenuItem.Enabled := ScannerHandle<>nil;
@@ -316,16 +330,22 @@ procedure TForm1.LoadPageMenuItemClick ( Sender: TObject ) ;
 var
   newpage: PLPix;
   pagename: String;
+  i: Integer;
 begin
-  if OpenDialog1.Execute
-       then  newpage := pixRead(PChar(OpenDialog1.FileName));
-  if newpage<>nil then
-     begin
-       pagename :=  ExtractFileNameOnly(OpenDialog1.FileName);
-       newpage^.text := PChar(pagename);
-       LoadPage(newpage)
-     end
-   else ShowMessage('Load page failed');
+  OpenDialog1.Options := OpenDialog1.Options + [ofAllowMultiSelect];
+  OpenDialog1.Filter := 'Image files|*.tif;*.tiff;*.bmp;*.png;*.jpg|All files|*';
+  if OpenDialog1.Execute then
+     for i := 0 to OpenDialog1.Files.Count-1 do
+        begin
+          newpage := pixRead(PChar(OpenDialog1.Files[i]));
+          if newpage<>nil then
+             begin
+               pagename :=  ExtractFileNameOnly(OpenDialog1.FileName);
+               newpage^.text := PChar(pagename);
+               LoadPage(newpage)
+             end
+           else ShowMessage('Error when loading page ' + OpenDialog1.Files[i]);
+        end;
 end;
 
 procedure TForm1.OpenProjectMenuItemClick ( Sender: TObject ) ;
@@ -361,21 +381,6 @@ procedure TForm1.SetScannerMenuItemClick ( Sender: TObject ) ;
 begin
  if ScannerHandle=nil then ScannerForm.FormCreate(nil);
  ScannerForm.ShowModal;
-end;
-
-procedure TForm1.TestDJVUButtonClick ( Sender: TObject ) ;
-var
-  p: Pointer;
-  d: LongInt;
-  fn: String;
-begin
-  p := ICanvas.Picture;
-  d := pixGetDepth(p);
-  if d=1
-     then fn := '/tmp/test/pnm'
-     else fn := '/tmp/test.pbm';
-  pixWrite(PChar(fn), p, IFF_PNM);
-  writeln( djvumakepage(fn, '/tmp/test.djvu') );
 end;
 
 procedure TForm1.TestTesseractButtonClick ( Sender: TObject ) ;

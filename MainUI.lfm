@@ -197,7 +197,7 @@ object Form1: TForm1
       OnClick = RotateButtonClick
     end
     object SelTextButton: TSpeedButton
-      Left = 200
+      Left = 248
       Height = 36
       Top = 2
       Width = 36
@@ -281,9 +281,10 @@ object Form1: TForm1
       }
       GroupIndex = 1
       NumGlyphs = 0
+      OnClick = SelTextButtonClick
     end
     object CropButton: TSpeedButton
-      Left = 280
+      Left = 328
       Height = 36
       Top = 2
       Width = 36
@@ -366,9 +367,10 @@ object Form1: TForm1
       }
       GroupIndex = 1
       NumGlyphs = 0
+      OnClick = CropButtonClick
     end
     object DelSelectButton: TSpeedButton
-      Left = 240
+      Left = 288
       Height = 36
       Top = 2
       Width = 36
@@ -451,9 +453,10 @@ object Form1: TForm1
       }
       GroupIndex = 1
       NumGlyphs = 0
+      OnClick = DelSelectButtonClick
     end
     object DjvuButton: TSpeedButton
-      Left = 352
+      Left = 400
       Height = 36
       Top = 2
       Width = 36
@@ -593,6 +596,16 @@ object Form1: TForm1
       NumGlyphs = 0
       OnClick = DjvuButtonClick
     end
+    object DeskewButton: TSpeedButton
+      Left = 200
+      Height = 36
+      Top = 2
+      Width = 36
+      Caption = 'Deskew'
+      Color = clBtnFace
+      NumGlyphs = 0
+      OnClick = DeskewButtonClick
+    end
   end
   object Panel3: TPanel
     Left = 0
@@ -640,15 +653,6 @@ object Form1: TForm1
     ClientHeight = 549
     ClientWidth = 170
     TabOrder = 3
-    object Button5: TButton
-      Left = 20
-      Height = 25
-      Top = 125
-      Width = 123
-      Caption = 'Set smCrop'
-      OnClick = Button5Click
-      TabOrder = 0
-    end
     object Button6: TButton
       Left = 21
       Height = 25
@@ -656,25 +660,7 @@ object Form1: TForm1
       Width = 120
       Caption = 'Set smSelection'
       OnClick = Button6Click
-      TabOrder = 1
-    end
-    object Button7: TButton
-      Left = 21
-      Height = 25
-      Top = 222
-      Width = 121
-      Caption = 'Test Save Project'
-      OnClick = Button7Click
-      TabOrder = 2
-    end
-    object Button8: TButton
-      Left = 27
-      Height = 25
-      Top = 254
-      Width = 115
-      Caption = 'Test Deskew'
-      OnClick = Button8Click
-      TabOrder = 3
+      TabOrder = 0
     end
     object Button9: TButton
       Left = 27
@@ -683,7 +669,7 @@ object Form1: TForm1
       Width = 114
       Caption = 'Analyse page'
       OnClick = Button9Click
-      TabOrder = 4
+      TabOrder = 1
     end
     object TestTesseractButton: TButton
       Left = 27
@@ -692,16 +678,7 @@ object Form1: TForm1
       Width = 114
       Caption = 'Tesseract'
       OnClick = TestTesseractButtonClick
-      TabOrder = 5
-    end
-    object TestDJVUButton: TButton
-      Left = 29
-      Height = 24
-      Top = 391
-      Width = 114
-      Caption = 'Test DJVU'
-      OnClick = TestDJVUButtonClick
-      TabOrder = 6
+      TabOrder = 2
     end
   end
   object Splitter2: TSplitter
@@ -737,6 +714,7 @@ object Form1: TForm1
     SimplePanel = False
   end
   object OpenDialog1: TOpenDialog
+    Options = [ofFileMustExist, ofEnableSizing, ofViewDetail]
     left = 40
     top = 136
   end
@@ -775,10 +753,12 @@ object Form1: TForm1
       Caption = '&Page'
       object ScanPageMenuItem: TMenuItem
         Caption = 'Scan'
+        ShortCut = 16467
         OnClick = ScanPageMenuItemClick
       end
       object LoadPageMenuItem: TMenuItem
         Caption = 'Load'
+        ShortCut = 16460
         OnClick = LoadPageMenuItemClick
       end
       object DelPageMenuItem: TMenuItem
@@ -800,6 +780,10 @@ object Form1: TForm1
         Caption = 'Rotate Left'
         ShortCut = 16460
         OnClick = RotateButtonClick
+      end
+      object DeskewMenuItem: TMenuItem
+        Caption = 'Deskew'
+        OnClick = DeskewButtonClick
       end
     end
     object ViewMenu: TMenuItem
