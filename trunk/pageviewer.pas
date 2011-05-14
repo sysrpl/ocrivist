@@ -10,7 +10,7 @@ uses
 type
 
 TViewermode = (vmFitToWindow, vmFitToWidth, vmFitToHeight, vmScaled, vmFullSize);
-TSelectionMode = (smSelect, smCrop);
+TSelectionMode = (smSelect, smCrop, smDelete);
 
 { TPageViewer }
 
