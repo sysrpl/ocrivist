@@ -138,7 +138,8 @@ begin
        FileWrite(F, FPageHeight, SizeOf(FPageHeight));         //4 - Integer - page height;
        bytes := Length(FTitle);
        FileWrite(F, bytes, SizeOf(bytes));                     //5 - Integer - length of string FTitle
-       FileWrite(F, FTitle[1], Length(FTitle));                //6 - array of char - string FTitle
+       if bytes>0 then
+              FileWrite(F, FTitle[1], Length(FTitle));                //6 - array of char - string FTitle
        bytes := Length(FPages);
        FileWrite(F, bytes, SizeOf(bytes));                     //7 - Integer - number of pages in project
        for page := 0 to Length(FPages)-1 do
@@ -147,11 +148,13 @@ begin
            databuf := aPage.FTitle;
            bytes := Length(databuf);
            FileWrite(F, bytes, SizeOf(bytes));                 //1 - Integer - length of string Title
-           FileWrite(F, databuf[1], bytes);                       //2 - array of char - string Title
+           if bytes>0 then
+              FileWrite(F, databuf[1], bytes);                    //2 - array of char - string Title
            bytes := Length(aPage.Text.Text);
            FileWrite(F, bytes, SizeOf(bytes));                 //3 - Integer - length of string Text
            databuf := aPage.Text.Text;                         //4 - array of char - = string Text
-           FileWrite(F, databuf[1], bytes);
+           if bytes>0 then
+              FileWrite(F, databuf[1], bytes);
            pageImage := pixRead(PChar( aPage.FTempFile ));
            if pageImage<>nil then
               try
