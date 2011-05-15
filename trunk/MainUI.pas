@@ -32,8 +32,6 @@ type
     AnalyseButton: TSpeedButton;
     StatusBar: TStatusBar;
     TestTesseractButton: TButton;
-    Button6: TButton;
-    Button9: TButton;
     ThumbnailListBox: TListBox;
     MainMenu: TMainMenu;
     FileMenu: TMenuItem;
@@ -61,14 +59,14 @@ type
     MainPanel: TPanel;
     Splitter1: TSplitter;
     Splitter2: TSplitter;
-    procedure Button6Click ( Sender: TObject ) ;
-    procedure Button9Click ( Sender: TObject ) ;
     procedure CropButtonClick ( Sender: TObject ) ;
     procedure DelPageMenuItemClick ( Sender: TObject ) ;
     procedure DelSelectButtonClick ( Sender: TObject ) ;
     procedure ExitMenuItemClick ( Sender: TObject ) ;
     procedure FormCreate ( Sender: TObject ) ;
     procedure FormDestroy ( Sender: TObject ) ;
+    procedure FormKeyDown ( Sender: TObject; var Key: Word; Shift: TShiftState
+      ) ;
     procedure RotateButtonClick ( Sender: TObject ) ;
     procedure DjvuButtonClick ( Sender: TObject ) ;
     procedure DeskewButtonClick ( Sender: TObject ) ;
@@ -93,6 +91,7 @@ type
     procedure SelectionChange ( Sender: TObject );
     procedure ShowScanProgress(progress: Single);
     procedure LoadPage( newpage: PLPix );
+    procedure DoCrop;
   public
     { public declarations }
   end;
@@ -116,51 +115,10 @@ var
 { TMainForm }
 
 
-procedure TMainForm.Button6Click ( Sender: TObject ) ;
-begin
-  //ICanvas.SelectionMode := smSelect;
-  writeln('Button6: ', ICanvas.Scale);
-  ICanvas.Picture := CropPix(ICanvas.Picture, ScaleRect( ICanvas.Selection , 100/ICanvas.Scale));
-  ICanvas.ClearSelection;
-end;
-
-
-procedure TMainForm.Button9Click ( Sender: TObject ) ;
-var
-  BinaryPix: PLPix;
-  TextMask: PLPix;
-  B: PBoxArray;
-  x, y, w, h: Integer;
-  count: Integer;
-  p: PLPix;
-begin
-  Textmask := nil;
-  if pixGetDepth(ICanvas.Picture) > 1
-     then BinaryPix := pixThresholdToBinary(ICanvas.Picture, 50)
-     else BinaryPix := pixClone(ICanvas.Picture);
-  if pixGetRegionsBinary(BinaryPix, nil, nil, @TextMask, 0) = 0 then
-     begin
-       B := pixConnComp(TextMask, nil, 8);
-       try
-       boxaWrite('/tmp/boxes.txt', B);
-       for count := 0 to boxaGetCount(B)-1 do
-            begin
-              boxaGetBoxGeometry(B, count, @x, @y, @w, @h);
-              ICanvas.AddSelection(Rect(x-10, y-5, x+w+5, y+h{+20}));
-            end;
-       finally
-         if B<>nil then
-         boxaDestroy(@B);
-         if Textmask <> nil then
-         pixDestroy(@TextMask);
-       end;
-     end;
-  pixDestroy(@BinaryPix);
-end;
-
 procedure TMainForm.CropButtonClick ( Sender: TObject ) ;
 begin
   ICanvas.SelectionMode := smCrop;  writeln('crop button');
+  StatusBar.Panels[0].Text := 'CROP';
 end;
 
 procedure TMainForm.DelPageMenuItemClick ( Sender: TObject ) ;
@@ -185,6 +143,7 @@ end;
 procedure TMainForm.DelSelectButtonClick ( Sender: TObject ) ;
 begin
   ICanvas.SelectionMode := smDelete;
+  StatusBar.Panels[0].Text := 'DELETE';
 end;
 
 procedure TMainForm.ExitMenuItemClick ( Sender: TObject ) ;
@@ -221,6 +180,21 @@ begin
       end;
 end;
 
+procedure TMainForm.FormKeyDown ( Sender: TObject; var Key: Word;
+  Shift: TShiftState ) ;
+  procedure ResetButtons;
+  begin
+    SelTextButton.Click;
+    SelTextButton.Down := true;
+  end;
+begin
+  if CropButton.Down then
+     begin
+       if Key=27 then begin ResetButtons; ICanvas.ClearSelection; end
+       else if Key=13 then  begin DoCrop; ResetButtons; end;
+     end;
+end;
+
 procedure TMainForm.RotateButtonClick ( Sender: TObject ) ;
 var
   newpix: PLPix;
@@ -239,7 +213,7 @@ begin
      newpix := pixRotate90(oldpix, direction);
      if newpix<>nil then
         begin
-          pixDestroy(@oldpix);
+          //pixDestroy(@oldpix);
           Project.CurrentPage.PageImage := newpix;
           ICanvas.Picture := newpix;
         end;
@@ -284,13 +258,14 @@ begin
      begin
        ICanvas.Picture := newpix;
        Project.CurrentPage.PageImage := newpix;
-       pixDestroy(@oldpix);
+      // pixDestroy(@oldpix);
      end;
 end;
 
 procedure TMainForm.SelTextButtonClick ( Sender: TObject ) ;
 begin
   ICanvas.SelectionMode := smSelect;
+  StatusBar.Panels[0].Text := 'SELECT';
 end;
 
 procedure TMainForm.AnalyseButtonClick ( Sender: TObject ) ;
@@ -344,7 +319,7 @@ begin
   for X := Project.CurrentPage.SelectionCount-1 downto 0 do
     ICanvas.DeleteSelector(X);
   Project.ItemIndex := TListBox(Sender).ItemIndex;
-  ICanvas.Picture := Project.CurrentPage.LoadFromTempfile;
+  ICanvas.Picture := Project.CurrentPage.PageImage;
   Invalidate;
   for x := 0 to Project.CurrentPage.SelectionCount-1 do
       ICanvas.AddSelection(Project.CurrentPage.Selection[x]);
@@ -381,7 +356,7 @@ begin
              begin
                pagename :=  ExtractFileNameOnly(OpenDialog.FileName);
                newpage^.text := PChar(pagename);
-               LoadPage(newpage)
+               LoadPage(newpage);
              end
            else ShowMessage('Error when loading page ' + OpenDialog.Files[i]);
         end;
@@ -521,8 +496,11 @@ procedure TMainForm.MakeSelection ( Sender: TObject ) ;
 var
   S: TSelector;
 begin
-  ICanvas.AddSelection(UnScaleRect(ICanvas.Selection, ICanvas.Scale));
-  Project.CurrentPage.AddSelection( UnScaleRect (ICanvas.Selection, ICanvas.Scale) )
+  if ICanvas.SelectionMode<>smCrop then
+    begin
+      ICanvas.AddSelection(UnScaleRect(ICanvas.Selection, ICanvas.Scale));
+      Project.CurrentPage.AddSelection( UnScaleRect (ICanvas.Selection, ICanvas.Scale) )
+    end;
 end;
 
 procedure TMainForm.SelectionChange ( Sender: TObject ) ;
@@ -566,6 +544,24 @@ begin
  pagecountLabel.Caption := Format('%d pages', [ThumbnailListBox.Count]);
  AddingThumbnail := false;
  pixDestroy(@thumbPIX);
+end;
+
+procedure TMainForm.DoCrop;
+var
+  newpix: PLPix;
+  oldpix: PLPix;
+begin
+ newpix := nil;
+ oldpix := ICanvas.Picture;
+ newpix := CropPix( oldpix, ScaleRect( ICanvas.Selection , 100/ICanvas.Scale));
+ if newpix <> nil then
+   begin
+     {if oldpix <> nil
+        then pixDestroy(@oldpix);}
+     ICanvas.ClearSelection;
+     ICanvas.Picture := newpix;
+     Project.CurrentPage.PageImage := newpix;
+   end;
 end;
 
 
