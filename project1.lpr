@@ -16,10 +16,10 @@ uses
 begin
   Application.Title := 'Ocrivist';
   Application.Initialize;
-  Application.CreateForm ( TForm1, Form1 ) ;
+  Application.CreateForm ( TMainForm, MainForm ) ;
   Application.CreateForm ( TScannerForm, ScannerForm ) ;
-  ScannerForm.OnChangeScanner := @Form1.UpdateScannerStatus;
-  Form1.UpdateScannerStatus(nil);
+  ScannerForm.OnChangeScanner := @MainForm.UpdateScannerStatus;
+  MainForm.UpdateScannerStatus(nil);
   Application.Run;
 end.
 

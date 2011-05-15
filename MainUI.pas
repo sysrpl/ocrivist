@@ -11,9 +11,11 @@ uses
 
 type
 
-  { TForm1 }
+  { TMainForm }
 
-  TForm1 = class ( TForm )
+  TMainForm = class ( TForm )
+    pagecountLabel: TLabel;
+    TesseractButton: TSpeedButton;
     DelSelectButton: TSpeedButton;
     MenuItem1: TMenuItem;
     DeskewMenuItem: TMenuItem;
@@ -27,12 +29,13 @@ type
     CropButton: TSpeedButton;
     DjvuButton: TSpeedButton;
     DeskewButton: TSpeedButton;
-    StatusBar1: TStatusBar;
+    AnalyseButton: TSpeedButton;
+    StatusBar: TStatusBar;
     TestTesseractButton: TButton;
     Button6: TButton;
     Button9: TButton;
-    ListBox1: TListBox;
-    MainMenu1: TMainMenu;
+    ThumbnailListBox: TListBox;
+    MainMenu: TMainMenu;
     FileMenu: TMenuItem;
     LoadPageMenuItem: TMenuItem;
     DelPageMenuItem: TMenuItem;
@@ -51,11 +54,11 @@ type
     View50MenuItem: TMenuItem;
     ViewMenu: TMenuItem;
     MenuItem3: TMenuItem;
-    OpenDialog1: TOpenDialog;
-    Panel1: TPanel;
-    Panel3: TPanel;
-    Panel4: TPanel;
-    Panel5: TPanel;
+    OpenDialog: TOpenDialog;
+    TopPanel: TPanel;
+    ListboxPanel: TPanel;
+    RightPanel: TPanel;
+    MainPanel: TPanel;
     Splitter1: TSplitter;
     Splitter2: TSplitter;
     procedure Button6Click ( Sender: TObject ) ;
@@ -70,9 +73,10 @@ type
     procedure DjvuButtonClick ( Sender: TObject ) ;
     procedure DeskewButtonClick ( Sender: TObject ) ;
     procedure SelTextButtonClick ( Sender: TObject ) ;
+    procedure AnalyseButtonClick ( Sender: TObject ) ;
     procedure UpdateScannerStatus ( Sender: TObject ) ;
-    procedure ListBox1Click ( Sender: TObject ) ;
-    procedure ListBox1DrawItem ( Control: TWinControl; Index: Integer;
+    procedure ThumbnailListBoxClick ( Sender: TObject ) ;
+    procedure ThumbnailListBoxDrawItem ( Control: TWinControl; Index: Integer;
       ARect: TRect; State: TOwnerDrawState ) ;
     procedure LoadPageMenuItemClick ( Sender: TObject ) ;
     procedure OpenProjectMenuItemClick ( Sender: TObject ) ;
@@ -99,7 +103,7 @@ const
   THUMBNAIL_HEIGHT = 100;
 
 var
-  Form1: TForm1;
+  MainForm: TMainForm;
   ICanvas : TPageViewer;
   Image1:TImage;
 
@@ -109,10 +113,10 @@ var
 
   {$R *.lfm}
 
-{ TForm1 }
+{ TMainForm }
 
 
-procedure TForm1.Button6Click ( Sender: TObject ) ;
+procedure TMainForm.Button6Click ( Sender: TObject ) ;
 begin
   //ICanvas.SelectionMode := smSelect;
   writeln('Button6: ', ICanvas.Scale);
@@ -121,7 +125,7 @@ begin
 end;
 
 
-procedure TForm1.Button9Click ( Sender: TObject ) ;
+procedure TMainForm.Button9Click ( Sender: TObject ) ;
 var
   BinaryPix: PLPix;
   TextMask: PLPix;
@@ -154,12 +158,12 @@ begin
   pixDestroy(@BinaryPix);
 end;
 
-procedure TForm1.CropButtonClick ( Sender: TObject ) ;
+procedure TMainForm.CropButtonClick ( Sender: TObject ) ;
 begin
   ICanvas.SelectionMode := smCrop;  writeln('crop button');
 end;
 
-procedure TForm1.DelPageMenuItemClick ( Sender: TObject ) ;
+procedure TMainForm.DelPageMenuItemClick ( Sender: TObject ) ;
 var
   ms: TMemoryStream;
   s: Cardinal;
@@ -178,36 +182,36 @@ begin
   Freemem(buf, s);
 end;
 
-procedure TForm1.DelSelectButtonClick ( Sender: TObject ) ;
+procedure TMainForm.DelSelectButtonClick ( Sender: TObject ) ;
 begin
   ICanvas.SelectionMode := smDelete;
 end;
 
-procedure TForm1.ExitMenuItemClick ( Sender: TObject ) ;
+procedure TMainForm.ExitMenuItemClick ( Sender: TObject ) ;
 begin
   Close;
 end;
 
-procedure TForm1.FormCreate ( Sender: TObject ) ;
+procedure TMainForm.FormCreate ( Sender: TObject ) ;
 begin
   ICanvas := TPageViewer.Create(self);
-  ICanvas.Parent := Panel5;
+  ICanvas.Parent := MainPanel;
   ICanvas.Align := alClient;
   Icanvas.OnSelect := @MakeSelection;
-  ListBox1.Clear;
-  ListBox1.ItemIndex := -1;
-  ListBox1.ItemHeight := THUMBNAIL_HEIGHT + ListBox1.Canvas.TextHeight('Yy')+2;
+  ThumbnailListBox.Clear;
+  ThumbnailListBox.ItemIndex := -1;
+  ThumbnailListBox.ItemHeight := THUMBNAIL_HEIGHT + ThumbnailListBox.Canvas.TextHeight('Yy')+2;
   Project := TOcrivistProject.Create;
   Project.Title := 'Default Project';
   AddingThumbnail := false;
 end;
 
-procedure TForm1.FormDestroy ( Sender: TObject ) ;
+procedure TMainForm.FormDestroy ( Sender: TObject ) ;
 var
   x: Integer;
 begin
-  for x := 0 to ListBox1.Items.Count-1 do
-    TBitmap(ListBox1.Items.Objects[x]).Free;
+  for x := 0 to ThumbnailListBox.Items.Count-1 do
+    TBitmap(ThumbnailListBox.Items.Objects[x]).Free;
   if Assigned(Project)
     then Project.Free;
   if Assigned(ScannerHandle) then
@@ -217,7 +221,7 @@ begin
       end;
 end;
 
-procedure TForm1.RotateButtonClick ( Sender: TObject ) ;
+procedure TMainForm.RotateButtonClick ( Sender: TObject ) ;
 var
   newpix: PLPix;
   oldpix: PLPix;
@@ -242,7 +246,7 @@ begin
    end;
 end;
 
-procedure TForm1.DjvuButtonClick ( Sender: TObject ) ;
+procedure TMainForm.DjvuButtonClick ( Sender: TObject ) ;
 var
   p: PLPix;
   d: LongInt;
@@ -257,18 +261,18 @@ begin
           if d=1
              then fn := '/tmp/test.pnm'
              else fn := '/tmp/test.pbm';
-          StatusBar1.Panels[1].Text := 'Processing page ' + IntToStr(x+1);
+          StatusBar.Panels[1].Text := 'Processing page ' + IntToStr(x+1);
           Application.ProcessMessages;
           pixWrite(PChar(fn), p, IFF_PNM);
           if djvumakepage(fn, '/tmp/test.djvu')=0
              then djvuaddpage(SaveProjectDialog.FileName, '/tmp/test.djvu')
              else ShowMessage('Error when encoding page ' + IntToStr(x+1));
         finally
-          StatusBar1.Panels[1].Text := '';
+          StatusBar.Panels[1].Text := '';
         end;
 end;
 
-procedure TForm1.DeskewButtonClick ( Sender: TObject ) ;
+procedure TMainForm.DeskewButtonClick ( Sender: TObject ) ;
 var
   oldpix: PLPix;
   newpix: PLPix;
@@ -284,19 +288,54 @@ begin
      end;
 end;
 
-procedure TForm1.SelTextButtonClick ( Sender: TObject ) ;
+procedure TMainForm.SelTextButtonClick ( Sender: TObject ) ;
 begin
   ICanvas.SelectionMode := smSelect;
 end;
 
-procedure TForm1.UpdateScannerStatus ( Sender: TObject ) ;
+procedure TMainForm.AnalyseButtonClick ( Sender: TObject ) ;
+var
+  BinaryPix: PLPix;
+  TextMask: PLPix;
+  B: PBoxArray;
+  x, y, w, h: Integer;
+  count: Integer;
+  p: PLPix;
+begin
+  Textmask := nil;
+  BinaryPix := nil;
+  if pixGetDepth(ICanvas.Picture) > 1
+     then BinaryPix := pixThresholdToBinary(ICanvas.Picture, 50)
+     else BinaryPix := pixClone(ICanvas.Picture);
+  if pixGetRegionsBinary(BinaryPix, nil, nil, @TextMask, 0) = 0 then
+     begin
+       B := pixConnComp(TextMask, nil, 8);
+       try
+       boxaWrite('/tmp/boxes.txt', B);
+       for count := 0 to boxaGetCount(B)-1 do
+            begin
+              boxaGetBoxGeometry(B, count, @x, @y, @w, @h);
+              ICanvas.AddSelection(Rect(x-10, y-5, x+w+5, y+h{+20}));
+            end;
+       finally
+         if B<>nil then
+            boxaDestroy(@B);
+         if Textmask <> nil then
+            pixDestroy(@TextMask);
+       end;
+     end;
+  if BinaryPix<>nil then
+       pixDestroy(@BinaryPix);
+end;
+
+procedure TMainForm.UpdateScannerStatus ( Sender: TObject ) ;
 begin
   ScanPageMenuItem.Enabled := ScannerHandle<>nil;
   if ScannerHandle=nil then writeln('ScannerHandle is nil')
   else writeln('ScannerHandle ok');;
 end;
 
-procedure TForm1.ListBox1Click ( Sender: TObject ) ;
+procedure TMainForm.ThumbnailListBoxClick ( Sender: TObject ) ;
 var
   X: Integer;
   S: TSelector;
@@ -311,7 +350,7 @@ begin
       ICanvas.AddSelection(Project.CurrentPage.Selection[x]);
 end;
 
-procedure TForm1.ListBox1DrawItem ( Control: TWinControl; Index: Integer;
+procedure TMainForm.ThumbnailListBoxDrawItem ( Control: TWinControl; Index: Integer;
   ARect: TRect; State: TOwnerDrawState ) ;
 var
   LeftOffset: Integer;
@@ -326,41 +365,41 @@ begin
   TListbox(Control).Canvas.Frame(ARect);
 end;
 
-procedure TForm1.LoadPageMenuItemClick ( Sender: TObject ) ;
+procedure TMainForm.LoadPageMenuItemClick ( Sender: TObject ) ;
 var
   newpage: PLPix;
   pagename: String;
   i: Integer;
 begin
-  OpenDialog1.Options := OpenDialog1.Options + [ofAllowMultiSelect];
-  OpenDialog1.Filter := 'Image files|*.tif;*.tiff;*.bmp;*.png;*.jpg|All files|*';
-  if OpenDialog1.Execute then
-     for i := 0 to OpenDialog1.Files.Count-1 do
+  OpenDialog.Options := OpenDialog.Options + [ofAllowMultiSelect];
+  OpenDialog.Filter := 'Image files|*.tif;*.tiff;*.bmp;*.png;*.jpg|All files|*';
+  if OpenDialog.Execute then
+     for i := 0 to OpenDialog.Files.Count-1 do
         begin
-          newpage := pixRead(PChar(OpenDialog1.Files[i]));
+          newpage := pixRead(PChar(OpenDialog.Files[i]));
           if newpage<>nil then
              begin
-               pagename :=  ExtractFileNameOnly(OpenDialog1.FileName);
+               pagename :=  ExtractFileNameOnly(OpenDialog.FileName);
                newpage^.text := PChar(pagename);
                LoadPage(newpage)
              end
-           else ShowMessage('Error when loading page ' + OpenDialog1.Files[i]);
+           else ShowMessage('Error when loading page ' + OpenDialog.Files[i]);
         end;
 end;
 
-procedure TForm1.OpenProjectMenuItemClick ( Sender: TObject ) ;
+procedure TMainForm.OpenProjectMenuItemClick ( Sender: TObject ) ;
 begin
-  if OpenDialog1.Execute
-    then Project.LoadfromFile(OpenDialog1.FileName);
+  if OpenDialog.Execute
+    then Project.LoadfromFile(OpenDialog.FileName);
 end;
 
-procedure TForm1.SaveAsMenuItemClick ( Sender: TObject ) ;
+procedure TMainForm.SaveAsMenuItemClick ( Sender: TObject ) ;
 begin
   if SaveProjectDialog.Execute
     then Project.SaveToFile(SaveProjectDialog.FileName);
 end;
 
-procedure TForm1.ScanPageMenuItemClick ( Sender: TObject ) ;
+procedure TMainForm.ScanPageMenuItemClick ( Sender: TObject ) ;
 var
   newpage: PLPix;
   nametext: String;
@@ -377,13 +416,13 @@ begin
      end;
 end;
 
-procedure TForm1.SetScannerMenuItemClick ( Sender: TObject ) ;
+procedure TMainForm.SetScannerMenuItemClick ( Sender: TObject ) ;
 begin
  if ScannerHandle=nil then ScannerForm.FormCreate(nil);
  ScannerForm.ShowModal;
 end;
 
-procedure TForm1.TestTesseractButtonClick ( Sender: TObject ) ;
+procedure TMainForm.TestTesseractButtonClick ( Sender: TObject ) ;
 var
   t: Pointer;
   BinaryPix: Pointer;
@@ -468,7 +507,7 @@ begin
 
 end;
 
-procedure TForm1.ViewMenuItemClick ( Sender: TObject ) ;
+procedure TMainForm.ViewMenuItemClick ( Sender: TObject ) ;
 begin
   Case TMenuItem(Sender).Tag of
        0: ICanvas.Mode := vmFitToHeight;   // Fit to Height
@@ -478,7 +517,7 @@ begin
        end;
 end;
 
-procedure TForm1.MakeSelection ( Sender: TObject ) ;
+procedure TMainForm.MakeSelection ( Sender: TObject ) ;
 var
   S: TSelector;
 begin
@@ -486,7 +525,7 @@ begin
   Project.CurrentPage.AddSelection( UnScaleRect (ICanvas.Selection, ICanvas.Scale) )
 end;
 
-procedure TForm1.SelectionChange ( Sender: TObject ) ;
+procedure TMainForm.SelectionChange ( Sender: TObject ) ;
 var
   SelectionId: LongInt;
 begin
@@ -494,12 +533,12 @@ begin
   Project.CurrentPage.Selection[SelectionId] := UnScaleRect(TSelector(Sender).Selection, ICanvas.Scale);
 end;
 
-procedure TForm1.ShowScanProgress ( progress: Single ) ;
+procedure TMainForm.ShowScanProgress ( progress: Single ) ;
 begin
   writeln( FormatFloat('0.00', progress));
 end;
 
-procedure TForm1.LoadPage ( newpage: PLPix ) ;
+procedure TMainForm.LoadPage ( newpage: PLPix ) ;
 var
   X: Integer;
   thumbBMP: TBitmap;
@@ -514,16 +553,17 @@ begin
        ICanvas.DeleteSelector(X);
  Project.AddPage(ICanvas.Picture);
  thumbBMP := TBitmap.Create;
- w := 0; //ListBox1.ClientWidth-6;
+ w := 0; //ThumbnailListBox.ClientWidth-6;
  h := THUMBNAIL_HEIGHT;
  thumbPIX := pixScaleToSize(ICanvas.Picture, w, h);
  pixWrite('/tmp/tmp.bmp', thumbPIX, IFF_BMP);
  //ScaleToBitmap(thumbPIX, thumbBMP, 1);
  AddingThumbnail := true;  //avoid triggering reload through ThumbList.Click;
- ListBox1.Items.AddObject(newpage^.text, thumbBMP);
+ ThumbnailListBox.Items.AddObject(newpage^.text, thumbBMP);
  //thumbBMP.SaveToFile('/tmp/tmp/bmp');
  thumbBMP.LoadFromFile('/tmp/tmp.bmp');
- //ListBox1.ItemIndex := ListBox1.Count-1;
+ ThumbnailListBox.ItemIndex := ThumbnailListBox.Count-1;
+ pagecountLabel.Caption := Format('%d pages', [ThumbnailListBox.Count]);
  AddingThumbnail := false;
  pixDestroy(@thumbPIX);
 end;
