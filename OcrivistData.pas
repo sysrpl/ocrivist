@@ -18,6 +18,7 @@ type
     FText: TStringlist;
     FSelections: array of TRect;
     FModified: Boolean;
+    FPix:PLPix;
   private
     function GetSelection ( aIndex: Integer ) : TRect;
     function GetSelectionCount: Integer;
@@ -35,7 +36,7 @@ type
     property SelectionCount: Integer read GetSelectionCount;
     property Title: string read FTitle write FTitle;
     property Modified: Boolean read FModified write FModified;
-    property PageImage: PLPix read LoadFromTempfile write SetPageImage;
+    property PageImage: PLPix read FPix write SetPageImage;
   end;
 
   { TOcrivistProject }
@@ -209,6 +210,8 @@ begin
        SetLength(FPages, Length(FPages)+1);
        FPages[PageCount-1] := P;
        FcurrentPage := PageCount-1;
+       if Pix^.text<>nil
+          then FTitle := Pix^.text;
      end;
 end;
 
@@ -228,7 +231,13 @@ end;
 
 procedure TOcrivistPage.SetPageImage ( const AValue: PLPix ) ;
 begin
-  SaveToTempfile(AValue, '');
+  if AValue<>FPix then
+        begin
+          writeln('setting new pix in OctrivistPage');
+//          pixDestroy(@FPix);
+          FPix := AValue;
+        end;
+  //SaveToTempfile(AValue, '');
 end;
 
 procedure TOcrivistPage.SetSelection ( aIndex: Integer ; const AValue: TRect
@@ -242,8 +251,11 @@ end;
 constructor TOcrivistPage.Create( pix: PLPix );
 begin
   FText := TStringList.Create;
-  if pix <> nil
-     then SaveToTempfile(pix, GetTempDir);
+  {if pix <> nil
+     then SaveToTempfile(pix, GetTempDir);}
+  FPix := pix;
+  if pix^.text<>nil
+     then FTitle := pix^.text;
   SetLength(FSelections, 0);
 end;
 
