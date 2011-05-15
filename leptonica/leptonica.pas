@@ -166,7 +166,6 @@ type
   function ptaWriteStream ( fp: pointer; pta: PPointArray; nktype: integer ): integer; cdecl; external LIBLEPT;
   function ptaWrite (  filename: PChar; pta: PPointArray; nktype: integer ): integer; cdecl; external LIBLEPT;
   function pixGetDimensions( pix: PLPix; pw, ph, pd: PInteger): Integer; cdecl; external LIBLEPT;
-
   function pixScale( pix: PLPix; pw, ph: Single): PLPix; cdecl; external LIBLEPT;
   function pixScaleSmooth( pix: PLPix; pw, ph: Single): PLPix; cdecl; external LIBLEPT;
   function pixGetDepth( pix: PLPix): Integer; cdecl; external LIBLEPT;
@@ -185,6 +184,45 @@ type
   function pixDeskewGeneral( pixs: PLPix; redsweep: integer; sweeprange, sweepdelta: Single;
                            redsearch, thresh: Integer; pangle, pconf: PSingle ): PLPix;
  }
+
+ {*!
+  *  pixRotate90()
+  *
+  *      Input:  pixs (all depths)
+  *              direction (1 = clockwise,  -1 = counter-clockwise)
+  *      Return: pixd, or null on error
+  *
+  *  Notes:
+  *      (1) This does a 90 degree rotation of the image about the center,
+  *          either cw or ccw, returning a new pix.
+  *      (2) The direction must be either 1 (cw) or -1 (ccw).
+  *}
+ function pixRotate90 	( pixs: TLPix; direction: Integer ): TLPix; cdecl; external LIBLEPT;
+
+ {*!
+ *  pixRotate180()
+ *
+ *      Input:  pixd  (<optional>; can be null, equal to pixs,
+ *                     or different from pixs)
+ *              pixs (all depths)
+ *      Return: pixd, or null on error
+ *
+ *  Notes:
+ *      (1) This does a 180 rotation of the image about the center,
+ *          which is equivalent to a left-right flip about a vertical
+ *          line through the image center, followed by a top-bottom
+ *          flip about a horizontal line through the image center.
+ *      (2) There are 3 cases for input:
+ *          (a) pixd == null (creates a new pixd)
+ *          (b) pixd == pixs (in-place operation)
+ *          (c) pixd != pixs (existing pixd)
+ *      (3) For clarity, use these three patterns, respectively:
+ *          (a) pixd = pixRotate180(NULL, pixs);
+ *          (b) pixRotate180(pixs, pixs);
+ *          (c) pixRotate180(pixd, pixs);
+ *}
+function pixRotate180( pixd, pixs: PLPix): PLPix; cdecl; external LIBLEPT;
+
 
 {*!
  *  pixScaleToSize()
