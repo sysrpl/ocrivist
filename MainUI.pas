@@ -215,7 +215,7 @@ begin
      newpix := pixRotate90(oldpix, direction);
      if newpix<>nil then
         begin
-          //pixDestroy(@oldpix);
+          if oldpix <> nil then pixDestroy(@oldpix);
           Project.CurrentPage.PageImage := newpix;
           ICanvas.Picture := newpix;
         end;
@@ -260,7 +260,7 @@ begin
      begin
        ICanvas.Picture := newpix;
        Project.CurrentPage.PageImage := newpix;
-      // pixDestroy(@oldpix);
+      if oldpix<>nil then pixDestroy(@oldpix);
      end;
 end;
 
@@ -356,8 +356,8 @@ begin
           newpage := pixRead(PChar(OpenDialog.Files[i]));
           if newpage<>nil then
              begin
-               pagename :=  ExtractFileNameOnly(OpenDialog.FileName);
-               newpage^.text := PChar(pagename);
+               pagename :=  ExtractFileNameOnly(OpenDialog.Files[i]);
+               pixSetText(newpage, PChar(pagename));
                LoadPage(newpage);
              end
            else ShowMessage('Error when loading page ' + OpenDialog.Files[i]);
@@ -567,11 +567,11 @@ begin
  newpix := CropPix( oldpix, ScaleRect( ICanvas.Selection , 100/ICanvas.Scale));
  if newpix <> nil then
    begin
-     {if oldpix <> nil
-        then pixDestroy(@oldpix);}
      ICanvas.ClearSelection;
      ICanvas.Picture := newpix;
      Project.CurrentPage.PageImage := newpix;
+     if oldpix <> nil
+        then pixDestroy(@oldpix);
    end;
 end;
 
