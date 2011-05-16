@@ -75,16 +75,15 @@ end;
 
 function CropPix ( pix: PLPix; x, y, w, h: longint ) : PLPix;
 var
-  BoxRect: TLBox;
+  BoxRect: PLBox;
   pixB: PLPix;
 begin
 //  writeln( Format('box: %d %d %d %d', [x, y, w, h]) );
   BoxRect := boxCreateValid(x, y, w, h);
-  //if BoxRect <> nil then
+  if BoxRect <> nil then
      pixB := pixClipRectangle( pix, BoxRect, nil);
   if pixB <> nil then
      begin
-       pixDestroy(@pix);
        Result := pixB;
      end
   else Result := pix;
