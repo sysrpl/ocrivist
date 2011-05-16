@@ -159,7 +159,6 @@ type
   function pixGetInputFormat ( Pix: TLPix ): Integer; cdecl; external LIBLEPT;
   function pixGetXRes ( Pix: PLPix ): Integer; cdecl; external LIBLEPT;
   function pixGetYRes ( Pix: PLPix ): Integer; cdecl; external LIBLEPT;
-  function pixGetText ( Pix: PLPix ): PChar; cdecl; external LIBLEPT;
   function pixSetResolution ( pix: PLPix; xres, yres: Integer ): Integer; cdecl; external LIBLEPT;
   function pixWriteStream( fp: Pointer; pix: PLPix; imagefileformat: Integer): Integer; cdecl; external LIBLEPT;
   function pixRotate90 (pixs: PLPix; rotatedirection: Integer ): PLPix; cdecl; external LIBLEPT;
@@ -185,6 +184,49 @@ type
   function pixDeskewGeneral( pixs: PLPix; redsweep: integer; sweeprange, sweepdelta: Single;
                            redsearch, thresh: Integer; pangle, pconf: PSingle ): PLPix;
  }
+
+
+ {*!
+  *  pixGetText()
+  *
+  *      Input:  pix
+  *      Return: ptr to existing text string
+  *
+  *  Notes:
+  *      (1) The text string belongs to the pix.  The caller must
+  *          NOT free it!
+  *}
+ function pixGetText( pix: PLPix ): PChar; cdecl; external LIBLEPT;
+
+
+{*!
+ *  pixSetText()
+ *
+ *      Input:  pix
+ *              textstring (can be null)
+ *      Return: 0 if OK, 1 on error
+ *
+ *  Notes:
+ *      (1) This removes any existing textstring and puts a copy of
+ *          the input textstring there.
+ *}
+function pixSetText( pix: PLPix; textstring: PChar ): Integer; cdecl; external LIBLEPT;
+
+{*!
+ *  pixAddText()
+ *
+ *      Input:  pix
+ *              textstring
+ *      Return: 0 if OK, 1 on error
+ *
+ *  Notes:
+ *      (1) This adds the new textstring to any existing text.
+ *      (2) Either or both the existing text and the new text
+ *          string can be null.
+ *}
+function pixAddText( pix: PLPix; textstring: PChar ): Integer; cdecl; external LIBLEPT;
+
+
 
  {*!
   *  pixRotate90()
