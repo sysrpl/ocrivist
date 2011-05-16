@@ -85,6 +85,7 @@ begin
   if pixB <> nil then
      begin
        Result := pixB;
+       pixWrite('/tmp/croppedpix.bmp', pixB, IFF_BMP);
      end
   else Result := pix;
   boxDestroy(@BoxRect);
@@ -133,8 +134,7 @@ begin
                     if Assigned(progresscb) then progresscb( byteswritten / pixeltotal );
                   end;
              finally
-               //if data<>nil then Freemem(data);  //causes a crash - memory space acquired by liblept?
-               //sane_cancel(h);
+               sane_cancel(h);
              end
           else writeln('Scan failed: ' + sane_strstatus(status));
           writeln('scan done');
@@ -143,7 +143,7 @@ begin
           Result := pixImage;
           writeln('file loaded');
         finally
-
+          if data<>nil then Freemem(data);
         end;
 end;
 
