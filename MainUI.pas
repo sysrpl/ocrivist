@@ -337,7 +337,7 @@ begin
   if LeftOffset<2 then LeftOffset := 2;
   TListbox(Control).Canvas.Rectangle(ARect);
   TListbox(Control).Canvas.Draw(LeftOffset, ARect.Top + TListbox(Control).Canvas.TextHeight('Yy')+2, TBitmap(TListbox(Control).Items.Objects[Index]));
-  TListbox(Control).Canvas.TextOut(2, ARect.Top + 2, TListbox(Control).Items[Index]);
+  TListbox(Control).Canvas.TextOut(2, ARect.Top + 2, IntToStr(Index+1) + #32 + TListbox(Control).Items[Index]);
   TListbox(Control).Canvas.Pen.Color := clBlack;
   TListbox(Control).Canvas.Frame(ARect);
 end;
