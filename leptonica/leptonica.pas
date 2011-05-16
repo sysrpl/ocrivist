@@ -88,6 +88,7 @@ type
 
   PPLPix = ^PLPix;
 
+  PPLBox = ^PLBox;
   PLBox = ^TLBox;
   TLBox = record
     x:         Longint;
@@ -623,7 +624,7 @@ function pixDeskewGeneral( pixs: PLPix; redsweep: integer; sweeprange, sweepdelt
  *  Accordingly, this function has a third (optional) argument, which is
  *  the input box clipped to the src pix.
  *}
-function pixClipRectangle( pixs: PLPix; box: TLBox; pboxc: Pointer {BOX- set as nil}): PLPix; cdecl; external LIBLEPT;
+function pixClipRectangle( pixs: PLPix; box: PLBox; pboxc: PPLBox): PLPix; cdecl; external LIBLEPT;
 
 {*---------------------------------------------------------------------*
  *                  Box creation, destruction and copy                 *
@@ -648,7 +649,7 @@ function pixClipRectangle( pixs: PLPix; box: TLBox; pboxc: Pointer {BOX- set as 
  *      (3) If you want to create only valid boxes, use boxCreateValid(),
  *          which returns NULL if either w or h is 0.
  *}
-function boxCreate(x, y, w, h: longint): TLBox; cdecl; external LIBLEPT;
+function boxCreate(x, y, w, h: longint): PLBox; cdecl; external LIBLEPT;
 
 {*!
  *  boxCreateValid()
@@ -659,7 +660,7 @@ function boxCreate(x, y, w, h: longint): TLBox; cdecl; external LIBLEPT;
  *  Notes:
  *      (1) This returns NULL if either w = 0 or h = 0.
  *}
-function boxCreateValid(x, y, w, h: longint): TLBox; cdecl; external LIBLEPT;
+function boxCreateValid(x, y, w, h: longint): PLBox; cdecl; external LIBLEPT;
 
 {*!
  *  boxDestroy()
