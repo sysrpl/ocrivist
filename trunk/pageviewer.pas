@@ -62,6 +62,7 @@ public
   procedure ClearSelection;
   procedure AddSelector( Selector: TSelector );
   procedure DeleteSelector ( SelIndex: Integer );
+  function GetThumbnail ( w, h: Integer ): TBitmap;
   property Picture: PLPix read FCurrentPagePix write SetPicture;
   property OnChangeBitmap: TNotifyEvent read FOnChangeBitmap write FOnChangeBitmap;
   property OnSelect: TNotifyEvent read FOnSelect write FOnSelect;
@@ -77,6 +78,9 @@ end;
   function ScaleRectToView( aRect: TRect; viewfactor: integer ): TRect;
   function UnScaleRect( aRect: TRect; viewfactor: integer ): TRect;
   function ScaleAndOffsetRect(ARect: TRect; scalexy: single; offsetX, offsetY: Integer): TRect;
+  Function  JLReScale(aWidth,aHeight:Integer;
+          NewWidth,NewHeight:Integer;
+          var outRect:TRect):Boolean;
 
 implementation
 
@@ -117,6 +121,41 @@ begin
   Result := TempRect;
 end;
 
+{ JLReScale copyright Jon L. Aasenden http://delphimax.wordpress.com/ }
+Function  JLReScale(aWidth,aHeight:Integer;
+          NewWidth,NewHeight:Integer;
+          var outRect:TRect):Boolean;
+var
+  x,y:    Integer;
+  x1,y1:  Real;
+  wd,hd:  Integer;
+Begin
+  result:=False;
+  if (aWidth>1) and (aHeight>1) then
+  Begin
+    If (NewWidth>1) and (NewHeight>1) then
+    Begin
+      x1:=(NewWidth/aWidth);
+      y1:=(NewHeight/aHeight);
+      if x1 > y1 then
+      begin
+        outRect.top:=0;
+        outRect.bottom:=NewHeight;
+        x:=trunc(aWidth*y1);
+        outRect.left:=(NewWidth-x) shr 1;
+        outRect.right:=outRect.left+x;
+      end else
+      begin
+        outRect.left:=0;
+        outRect.right:=NewWidth;
+        y:=trunc(aHeight*x1);
+        outRect.top:=(NewHeight-y) shr 1;
+        outRect.bottom:=outRect.top+y;
+      end;
+      result:=True;
+    end;
+  end;
+end;
 
 
 { TPageViewer }
@@ -169,6 +208,8 @@ begin
           SetLength(FRealSelections, 0);
           ClearSelection;
           ReloadBitmap;
+          if Assigned(FOnChangeBitmap)
+              then FOnChangeBitmap(Self);
         end;
 end;
 
@@ -414,6 +455,28 @@ begin
           SetLength(Fselections, Length(Fselections)-1);
         end
   else Raise Exception.CreateFmt('Error in DeleteSelector: Index out of range (%d)', [SelIndex]);
+end;
+
+function TPageViewer.GetThumbnail ( w, h: Integer ) : TBitmap;
+var
+  TargetRect: TRect;
+  Thumbnail: TBitmap;
+begin
+  Result := nil;
+  if JLReScale(FBitmap.Width, FBitmap.Height, w, h, TargetRect) then
+        begin
+          writeln( Format('Rect: %d %d %d %d ', [TargetRect.Left, TargetRect.Top, TargetRect.Right, TargetRect.Bottom]));
+          //now remove left and top borders if any
+          TargetRect.Right := TargetRect.Right-TargetRect.Left;
+          TargetRect.Left := 0;
+          TargetRect.Bottom := TargetRect.Bottom-TargetRect.Top;
+          TargetRect.Top := 0;
+          Thumbnail := TBitmap.Create;
+          Thumbnail.Width := TargetRect.Right;
+          Thumbnail.Height := TargetRect.Bottom;
+          Thumbnail.Canvas.StretchDraw(TargetRect, FBitmap);
+          Result := Thumbnail;
+        end;
 end;
 
 procedure TPageViewer.AddSelection(Selection: TRect);

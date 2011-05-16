@@ -89,6 +89,7 @@ type
     AddingThumbnail: Boolean;
     procedure MakeSelection ( Sender: TObject );
     procedure SelectionChange ( Sender: TObject );
+    procedure UpdateThumbnail ( Sender: TObject );
     procedure ShowScanProgress(progress: Single);
     procedure LoadPage( newpage: PLPix );
     procedure DoCrop;
@@ -157,6 +158,7 @@ begin
   ICanvas.Parent := MainPanel;
   ICanvas.Align := alClient;
   Icanvas.OnSelect := @MakeSelection;
+  ICanvas.OnChangeBitmap := @UpdateThumbnail;
   ThumbnailListBox.Clear;
   ThumbnailListBox.ItemIndex := -1;
   ThumbnailListBox.ItemHeight := THUMBNAIL_HEIGHT + ThumbnailListBox.Canvas.TextHeight('Yy')+2;
@@ -511,6 +513,21 @@ begin
   Project.CurrentPage.Selection[SelectionId] := UnScaleRect(TSelector(Sender).Selection, ICanvas.Scale);
 end;
 
+procedure TMainForm.UpdateThumbnail ( Sender: TObject ) ;
+var
+  thumbBMP: TBitmap;
+begin
+ if AddingThumbnail then exit
+    else if ThumbnailListBox.Count<1 then exit;
+ thumbBMP := ICanvas.GetThumbnail(THUMBNAIL_HEIGHT, THUMBNAIL_HEIGHT);
+ if thumbBMP<>nil then
+   begin
+     TBitmap(ThumbnailListBox.Items.Objects[ThumbnailListBox.ItemIndex]).Free;
+     ThumbnailListBox.Items.Objects[ThumbnailListBox.ItemIndex] := thumbBMP;
+     ThumbnailListBox.Invalidate;
+   end;
+end;
+
 procedure TMainForm.ShowScanProgress ( progress: Single ) ;
 begin
   writeln( FormatFloat('0.00', progress));
@@ -520,30 +537,24 @@ procedure TMainForm.LoadPage ( newpage: PLPix ) ;
 var
   X: Integer;
   thumbBMP: TBitmap;
-  w: Integer;
-  h: Integer;
-  thumbPIX: PLPix;
 begin
+ AddingThumbnail := true;  //avoid triggering reload through ThumbList.Click;
  ICanvas.Picture := newpage;
  Application.ProcessMessages;  // Draw the screen before doing some background work
  If Project.ItemIndex>=0
   then for X := Project.CurrentPage.SelectionCount-1 downto 0 do
        ICanvas.DeleteSelector(X);
  Project.AddPage(ICanvas.Picture);
- thumbBMP := TBitmap.Create;
- w := 0; //ThumbnailListBox.ClientWidth-6;
- h := THUMBNAIL_HEIGHT;
- thumbPIX := pixScaleToSize(ICanvas.Picture, w, h);
- pixWrite('/tmp/tmp.bmp', thumbPIX, IFF_BMP);
- //ScaleToBitmap(thumbPIX, thumbBMP, 1);
- AddingThumbnail := true;  //avoid triggering reload through ThumbList.Click;
- ThumbnailListBox.Items.AddObject(newpage^.text, thumbBMP);
- //thumbBMP.SaveToFile('/tmp/tmp/bmp');
- thumbBMP.LoadFromFile('/tmp/tmp.bmp');
+ thumbBMP := ICanvas.GetThumbnail(THUMBNAIL_HEIGHT, THUMBNAIL_HEIGHT);
+ if thumbBMP<>nil then
+   begin
+     ThumbnailListBox.Items.AddObject(newpage^.text, thumbBMP);
+   end;
  ThumbnailListBox.ItemIndex := ThumbnailListBox.Count-1;
- pagecountLabel.Caption := Format('%d pages', [ThumbnailListBox.Count]);
+ if ThumbnailListBox.Count>1
+  then pagecountLabel.Caption := Format('%d pages', [ThumbnailListBox.Count])
+  else pagecountLabel.Caption := #32;  // if label is empty it changes its height
  AddingThumbnail := false;
- pixDestroy(@thumbPIX);
 end;
 
 procedure TMainForm.DoCrop;
