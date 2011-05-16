@@ -81,6 +81,7 @@ end;
   Function  JLReScale(aWidth,aHeight:Integer;
           NewWidth,NewHeight:Integer;
           var outRect:TRect):Boolean;
+  procedure AdjustRect(var aRect: TRect); //ensures that BottomRight>TopLeft
 
 implementation
 
@@ -155,6 +156,27 @@ Begin
       result:=True;
     end;
   end;
+end;
+
+procedure AdjustRect ( var aRect: TRect ) ;
+var
+  i: LongInt;
+begin
+  with aRect do
+       begin
+         if Top>Bottom then
+               begin
+                 i := Top;
+                 Top := Bottom;
+                 Bottom := i
+               end;
+         if Left>Right then
+               begin
+                 i := Left;
+                 Left := Right;
+                 Right := i;
+               end;
+       end;
 end;
 
 
@@ -377,9 +399,12 @@ procedure TPageViewer.MouseUp ( Button: TMouseButton; Shift: TShiftState; X,
   Y: Integer ) ;
 begin
   inherited MouseUp ( Button, Shift, X, Y ) ;
-  if FSelecting
-     then if Assigned(FOnSelect)
-        then FOnSelect( Self );
+  if FSelecting then
+        begin
+          AdjustRect(FSelectRect);
+          if Assigned(FOnSelect)
+            then FOnSelect( Self );
+        end;
   FSelecting := false;
 end;
 
@@ -454,7 +479,8 @@ begin
             Fselections[x] := Fselections[x+1];
           SetLength(Fselections, Length(Fselections)-1);
         end
-  else Raise Exception.CreateFmt('Error in DeleteSelector: Index out of range (%d)', [SelIndex]);
+  else WriteLn(Format('Error in DeleteSelector: Index out of range (%d)', [SelIndex]));
+  //Raise Exception.CreateFmt('Error in DeleteSelector: Index out of range (%d)', [SelIndex]);
 end;
 
 function TPageViewer.GetThumbnail ( w, h: Integer ) : TBitmap;
