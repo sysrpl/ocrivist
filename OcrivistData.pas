@@ -84,7 +84,9 @@ end;
 
 function TOcrivistProject.GetCurrentPage: TOcrivistPage;
 begin
-  Result := FPages[FcurrentPage];
+  if Length(FPages)>0
+     then Result := FPages[FcurrentPage]
+     else Result := nil;
 end;
 
 function TOcrivistProject.GetPageCount: Integer;
