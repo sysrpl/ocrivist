@@ -15,6 +15,9 @@ type
 
   TMainForm = class ( TForm )
     ImageList1: TImageList;
+    LoadModeMenu: TPopupMenu;
+    LoadModeFileButton: TMenuItem;
+    LoadModeScanButton: TMenuItem;
     SelModeSelectButton: TMenuItem;
     SelModeDeleteButton: TMenuItem;
     SelModeCropButton: TMenuItem;
@@ -53,7 +56,6 @@ type
     FitWidthButton: TToolButton;
     SaveButton: TToolButton;
     AutoselectButton: TToolButton;
-    ScanButton: TToolButton;
     ToolButton3: TToolButton;
     DelPageButton: TToolButton;
     ToolButton4: TToolButton;
@@ -80,6 +82,7 @@ type
     procedure FormDestroy ( Sender: TObject ) ;
     procedure FormKeyDown ( Sender: TObject; var Key: Word; Shift: TShiftState
       ) ;
+    procedure LoadModeOptionClick(Sender: TObject);
     procedure RotateButtonClick ( Sender: TObject ) ;
     procedure DjvuButtonClick ( Sender: TObject ) ;
     procedure DeskewButtonClick ( Sender: TObject ) ;
@@ -216,6 +219,15 @@ begin
        if Key=27 then begin SelTextButtonClick(SelModeSelectButton); ICanvas.ClearSelection; end
        else if Key=13 then begin DoCrop; SelTextButtonClick(SelModeSelectButton); end;
      end;
+end;
+
+procedure TMainForm.LoadModeOptionClick(Sender: TObject);
+begin
+  case TMenuItem(Sender).Tag of
+       0: AddPageButton.OnClick := @LoadPageMenuItemClick;
+       1: AddPageButton.OnClick := @ScanPageMenuItemClick;
+  end;
+  AddPageButton.ImageIndex := TMenuItem(Sender).ImageIndex;
 end;
 
 procedure TMainForm.RotateButtonClick ( Sender: TObject ) ;
@@ -378,7 +390,6 @@ begin
                pagename :=  ExtractFileNameOnly(OpenDialog.Files[i]);
                pixSetText(newpage, PChar(pagename));
                LoadPage(newpage);
-               DelPageButton.Enabled := ThumbnailListBox.Count>0;
              end
            else ShowMessage('Error when loading page ' + OpenDialog.Files[i]);
         end;
@@ -407,8 +418,8 @@ begin
      begin
        writeln('ScannerHandle OK');
        newpage := ScanToPix(ScannerHandle, ScannerForm.GetResolution, ScannerForm.GetColorMode, nil {@ShowScanProgress});
-       nametext := Format('scan_%.4d', [ScannerForm.GetNextCounterValue]);
-       newpage^.text := Pchar(nametext);
+       nametext := Format('scan_%.3d', [ScannerForm.GetNextCounterValue]);
+       pixSetText(newpage, PChar( nametext ));
        if newpage<>nil
         then LoadPage(newpage)
         else ShowMessage('Scan page failed');
@@ -577,6 +588,7 @@ begin
   then pagecountLabel.Caption := Format('%d pages', [ThumbnailListBox.Count])
   else pagecountLabel.Caption := #32;  // if label is empty it changes its height
  AddingThumbnail := false;
+ DelPageButton.Enabled := ThumbnailListBox.Count>0;
 end;
 
 procedure TMainForm.DoCrop;
