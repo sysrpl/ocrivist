@@ -222,8 +222,9 @@ begin
   if AValue<>FCurrentPagePix then
         begin
           FCurrentPagePix := AValue;
-          if pixGetDimensions(FCurrentPagePix, @FPageWidth, @FPageHeight, nil)<>0
-              then WriteLn('Error when getting image dimensions');
+          if FCurrentPagePix<>nil then
+             if pixGetDimensions(FCurrentPagePix, @FPageWidth, @FPageHeight, nil)<>0
+                then WriteLn('Error when getting image dimensions');
           For x := Length(FSelections)-1 downto 0 do
             FSelections[x].Free;
           SetLength(FSelections, 0);
@@ -350,23 +351,30 @@ procedure TPageViewer.ReloadBitmap;
 begin
 //  if PictureLoaded then
   begin
-    if FBitmap<>nil then FBitmap.Free;
-    FBitmap := TBitmap.Create;
-    case FMode of
-         vmFitToWidth: begin
-                         FScale := Width / FPageWidth;
-                       end;
-         vmFitToHeight:begin
-                         FScale := Height / FPageHeight;
-                       end;
-         vmFullSize:   begin
-                         FScale := 1;
-                       end;
-    end;
-    ScaleToBitmap(FCurrentPagePix, FBitmap, FScale);
-    writeln('w:', FPageWidth, '  h:', FPageHeight, ' scale:', FormatFloat('0.00', FScale));
-    SetupScrollbars;
-    ResizeSelections;
+    if FBitmap<>nil then
+       begin
+         FBitmap.Free;
+         FBitmap := nil;
+       end;
+    if FCurrentPagePix<> nil then
+        begin
+          FBitmap := TBitmap.Create;
+          case FMode of
+               vmFitToWidth: begin
+                               FScale := Width / FPageWidth;
+                             end;
+               vmFitToHeight:begin
+                               FScale := Height / FPageHeight;
+                             end;
+               vmFullSize:   begin
+                               FScale := 1;
+                             end;
+          end;
+          ScaleToBitmap(FCurrentPagePix, FBitmap, FScale);
+          writeln('w:', FPageWidth, '  h:', FPageHeight, ' scale:', FormatFloat('0.00', FScale));
+          SetupScrollbars;
+          ResizeSelections;
+        end;
  //   Invalidate;
   end;
 end;

@@ -14,22 +14,18 @@ type
   { TMainForm }
 
   TMainForm = class ( TForm )
+    ImageList1: TImageList;
+    SelModeSelectButton: TMenuItem;
+    SelModeDeleteButton: TMenuItem;
+    SelModeCropButton: TMenuItem;
     pagecountLabel: TLabel;
-    TesseractButton: TSpeedButton;
-    DelSelectButton: TSpeedButton;
+    SelModeMenu: TPopupMenu;
     MenuItem1: TMenuItem;
     DeskewMenuItem: TMenuItem;
     RotateRMenuItem: TMenuItem;
     RotateLMenuItem: TMenuItem;
     SetScannerMenuItem: TMenuItem;
     MenuItem2: TMenuItem;
-    RotateLeftButton: TSpeedButton;
-    RotateRightButton: TSpeedButton;
-    SelTextButton: TSpeedButton;
-    CropButton: TSpeedButton;
-    DjvuButton: TSpeedButton;
-    DeskewButton: TSpeedButton;
-    AnalyseButton: TSpeedButton;
     StatusBar: TStatusBar;
     TestTesseractButton: TButton;
     ThumbnailListBox: TListBox;
@@ -46,6 +42,24 @@ type
     ExitMenuItem: TMenuItem;
     FitHeightMenuItem: TMenuItem;
     FitWidthMenuItem: TMenuItem;
+    ToolBar1: TToolBar;
+    RotateLeftTButton: TToolButton;
+    FitHeightButton: TToolButton;
+    AddPageButton: TToolButton;
+    ToolButton1: TToolButton;
+    RotateRightButton: TToolButton;
+    SelectToolButton: TToolButton;
+    TesseractButton: TToolButton;
+    FitWidthButton: TToolButton;
+    SaveButton: TToolButton;
+    AutoselectButton: TToolButton;
+    ScanButton: TToolButton;
+    ToolButton3: TToolButton;
+    DelPageButton: TToolButton;
+    ToolButton4: TToolButton;
+    ToolButton6: TToolButton;
+    DjvuButton: TToolButton;
+    DeskewButton: TToolButton;
     View25MenuItem: TMenuItem;
     View100MenuItem: TMenuItem;
     View75MenuItem: TMenuItem;
@@ -53,7 +67,6 @@ type
     ViewMenu: TMenuItem;
     MenuItem3: TMenuItem;
     OpenDialog: TOpenDialog;
-    TopPanel: TPanel;
     ListboxPanel: TPanel;
     RightPanel: TPanel;
     MainPanel: TPanel;
@@ -120,31 +133,44 @@ procedure TMainForm.CropButtonClick ( Sender: TObject ) ;
 begin
   ICanvas.SelectionMode := smCrop;  writeln('crop button');
   StatusBar.Panels[0].Text := 'CROP';
+  SelectToolButton.ImageIndex := TMenuItem(Sender).ImageIndex;
 end;
 
 procedure TMainForm.DelPageMenuItemClick ( Sender: TObject ) ;
 var
-  ms: TMemoryStream;
-  s: Cardinal;
-  buf:pbyte;
-
+  DelPage: LongInt;
+  NewPage: Integer;
 begin
-  ms := TMemoryStream.Create;
-  ms.LoadFromFile('/home/malcolm/lazarus/ocrivist2/kscan_0025.bmp');
-  s := ms.Size;
-  writeln(s);
-  Getmem(buf, s);
-  ms.Read(buf^, s);
-  //writeln(length(buf^));
-  ICanvas.Picture := pixReadMem(buf, s);
-  ms.Free;
-  Freemem(buf, s);
+  if ThumbnailListBox.ItemIndex<0 then exit;
+  DelPage := ThumbnailListBox.ItemIndex;
+  NewPage := 0;
+  if MessageDlg('Confirm delete page',
+                'Are you sure that you want to delete page ' + IntToStr(DelPage+1) + ' ?',
+                mtConfirmation,
+                mbYesNoCancel, 0)=mrYes then
+                begin
+                  if ThumbnailListBox.Count>1 then
+                     begin
+                       if DelPage>0 then NewPage := DelPage-1
+                       else NewPage := 0;
+                     end
+                  else NewPage := -1;
+                  TBitmap( ThumbnailListBox.Items.Objects[DelPage] ).Free;
+                  ThumbnailListBox.Items.Delete(DelPage);
+                  ThumbnailListBox.ItemIndex := NewPage;
+                  Project.DeletePage(DelPage);
+                  if ThumbnailListBox.Count>0
+                     then ThumbnailListBoxClick(ThumbnailListBox)
+                     else ICanvas.Picture := nil;
+                  DelPageButton.Enabled := ThumbnailListBox.Count>0;
+                end;
 end;
 
 procedure TMainForm.DelSelectButtonClick ( Sender: TObject ) ;
 begin
   ICanvas.SelectionMode := smDelete;
   StatusBar.Panels[0].Text := 'DELETE';
+  SelectToolButton.ImageIndex := TMenuItem(Sender).ImageIndex;
 end;
 
 procedure TMainForm.ExitMenuItemClick ( Sender: TObject ) ;
@@ -184,16 +210,11 @@ end;
 
 procedure TMainForm.FormKeyDown ( Sender: TObject; var Key: Word;
   Shift: TShiftState ) ;
-  procedure ResetButtons;
-  begin
-    SelTextButton.Click;
-    SelTextButton.Down := true;
-  end;
 begin
-  if CropButton.Down then
+  if ICanvas.SelectionMode=smCrop then
      begin
-       if Key=27 then begin ResetButtons; ICanvas.ClearSelection; end
-       else if Key=13 then  begin DoCrop; ResetButtons; end;
+       if Key=27 then begin SelTextButtonClick(SelModeSelectButton); ICanvas.ClearSelection; end
+       else if Key=13 then begin DoCrop; SelTextButtonClick(SelModeSelectButton); end;
      end;
 end;
 
@@ -205,10 +226,7 @@ var
 begin
  direction := 0;
  newpix := nil;
- if Sender is TSpeedButton
-    then direction := TSpeedButton(Sender).Tag
- else if Sender is TMenuItem
-    then direction := TMenuItem(Sender).Tag;
+ direction := TComponent(Sender).Tag;
  if direction<>0 then
    begin
      oldpix := Project.CurrentPage.PageImage;
@@ -268,6 +286,7 @@ procedure TMainForm.SelTextButtonClick ( Sender: TObject ) ;
 begin
   ICanvas.SelectionMode := smSelect;
   StatusBar.Panels[0].Text := 'SELECT';
+  SelectToolButton.ImageIndex := TMenuItem(Sender).ImageIndex;
 end;
 
 procedure TMainForm.AnalyseButtonClick ( Sender: TObject ) ;
@@ -359,6 +378,7 @@ begin
                pagename :=  ExtractFileNameOnly(OpenDialog.Files[i]);
                pixSetText(newpage, PChar(pagename));
                LoadPage(newpage);
+               DelPageButton.Enabled := ThumbnailListBox.Count>0;
              end
            else ShowMessage('Error when loading page ' + OpenDialog.Files[i]);
         end;
@@ -381,6 +401,8 @@ var
   newpage: PLPix;
   nametext: String;
 begin
+  if ScannerHandle=nil then ScannerForm.ShowModal;
+
   if ScannerHandle<>nil then
      begin
        writeln('ScannerHandle OK');
@@ -486,7 +508,7 @@ end;
 
 procedure TMainForm.ViewMenuItemClick ( Sender: TObject ) ;
 begin
-  Case TMenuItem(Sender).Tag of
+  Case TComponent(Sender).Tag of
        0: ICanvas.Mode := vmFitToHeight;   // Fit to Height
        1: ICanvas.Mode := vmFitToWidth;    // Fit to Width
        else
