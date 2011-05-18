@@ -236,6 +236,7 @@ var
   oldpix: PLPix;
   direction: LongInt;
 begin
+ if Project.CurrentPage=nil then exit;
  direction := 0;
  newpix := nil;
  direction := TComponent(Sender).Tag;
@@ -283,6 +284,7 @@ var
   oldpix: PLPix;
   newpix: PLPix;
 begin
+  if Project.CurrentPage=nil then exit;
   newpix := nil;
   oldpix := Project.CurrentPage.PageImage;
   newpix := pixDeskew(oldpix, 0);
@@ -596,6 +598,7 @@ var
   newpix: PLPix;
   oldpix: PLPix;
 begin
+ if Project.CurrentPage=nil then exit;
  newpix := nil;
  oldpix := ICanvas.Picture;
  newpix := CropPix( oldpix, ScaleRect( ICanvas.Selection , 100/ICanvas.Scale));
