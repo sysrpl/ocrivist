@@ -54,6 +54,7 @@ protected
   procedure MouseUp ( Button: TMouseButton; Shift: TShiftState; X, Y: Integer ) ;
     override;
   procedure SelectionChange ( Sender: TObject ) ;
+  procedure SelectionGrabFocus ( Sender: TObject ) ;
   procedure ResizeSelections;
 public
   { public declarations }
@@ -419,6 +420,24 @@ end;
 procedure TPageViewer.SelectionChange(Sender: TObject);
 begin
   FRealSelections[ TSelector(Sender).Tag ] := UnScaleRect(TSelector(Sender).Selection, Scale);
+  //FIXME: use of Tag is inconsistent
+end;
+
+procedure TPageViewer.SelectionGrabFocus ( Sender: TObject ) ;
+var
+  x: Integer;
+begin
+  if FSelectionMode=smSelect then
+    begin
+      for x := 0 to Length(FSelections)-1 do
+        if FSelections[x]<>Sender then begin FSelections[x].Focussed := false; FSelections[x].Invalidate; end;
+    end
+  else if FSelectionMode=smDelete then
+    begin
+      x := 0;
+      while FSelections[x]<>Sender do Inc(x);
+      DeleteSelector(x);
+    end;
 end;
 
 procedure TPageViewer.ResizeSelections;
@@ -484,8 +503,14 @@ begin
         begin
           Fselections[SelIndex].Free;
           for x := SelIndex to Length(Fselections)-2 do
-            Fselections[x] := Fselections[x+1];
+            begin
+              Fselections[x] := Fselections[x+1];
+              TSelector(FSelections[x]).Tag := x;
+              TSelector(FSelections[x]).Name := 'Selector' + IntToStr(x+1);
+              FRealSelections[x] := FRealSelections[x+1];
+            end;
           SetLength(Fselections, Length(Fselections)-1);
+          SetLength(FRealSelections, Length(Fselections));
         end
   else WriteLn(Format('Error in DeleteSelector: Index out of range (%d)', [SelIndex]));
   //Raise Exception.CreateFmt('Error in DeleteSelector: Index out of range (%d)', [SelIndex]);
@@ -520,14 +545,18 @@ begin
   S := TSelector.Create(Self);
   S.Parent := Self;
   S.Color := clGreen;
+  S.Width := 2;
   S.Selection := ScaleRect(Selection, FScale);
   S.OnSelect := @SelectionChange;
+  S.OnFocus := @SelectionGrabFocus;
   S.Tag := Length(FSelections);
   S.Name := 'Selector' + IntToStr(Length(FSelections)+1);
   SetLength(FRealSelections, Length(FRealSelections)+1);
   FRealSelections[Length(FRealSelections)-1] := Selection;
   SetLength(FSelections, Length(FSelections)+1);
   FSelections[ Length( FSelections )-1 ] := S;
+  S.Caption := IntToStr(Length(FSelections));
+  S.SetFocus;
 end;
 
 

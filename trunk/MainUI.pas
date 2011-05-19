@@ -399,8 +399,11 @@ end;
 
 procedure TMainForm.OpenProjectMenuItemClick ( Sender: TObject ) ;
 begin
-  if OpenDialog.Execute
-    then Project.LoadfromFile(OpenDialog.FileName);
+  if OpenDialog.Execute then
+    begin
+      Project.LoadfromFile(OpenDialog.FileName);
+      ICanvas.Picture := Project.Pages[0].PageImage;
+    end;
 end;
 
 procedure TMainForm.SaveAsMenuItemClick ( Sender: TObject ) ;
@@ -533,7 +536,7 @@ procedure TMainForm.MakeSelection ( Sender: TObject ) ;
 var
   S: TSelector;
 begin
-  if ICanvas.SelectionMode<>smCrop then
+  if ICanvas.SelectionMode=smSelect then
     begin
       ICanvas.AddSelection(UnScaleRect(ICanvas.Selection, ICanvas.Scale));
       Project.CurrentPage.AddSelection( UnScaleRect (ICanvas.Selection, ICanvas.Scale) )

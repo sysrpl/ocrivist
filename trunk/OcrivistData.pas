@@ -158,7 +158,7 @@ begin
            databuf := aPage.Text.Text;                         //4 - array of char - = string Text
            if bytes>0 then
               FileWrite(F, databuf[1], bytes);
-           pageImage := pixRead(PChar( aPage.FTempFile ));
+           pageImage := pixClone(aPage.PageImage);
            if pageImage<>nil then
               try
                 if pixWriteMem(@tempbuf, @bytecount, pageImage, IFF_TIFF_ZIP)=0 then
@@ -181,8 +181,67 @@ begin
 end;
 
 function TOcrivistProject.LoadfromFile ( FileName: TFilename ) : integer;
+var
+  F: THandle;
+  databuf: array of char;
+  strbuf: string;
+  tempbuf: PByte;
+  bytes: Integer;
+  page: Integer;
+  aPage: TOcrivistPage;
+  bytecount: Integer;
+  pageImage: PLPix;
 begin
   Result := -1;
+  F := FileOpen(FileName, fmOpenRead);
+  if F > 0 then
+     try
+       SetLength(databuf, 6);
+       FileRead(F, databuf[0], 6);
+       FileRead(F, FcurrentPage, SizeOf(FcurrentPage));       //2 - integer - current page
+       FileRead(F, FPageWidth, SizeOf(FPageWidth));           //3 - Integer - page width
+       FileRead(F, FPageHeight, SizeOf(FPageHeight));         //4 - Integer - page height;
+       FileRead(F, bytes, SizeOf(bytes));                     //5 - Integer - length of string FTitle
+       SetLength(FTitle, bytes+1);
+       if bytes>0 then
+              FileRead(F, FTitle[1], bytes);                //6 - array of char - string FTitle
+       //bytes := Length(FPages);
+       FileRead(F, bytes, SizeOf(bytes));                     //7 - Integer - number of pages in project
+       SetLength(FPages, bytes);
+       for page := 0 to bytes-1 do
+         begin
+           //aPage := TOcrivistPage(FPages[page]);
+           aPage := TOcrivistPage.Create(nil);
+           FPages[page] := aPage;
+           //databuf := aPage.FTitle;
+           //bytes := Length(databuf);
+           FileRead(F, bytes, SizeOf(bytes));                 //1 - Integer - length of string Title
+           SetLength(apage.FTitle, bytes+1);
+           if bytes>0 then
+              FileRead(F, apage.FTitle[1], bytes);                    //2 - array of char - string Title
+//           aPage.FTitle := databuf;
+           //bytes := Length(aPage.Text.Text);
+           FileRead(F, bytes, SizeOf(bytes));                 //3 - Integer - length of string Text
+           SetLength(strbuf, bytes+1);
+           //databuf := aPage.Text.Text;                         //4 - array of char - = string Text
+           if bytes>0 then
+              FileRead(F, strbuf[1], bytes);
+           aPage.Text.Text := strbuf;
+           //apage.Text.Text := databuf;
+           //pageImage := pixClone(aPage.PageImage);
+           FileRead(F, bytecount, SizeOf(bytecount));    //5 - Integer - length of image data
+           if bytecount>0 then
+              try
+                Getmem(tempbuf, bytecount);
+                FileRead(F, tempbuf[0], bytecount);      //6 - array of byte - image data
+                aPage.PageImage := pixReadMem(tempbuf, bytecount);
+              finally
+                Freemem(tempbuf);
+              end;
+         end;
+     finally
+       FileClose(F);
+     end
 end;
 
 procedure TOcrivistProject.DeletePage ( aIndex: Integer ) ;
@@ -256,8 +315,8 @@ begin
   {if pix <> nil
      then SaveToTempfile(pix, GetTempDir);}
   FPix := pix;
-  if pix^.text<>nil
-     then FTitle := pix^.text;
+  if FPix<>nil
+     then FTitle := pixGetText(FPix);
   SetLength(FSelections, 0);
 end;
 
