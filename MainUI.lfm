@@ -1,7 +1,7 @@
 object MainForm: TMainForm
-  Left = 50
+  Left = 338
   Height = 637
-  Top = 146
+  Top = 290
   Width = 1072
   ActiveControl = ListboxPanel
   Caption = 'Ocrivist'

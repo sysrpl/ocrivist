@@ -18,6 +18,8 @@ TResizeHandle = (rhNone, rhTopLeft, rhTopRight, rhBottomLeft, rhBottomRight);
 TSelector = class (TGraphicControl)
   private
     FOnSelect: TNotifyEvent;
+    fFocussed: Boolean;
+    FOnFocus: TNotifyEvent;
     fResizing: Boolean;
     fStartX: Integer;
     fStartY: integer;
@@ -53,6 +55,7 @@ TSelector = class (TGraphicControl)
     procedure Paint; override;
   public
     constructor Create(AOwner: TComponent); override;
+    procedure SetFocus;
     property Selection: TRect read GetSelection write SetSelection;
     property Caption: string read fCaption write SetCaption;
     property Color: TColor read fColor write SetColor;
@@ -60,6 +63,8 @@ TSelector = class (TGraphicControl)
     property LineWidth: Integer read fPenSize write SetPenSize;
     property DrawHandles: Boolean read fDrawHandles write SetDrawHandles;
     property OnSelect: TNotifyEvent read FOnSelect write FOnSelect;
+    property OnFocus: TNotifyEvent read FOnFocus write FOnFocus;
+    property Focussed: Boolean read fFocussed write fFocussed;
   end;
 
 PSelector = ^TSelector;
@@ -108,20 +113,23 @@ begin
 //  inherited Paint;
     //Canvas.pen.Mode := pm;
 //  writeln('painting ', Self.Name);
-    with fClientRect do
+  Canvas.Brush.Style := bsClear;
+  Canvas.Brush.Color := clNone;
+  {if fResizing then Canvas.Pen.Color := fResizeColor
+  else }Canvas.Pen.Color := fColor;
+  Canvas.Pen.Width := fPenSize;
+  if fFocussed then Canvas.Pen.Width := fPenSize + 2
+  else Canvas.Pen.Width := fPenSize;
+
+  with fClientRect do
          begin
            Top := fCaptionHeight + CAPTIONPADDING;
-           Left := fPenSize-1;
+           Left := fPenSize;
            Right := Self.Width-1;
            Bottom := Self.Height-1;
          end;
     PositionHandles;
 
-    Canvas.Brush.Style := bsClear;
-    Canvas.Brush.Color := clNone;
-    if fResizing then Canvas.Pen.Color := fResizeColor
-    else Canvas.Pen.Color := fColor;
-    Canvas.Pen.Width := fPenSize;
     Canvas.Rectangle(fClientRect);
     Canvas.Pen.Width := 1;
     if fDrawHandles then
@@ -147,6 +155,14 @@ begin
   fColor := clBlack;
   fResizeColor := clBlack;
   fPenSize := 1;
+end;
+
+procedure TSelector.SetFocus;
+begin
+  fFocussed := true;
+  Paint;
+  writeln(fCaption, ' SetFocus');
+  if Assigned(FOnFocus) then FOnFocus(Self);
 end;
 
 procedure TSelector.SelectorMouseDown ( Sender: TObject; Button: TMouseButton;
@@ -180,6 +196,7 @@ begin
    fStartLeft := Left;
    fStartHeight := Height;
    fStartWidth := Width;
+   Self.SetFocus;
 end;
 
 function TSelector.GetSelection: TRect;
@@ -220,7 +237,7 @@ var
 begin
    MouseCoords.X := X;
    MouseCoords.Y := Y;
-
+   Self.BringToFront;
    if fResizing then
       case fResizehandle of
            rhTopLeft: begin
