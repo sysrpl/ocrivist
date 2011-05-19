@@ -18,6 +18,10 @@ type
     LoadModeMenu: TPopupMenu;
     LoadModeFileButton: TMenuItem;
     LoadModeScanButton: TMenuItem;
+    ExportModeMenu: TPopupMenu;
+    ExportDjvuButton: TMenuItem;
+    ExportTextButton: TMenuItem;
+    ExportPDFButton: TMenuItem;
     SelModeSelectButton: TMenuItem;
     SelModeDeleteButton: TMenuItem;
     SelModeCropButton: TMenuItem;
@@ -56,11 +60,12 @@ type
     FitWidthButton: TToolButton;
     SaveButton: TToolButton;
     AutoselectButton: TToolButton;
+    ToolButton2: TToolButton;
     ToolButton3: TToolButton;
     DelPageButton: TToolButton;
     ToolButton4: TToolButton;
     ToolButton6: TToolButton;
-    DjvuButton: TToolButton;
+    ExportButton: TToolButton;
     DeskewButton: TToolButton;
     View25MenuItem: TMenuItem;
     View100MenuItem: TMenuItem;
@@ -78,6 +83,7 @@ type
     procedure DelPageMenuItemClick ( Sender: TObject ) ;
     procedure DelSelectButtonClick ( Sender: TObject ) ;
     procedure ExitMenuItemClick ( Sender: TObject ) ;
+    procedure ExportModeMenuClick ( Sender: TObject ) ;
     procedure FormCreate ( Sender: TObject ) ;
     procedure FormDestroy ( Sender: TObject ) ;
     procedure FormKeyDown ( Sender: TObject; var Key: Word; Shift: TShiftState
@@ -179,6 +185,14 @@ end;
 procedure TMainForm.ExitMenuItemClick ( Sender: TObject ) ;
 begin
   Close;
+end;
+
+procedure TMainForm.ExportModeMenuClick ( Sender: TObject ) ;
+begin
+  case TComponent(Sender).Tag of
+       0: ExportButton.OnClick := @DjvuButtonClick;
+  end;
+  ExportButton.ImageIndex := TMenuItem(Sender).ImageIndex;
 end;
 
 procedure TMainForm.FormCreate ( Sender: TObject ) ;
