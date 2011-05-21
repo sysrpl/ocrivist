@@ -5,7 +5,7 @@ unit OcrivistData;
 interface
 
 uses
-  Classes, SysUtils, leptonica, selector;
+  Classes, SysUtils, leptonica, selector, Graphics;
 
 type
 
@@ -15,6 +15,7 @@ type
   private
     FTitle: string;
     FTempFile: TFilename;
+    FThumbnail: TBitmap;
     FText: TStringlist;
     FSelections: array of TRect;
     FModified: Boolean;
@@ -24,6 +25,7 @@ type
     function GetSelectionCount: Integer;
     procedure SetPageImage ( const AValue: PLPix ) ;
     procedure SetSelection ( aIndex: Integer ; const AValue: TRect ) ;
+    procedure MakeThumbnail;
   public
     constructor Create( pix: PLPix );
     destructor Destroy; override;
@@ -37,6 +39,7 @@ type
     property Title: string read FTitle write FTitle;
     property Modified: Boolean read FModified write FModified;
     property PageImage: PLPix read FPix write SetPageImage;
+    property Thumbnail: TBitmap read FThumbnail;
   end;
 
   { TOcrivistProject }
@@ -70,7 +73,34 @@ type
     property PageCount: Integer read GetPageCount;
   end;
 
+  { TPixFileThread }
+
+  { Use:
+    Create with CreateSuspended = true
+    Call either SaveToFile or LoadFromFile
+    LoadFromFile will place loaded pix at address Pix
+  }
+  TPixFileThread = class (TThread)
+  private
+    FFilename: TFilename;
+    FOnComplete: TNotifyEvent;
+    FPix: PLPix;
+    FPixAddr: PPLPix;
+    protected
+      procedure Execute; override;
+    public
+      constructor Create ( CreateSuspended: Boolean; const StackSize: SizeUInt =
+        DefaultStackSize ) ;
+      Procedure SaveToFile( Pix: PLPix; Dest: TFilename );
+      Procedure LoadFromFile( Pix: PPLPix; Src: TFilename );
+      property OnComplete: TNotifyEvent read FOnComplete write FOnComplete;
+      property Pix: PLPix read FPix write FPix;
+      property Filename: TFilename read FFilename write FFilename;
+  end;
+
 implementation
+
+uses LibLeptUtils;
 
 { TOcrivistProject }
 
@@ -297,6 +327,7 @@ begin
           writeln('setting new pix in OctrivistPage');
 //          pixDestroy(@FPix);
           FPix := AValue;
+          MakeThumbnail;
         end;
   //SaveToTempfile(AValue, '');
 end;
@@ -309,14 +340,33 @@ begin
      else Raise Exception.CreateFmt('Error in SetSelection: Index out of range (%d)', [aIndex]);
 end;
 
+procedure TOcrivistPage.MakeThumbnail;
+var
+  tPix: PLPix;
+begin
+  tPix := pixScaleToSize(FPix, 0, 100);
+  if tPix<>nil then
+     begin
+       if Assigned(FThumbnail) then FThumbnail.Free;
+       FThumbnail := TBitmap.Create;
+       ScaleToBitmap(tPix, FThumbnail, 1);
+       pixDestroy(@tPix);
+       FThumbnail.SaveToFile('/tmp/thumb.bmp');
+     end;
+end;
+
 constructor TOcrivistPage.Create( pix: PLPix );
 begin
   FText := TStringList.Create;
+  FThumbnail := nil;
   {if pix <> nil
      then SaveToTempfile(pix, GetTempDir);}
   FPix := pix;
-  if FPix<>nil
-     then FTitle := pixGetText(FPix);
+  if FPix<>nil then
+     begin
+     FTitle := pixGetText(FPix);
+     MakeThumbnail;
+     end;
   SetLength(FSelections, 0);
 end;
 
@@ -325,7 +375,8 @@ var
   c: Integer;
 begin
   FText.Free;
-  if FileExists(FTempFile) then DeleteFile(FTempFile);
+  //if FileExists(FTempFile) then DeleteFile(FTempFile);
+  if Assigned(FThumbnail) then FThumbnail.Free;
   inherited Destroy;
 end;
 
@@ -363,6 +414,62 @@ begin
        SetLength(FSelections, Length(FSelections)-1);
      end
   else Raise Exception.CreateFmt('Error in DeleteSelection: Index out of range (%d)', [aIndex]);
+end;
+
+{ TPixFileThread }
+
+procedure TPixFileThread.Execute;
+var
+  SaveResult: LongInt;
+  pixA: PLPix;
+begin
+  if FPix = nil then
+      begin
+        writeln('loading pix from ', FFilename, ' in background');
+        pixA := pixRead(PChar(FFilename));
+        FPixAddr^ := pixA;
+        if Pixa<>nil
+           then writeln('pix loaded successfully')
+           else writeln('failed to load pix');
+      end
+  else
+      begin
+        writeln('writing pix to ', FFilename, ' in background');
+        SaveResult := pixWrite(PChar(FFilename), FPix, IFF_TIFF_LZW);
+        writeln('Result of save is ', SaveResult);
+      end;
+  if Assigned(FOnComplete)
+     then FOnComplete(Self);
+end;
+
+constructor TPixFileThread.Create ( CreateSuspended: Boolean;
+  const StackSize: SizeUInt ) ;
+begin
+  FreeOnTerminate := true;
+  inherited Create(CreateSuspended);
+  Fpix := nil;
+  writeln('Created TPixFileThread');
+end;
+
+procedure TPixFileThread.SaveToFile ( Pix: PLPix; Dest: TFilename ) ;
+begin
+  if Pix <> nil then
+     begin
+       Fpix := Pix;
+       FFilename := Dest;
+       Execute;
+     end;
+end;
+
+procedure TPixFileThread.LoadFromFile ( Pix: PPLPix; Src: TFilename ) ;
+begin
+  if Length(Src)>0 then
+     if FileExists(Src) then
+        begin
+          FFilename := Src;
+          FPixAddr := Pix;
+          Execute;
+        end;
 end;
 
 end.
