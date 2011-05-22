@@ -21,18 +21,21 @@ type
     FModified: Boolean;
     FPix:PLPix;
   private
+    FActive: Boolean;
     function GetSelection ( aIndex: Integer ) : TRect;
     function GetSelectionCount: Integer;
+    procedure SetActive ( const AValue: Boolean ) ;
     procedure SetPageImage ( const AValue: PLPix ) ;
     procedure SetSelection ( aIndex: Integer ; const AValue: TRect ) ;
     procedure MakeThumbnail;
+    function LoadFromFileBackground: PLPix;
+    procedure SaveToFileBackground ( Pix: PLPix; Path: String );
   public
     constructor Create( pix: PLPix );
     destructor Destroy; override;
-    function LoadFromTempfile: PLPix;
-    procedure SaveToTempfile ( Pix: PLPix; Path: String );
     procedure AddSelection ( Sel: TRect );
     procedure DeleteSelection ( aIndex: Integer );
+    function LoadFromFile: PLPix;
     property Text: TStringList read FText write FText;
     property Selection[ aIndex: Integer ]: TRect read GetSelection write SetSelection;
     property SelectionCount: Integer read GetSelectionCount;
@@ -40,6 +43,7 @@ type
     property Modified: Boolean read FModified write FModified;
     property PageImage: PLPix read FPix write SetPageImage;
     property Thumbnail: TBitmap read FThumbnail;
+    property Active: Boolean read FActive write SetActive;
   end;
 
   { TOcrivistProject }
@@ -220,7 +224,6 @@ var
   page: Integer;
   aPage: TOcrivistPage;
   bytecount: Integer;
-  pageImage: PLPix;
 begin
   Result := -1;
   F := FileOpen(FileName, fmOpenRead);
@@ -299,10 +302,10 @@ begin
   if P <> nil then
      begin
        SetLength(FPages, Length(FPages)+1);
+       P.SaveToFileBackground(Pix, '/tmp/');
        FPages[PageCount-1] := P;
        FcurrentPage := PageCount-1;
-       if Pix^.text<>nil
-          then FTitle := Pix^.text;
+       FTitle := pixGetText(Pix);
      end;
 end;
 
@@ -318,6 +321,20 @@ end;
 function TOcrivistPage.GetSelectionCount: Integer;
 begin
   Result := Length(FSelections);
+end;
+
+procedure TOcrivistPage.SetActive ( const AValue: Boolean ) ;
+begin
+  if FActive = AValue then exit;
+  if AValue then
+     begin
+       FPix := LoadFromFileBackground;
+     end
+  else
+     begin
+       pixDestroy(@FPix);
+     end;
+  FActive := AValue;
 end;
 
 procedure TOcrivistPage.SetPageImage ( const AValue: PLPix ) ;
@@ -359,6 +376,7 @@ constructor TOcrivistPage.Create( pix: PLPix );
 begin
   FText := TStringList.Create;
   FThumbnail := nil;
+  FActive := true;
   {if pix <> nil
      then SaveToTempfile(pix, GetTempDir);}
   FPix := pix;
@@ -380,21 +398,31 @@ begin
   inherited Destroy;
 end;
 
-function TOcrivistPage.LoadFromTempfile: PLPix;
+function TOcrivistPage.LoadFromFileBackground: PLPix;
+var
+  PixL: PLPix;
+  LoadThread: TPixFileThread;
 begin
   Result := nil;
   if Length(FTempFile)>0
-     then if FileExists(FTempFile)
-        then Result := pixRead( PChar(FTempFile) );
+     then if FileExists(FTempFile) then
+        begin
+          LoadThread := TPixFileThread.Create(true);
+          LoadThread.LoadFromFile(@PixL, FTempFile);
+          Result := PixL;
+        end;
 end;
 
 //NB: function will not work as expected if Ftempfile already exists and different Path is given
-procedure TOcrivistPage.SaveToTempfile ( Pix: PLPix; Path: String ) ;
+procedure TOcrivistPage.SaveToFileBackGround ( Pix: PLPix; Path: String ) ;
+var
+  SaveThread: TPixFileThread;
 begin
   if Length(Path)=0 then Path := GetTempDir;
   if FTempFile=''
      then FTempFile := GetTempFileName( Path, 'ovp' );
-  pixWrite( Pchar(FTempFile), pix, IFF_TIFF_LZW);
+  SaveThread := TPixFileThread.Create(true);
+  SaveThread.SaveToFile(pix, FTempFile);
 end;
 
 procedure TOcrivistPage.AddSelection ( Sel: TRect ) ;
@@ -414,6 +442,13 @@ begin
        SetLength(FSelections, Length(FSelections)-1);
      end
   else Raise Exception.CreateFmt('Error in DeleteSelection: Index out of range (%d)', [aIndex]);
+end;
+
+function TOcrivistPage.LoadFromFile: PLPix;
+begin
+  FPix := pixRead(PChar(FTempFile));
+  FActive := FPix<>nil;
+  Result := FPix;
 end;
 
 { TPixFileThread }
