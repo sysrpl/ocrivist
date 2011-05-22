@@ -106,6 +106,14 @@ type
     box:      array of PLBox;      // box ptr array
   end;
 
+ PPBoxArrayArray = ^PBoxArrayArray;
+ PBoxArrayArray = ^TBoxArrayArray;
+ TBoxArrayArray = record
+    n:        integer;             // number of box in ptr array
+    nalloc:   integer;             // number of box ptrs allocated
+    boxa:      array of PBoxArray; // boxa ptr array
+  end;
+
 
   PPixArray = ^TPixArray;
   TPixArray = record
@@ -169,6 +177,8 @@ type
   function pixScale( pix: PLPix; pw, ph: Single): PLPix; cdecl; external LIBLEPT;
   function pixScaleSmooth( pix: PLPix; pw, ph: Single): PLPix; cdecl; external LIBLEPT;
   function pixGetDepth( pix: PLPix): Integer; cdecl; external LIBLEPT;
+  function boxaaCreate(n: Integer):PBoxArrayArray; cdecl; external LIBLEPT;
+  procedure boxaaDestroy(pbaa: PPBoxArrayArray); cdecl; external LIBLEPT;
 
  {
   function pixScaleToSize( pix: PLPix; wd, hd: Integer): PLPix;
@@ -852,6 +862,34 @@ function pixGenTextblockMask( pixs: PLPix; pixvws: PLPix; debug: Integer): PLPix
  *          points that we do have.
  *}
 function pixGetTextlineCenters( pixs: PLPix; debugflag: longint): PPtaArray;  cdecl; external LIBLEPT;
+
+{*!
+ *  boxaaAddBoxa()
+ *
+ *      Input:  boxaa
+ *              boxa     (to be added)
+ *              copyflag  (L_INSERT, L_COPY, L_CLONE)
+ *      Return: 0 if OK, 1 on error
+ *}
+function boxaaAddBoxa(baa: PBoxArrayArray; ba: PBoxArray; copyflag: Integer): Integer; cdecl; external LIBLEPT;
+
+{*!
+ *  boxaaGetCount()
+ *
+ *      Input:  boxaa
+ *      Return: count (number of boxa), or 0 if no boxa or on error
+ *}
+function boxaaGetCount(baa: PBoxArrayArray): Integer; cdecl; external LIBLEPT;
+
+{*!
+ *  boxaaGetBoxCount()
+ *
+ *      Input:  boxaa
+ *      Return: count (number of boxes), or 0 if no boxes or on error
+ *}
+function boxaaGetBoxCount(baa: PBoxArrayArray): Integer; cdecl; external LIBLEPT;
+
+
 
 
 
