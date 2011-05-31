@@ -8,7 +8,7 @@ uses
   {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset
   Forms, sane, scanutils, MainUI, LibLeptUtils, leptonica, pageviewer,
-  OcrivistData, selector, tessintf, DjvuUtils, scanner
+  OcrivistData, selector, tessintf, DjvuUtils, scanner, ocr
   { you can add units after this };
 
 {$R *.res}
