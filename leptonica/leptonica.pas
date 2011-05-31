@@ -158,6 +158,50 @@ type
      pta:        array of PPta;     // pta ptr array
   end;
 
+{*-------------------------------------------------------------------------*
+ *                         Access and storage flags                        *
+ *-------------------------------------------------------------------------*/
+/*
+ *  For Pix, Box, Pta and Numa, there are 3 standard methods for handling
+ *  the retrieval or insertion of a struct:
+ *     (1) direct insertion (Don't do this if there is another handle
+ *                           somewhere to this same struct!)
+ *     (2) copy (Always safe, sets up a refcount of 1 on the new object.
+ *               Can be undesirable if very large, such as an image or
+ *               an array of images.)
+ *     (3) clone (Makes another handle to the same struct, and bumps the
+ *                refcount up by 1.  Safe to do unless you're changing
+ *                data through one of the handles but don't want those
+ *                changes to be seen by the other handle.)
+ *
+ *  For Pixa and Boxa, which are structs that hold an array of clonable
+ *  structs, there is an additional method:
+ *     (4) copy-clone (Makes a new higher-level struct with a refcount
+ *                     of 1, but clones all the structs in the array.)
+ *
+ *  Unlike the other structs, when retrieving a string from an Sarray,
+ *  you are allowed to get a handle without a copy or clone (i.e., that
+ *  you don't own!).  You must not free or insert such a string!
+ *  Specifically, for an Sarray, the copyflag for retrieval is either:
+ *         TRUE (or 1 or L_COPY)
+ *  or
+ *         FALSE (or 0 or L_NOCOPY)
+ *  For insertion, the copyflag is either:
+ *         TRUE (or 1 or L_COPY)
+ *  or
+ *         FALSE (or 0 or L_INSERT)
+ *  Note that L_COPY is always 1, and L_INSERT and L_NOCOPY are always 0.
+ *}
+const
+    L_INSERT = 0;     // stuff it in; no copy, clone or copy-clone
+    L_COPY = 1;       // make/use a copy of the object
+    L_CLONE = 2;      // make/use clone (ref count) of the object
+    L_COPY_CLONE = 3; // make a new object and fill with with clones
+                      // of each object in the array(s)
+
+const
+    L_NOCOPY = 0;     // copyflag value in sarrayGetString()
+
   function pixRead ( filename: PChar ): PLPix; cdecl; external LIBLEPT;
   function pixCreate( w, h, format: Integer ): TLPix; cdecl; external LIBLEPT;
   function pixClone ( pixs: PLPix ): PLPix; cdecl; external LIBLEPT;
@@ -726,6 +770,25 @@ function boxCreateValid(x, y, w, h: longint): PLBox; cdecl; external LIBLEPT;
  *}
 procedure boxDestroy( pbox: PLBox ); cdecl; external LIBLEPT;
 
+{*!
+ *  boxGetGeometry()
+ *
+ *      Input:  box
+ *              &x, &y, &w, &h (<optional return>; each can be null)
+ *      Return: 0 if OK, 1 on error
+ *}
+function boxGetGeometry( box: PLBox; px, py, pw, ph: PLongint): LongInt; cdecl; external LIBLEPT;
+
+{*!
+ *  boxSetGeometry()
+ *
+ *      Input:  box
+ *              x, y, w, h (use -1 to leave unchanged)
+ *      Return: 0 if OK, 1 on error
+ *}
+ function boxSetGeometry( box: PLBox; px, py, pw, ph: Longint): LongInt; cdecl; external LIBLEPT;
+
+
 {*-----------------------------------------------------------------------*
  *                Bounding boxes of 4 Connected Components               *
  *-----------------------------------------------------------------------*/
@@ -759,9 +822,39 @@ function boxaGetCount( boxa: PBoxArray): Integer; cdecl; external LIBLEPT;
 
 procedure boxaDestroy( pboxa: PBoxArray); cdecl; external LIBLEPT;
 
+{*!
+ *  boxaGetBox()
+ *
+ *      Input:  boxa
+ *              index  (to the index-th box)
+ *              accessflag  (L_COPY or L_CLONE)
+ *      Return: box, or null on error
+ *}
 function boxaGetBox( boxa: PBoxArray; index: Integer; accessflag: Integer): PLBox; cdecl; external LIBLEPT;
 
+{*!
+ *  boxaGetBoxGeometry()
+ *
+ *      Input:  boxa
+ *              index  (to the index-th box)
+ *              &x, &y, &w, &h (<optional return>; each can be null)
+ *      Return: 0 if OK, 1 on error
+ *}
 function boxaGetBoxGeometry ( boxa: PBoxArray; index: Integer; px, py, pw, ph: PInteger): Integer; cdecl; external LIBLEPT;
+
+{*!
+ *  boxaReplaceBox()
+ *
+ *      Input:  boxa
+ *              index  (to the index-th box)
+ *              box (insert to replace existing one)
+ *      Return: 0 if OK, 1 on error
+ *
+ *  Notes:
+ *      (1) In-place replacement of one box.
+ *      (2) The previous box at that location is destroyed.
+ *}
+function boxaReplaceBox( boxa: PBoxArray; index: Integer; box: PLBox ): Integer; cdecl; external LIBLEPT;
 
 {*!
  *  pixGetData()
@@ -888,6 +981,42 @@ function boxaaGetCount(baa: PBoxArrayArray): Integer; cdecl; external LIBLEPT;
  *      Return: count (number of boxes), or 0 if no boxes or on error
  *}
 function boxaaGetBoxCount(baa: PBoxArrayArray): Integer; cdecl; external LIBLEPT;
+
+{*!
+ *  numaGetFValue()
+ *
+ *      Input:  na
+ *              index (into numa)
+ *              &val  (<return> float value; 0.0 on error)
+ *      Return: 0 if OK; 1 on error
+ *
+ *  Notes:
+ *      (1) Caller may need to check the function return value to
+ *          decide if a 0.0 in the returned ival is valid.
+ *}
+function numaGetFValue( na: PNumArray; index: Longint; pval: PSingle ): Longint; cdecl; external LIBLEPT;
+
+{*!
+ *  numaGetIValue()
+ *
+ *      Input:  na
+ *              index (into numa)
+ *              &ival  (<return> integer value; 0 on error)
+ *      Return: 0 if OK; 1 on error
+ *
+ *  Notes:
+ *      (1) Caller may need to check the function return value to
+ *          decide if a 0 in the returned ival is valid.
+ *}
+function numaGetIValue( na: PNumArray; index: Longint; pival: PLongint ): Longint; cdecl; external LIBLEPT;
+
+{*!
+ *  pixaGetCount()
+ *
+ *      Input:  pixa
+ *      Return: count, or 0 if no pixa
+ *}
+function pixaGetCount( pixa: PPixArray): Longint; cdecl; external LIBLEPT;
 
 
 
