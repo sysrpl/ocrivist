@@ -33,15 +33,16 @@ private
   FScale: Single;
   FVertScrollBar: TScrollBar;
   FHorzScrollBar: TScrollBar;
-  function GetScale: Integer;
+  //function GetScale: Integer;
   function GetSelection: TRect;
   procedure SetBitmap ( const AValue: TBitmap ) ;
   procedure SetMode ( const AValue: TViewermode ) ;
   procedure SetPicture ( const AValue: PLPix ) ;
-  procedure SetScale ( const AValue: Integer ) ;
+  procedure SetScale ( const AValue: Single ) ;
   procedure SetupScrollbars;
   procedure OnScrollBarChange( Sender: TObject );
   procedure ResetScrollBars;
+  function GetSelections( AValue: Integer ): TRect;
 protected
   procedure Paint; override;
   function PictureLoaded: Boolean;
@@ -68,16 +69,17 @@ public
   property OnChangeBitmap: TNotifyEvent read FOnChangeBitmap write FOnChangeBitmap;
   property OnSelect: TNotifyEvent read FOnSelect write FOnSelect;
   property Mode: TViewermode read FMode write SetMode;
-  property Scale: Integer read GetScale write SetScale;
+  property Scale: Single read FScale write SetScale;
   procedure AddSelection( Selection: TRect );
-  property Selection: TRect read GetSelection;
+  property CurrentSelection: TRect read GetSelection;
+  property Selections[SelIndex: Integer]: TRect read GetSelections;
   property SelectionMode: TSelectionMode read FSelectionMode write FSelectionMode;
 end;
 
 
   function ScaleRect( aRect: TRect; scale: Single ): TRect;
-  function ScaleRectToView( aRect: TRect; viewfactor: integer ): TRect;
-  function UnScaleRect( aRect: TRect; viewfactor: integer ): TRect;
+  function ScaleRectToView( aRect: TRect; viewfactor: Single ): TRect;
+  function UnScaleRect( aRect: TRect; viewfactor: Single ): TRect;
   function ScaleAndOffsetRect(ARect: TRect; scalexy: single; offsetX, offsetY: Integer): TRect;
   Function  JLReScale(aWidth,aHeight:Integer;
           NewWidth,NewHeight:Integer;
@@ -100,15 +102,15 @@ begin
   writeln( Format('Output rect: %d %d %d %d', [TempRect.Top, TempRect.Left, TempRect.Bottom, TempRect.Right]) );
 end;
 
-function ScaleRectToView ( aRect: TRect; viewfactor: integer ) : TRect;
+function ScaleRectToView ( aRect: TRect; viewfactor: single ) : TRect;
 begin
   Result := ScaleRect( aRect, viewfactor/100 );
   writeln('ScaleRectToView');
 end;
 
-function UnScaleRect ( aRect: TRect; viewfactor: integer ) : TRect;
+function UnScaleRect ( aRect: TRect; viewfactor: Single ) : TRect;
 begin
-  Result := ScaleRect( aRect, 100/viewfactor );
+  Result := ScaleRect( aRect, 1/viewfactor );
   writeln('UnScaleRect');
 end;
 
@@ -191,12 +193,12 @@ begin
       then FOnChangeBitmap(Self);
 end;
 
-function TPageViewer.GetScale: Integer;
+{function TPageViewer.GetScale: Integer;
 begin
   writeln('GetScale(float): ', FormatFloat( '0.00', FScale ));
   Result := round(FScale*100);
   writeln('GetScale(int): ', Result);
-end;
+end;}
 
 function TPageViewer.GetSelection: TRect;
 begin
@@ -237,15 +239,12 @@ begin
         end;
 end;
 
-procedure TPageViewer.SetScale ( const AValue: Integer ) ;
-var
-  ValueAsFloat: Single;
+procedure TPageViewer.SetScale ( const AValue: Single ) ;
 begin
-  if AValue<1 then exit;
-  ValueAsFloat := AValue/100;
-  if ValueAsFloat<>FScale then
+  if AValue<0.05 then exit;
+  if AValue<>FScale then
         begin
-          FScale := ValueAsFloat;
+          FScale := Avalue;
           if FScale=1
               then FMode := vmFullSize
               else FMode := vmScaled;
@@ -291,6 +290,11 @@ procedure TPageViewer.ResetScrollBars;
 begin
   FVertScrollBar.Position := 0;
   FHorzScrollBar.Position := 0;
+end;
+
+function TPageViewer.GetSelections ( AValue: Integer ) : TRect;
+begin
+
 end;
 
 procedure TPageViewer.Paint;
@@ -363,9 +367,13 @@ begin
           case FMode of
                vmFitToWidth: begin
                                FScale := Width / FPageWidth;
+                               if (FPageHeight*FScale) > Height
+                                  then FScale := (Width-FVertScrollBar.Width) / FPageWidth;
                              end;
                vmFitToHeight:begin
                                FScale := Height / FPageHeight;
+                               if (FPageWidth*FScale) > Width
+                                  then FScale := (Height-FHorzScrollBar.Height) / FPageHeight;
                              end;
                vmFullSize:   begin
                                FScale := 1;
