@@ -73,8 +73,7 @@ var
   R: TRect;
   TextRegion: PLPix;
   conf: PInteger;
-  y: LongInt;
-  z: Integer;
+  UTF8Text: PChar;
   b: PLBox;
   wb: PLBox;
   boxCount: LongInt;
@@ -119,9 +118,11 @@ begin
     while numaGetIValue(na, n, @linenum)=0 do
        begin
          Inc(linecount);
-         R.Left := 20;
-         R.Top := inRect.Bottom;
-         while lineNum=lineindex do
+         R.Left := 0;
+         R.Top := inRect.Bottom-inRect.Top;
+         R.Right := 0;
+         R.Bottom := 0;
+         while (numaGetIValue(na, n, @lineNum)=0) and (lineNum=lineindex) do
                begin
                  wb := boxaGetBox(ba, n, L_CLONE);
                  boxGetGeometry(wb, @wbx, @wby, @wbw, @wbh);
@@ -130,90 +131,74 @@ begin
                  if wbx + wbw > R.Right then R.Right := wbx + wbw;
                  boxDestroy(@wb);
                  Inc(n);
-                 numaGetIValue(na, n, @lineNum);
                end;
-        { x := R.Bottom-R.Top;
-         x := 0;
-         R.Top := R.Top-x;
-         R.Bottom := R.Bottom+x; }
-         //x := lineindex;
          ra[lineindex] := R;
          lineindex := lineNum;
          writeln( 'Lineindex: ', FormatFloat('0.00', lineindex));
        end;
 
      writeln('Linecount: ', linecount);
-     for x := 0 to pixaGetCount(pa)-1 do
-          begin
-            //pixWrite(Pchar('/tmp/test'+IntToStr(x) +'.bmp'), pa^.pix[x], IFF_BMP);
-            //tesseract_SetImage(t, pa^.pix[x]);
-            //tesseract_SetRectangle(t, ba^.box[x]^.x, ba^.box[x]^.y, ba^.box[x]^.w, ba^.box[x]^.h);
-            //ICanvas.AddSelection( Rect(ba^.box[x]^.x, ba^.box[x]^.y, ba^.box[x]^.w + ba^.box[x]^.x, ba^.box[x]^.h + ba^.box[x]^.y) );
-            //Write(tesseract_GetUTF8Text(t), #32);
-          end;
      SetLength(FConfidenceRating, linecount+1); //TODO: work out why linecount+0 causes crash
+
       // --------- OCR inRect one line at a time to allow for progress callback --------
      for x := 0 to linecount-1 do
           begin
             wa := nil;
             R := ra[x];
+            writeln(Format('ra(%d): %d %d %d %d', [x, R.Left, R.Top, R.Right, R.Bottom]));
             if RectIsValid(R) then
-            begin
-            writeln ('ocr line ', x);
-            writeln(Format('line Rect: %d %d %d %d', [R.Left, R.Top, R.Right, R.Bottom]));
-            tesseract_SetRectangle(FTesseract, inRect.Left + R.Left,
-                                               inRect.Top + R.Top,
-                                               R.Right-R.Left,
-                                               R.Bottom-R.Top);
-            writeln('SetRectangle done');
-            try
-            FText := Ftext + tesseract_GetUTF8Text(FTesseract);
-            writeln('GetUTF8Text done');
-
-            except
-              writeln('error in GetUTF8Text');
-            end;
-            n := length(Ftext);
-            if FText[n]=#10 then SetLength(FText, n-1);
-            wa := tesseract_GetWords(FTesseract, nil);
-            if wa<>nil then
-                begin
-                   writeln('Tesseract wordcount: ', boxaGetCount(wa));
-                   conf := tesseract_AllWordConfidences(FTesseract);
-
-                   writeln( boxaWrite(Pchar('/tmp/tessboxes' + IntToStr(x) + '.txt'), wa));
-                   for n := 0 to boxaGetCount(wa)-1 do
-                        begin
-                          writeln('confidence ', conf[n]);
-                          b := boxaGetBox(wa, n, L_COPY);
-                          if b<>nil then
+              begin
+              writeln ('ocr line ', x);
+              writeln(Format('line Rect: %d %d %d %d', [R.Left, R.Top, R.Right, R.Bottom]));
+              tesseract_SetRectangle(FTesseract, inRect.Left + R.Left,
+                                                 inRect.Top + R.Top,
+                                                 R.Right-R.Left,
+                                                 R.Bottom-R.Top);
+              try
+                UTF8Text := tesseract_GetUTF8Text(FTesseract);
+                FText := Ftext + UTF8Text;
+                tesseract_DeleteString(UTF8Text);
+                except
+                writeln('error in GetUTF8Text');
+              end;
+              n := length(Ftext);
+              if FText[n]=#10 then SetLength(FText, n-1);
+              wa := tesseract_GetWords(FTesseract, nil);
+              if wa<>nil then
+                  begin
+                     writeln('Tesseract wordcount: ', boxaGetCount(wa));
+                     conf := tesseract_AllWordConfidences(FTesseract);
+                    //writeln( boxaWrite(Pchar('/tmp/tessboxes' + IntToStr(x) + '.txt'), wa));
+                     for n := 0 to boxaGetCount(wa)-1 do
                           begin
-                            AdjustToArea(b, x);
-                            boxaReplaceBox(wa, n, b);
+                            writeln('confidence ', conf[n]);
+                            b := boxaGetBox(wa, n, L_COPY);
+                            if b<>nil then
+                            begin
+                              AdjustToArea(b, x);
+                              boxaReplaceBox(wa, n, b);
+                            end;
                           end;
-                        end;
-                   writeln( boxaWrite(Pchar('/tmp/adjusted-tessboxes' + IntToStr(x) + '.txt'), wa));
+                     //writeln( boxaWrite(Pchar('/tmp/adjusted-tessboxes' + IntToStr(x) + '.txt'), wa));
 
-                   boxaaAddBoxa(FBoxes, wa, 0);
-                   y := boxaaGetCount(FBoxes);
-                   z := Length(FConfidenceRating);
-                   //FConfidenceRating[boxaaGetCount(FBoxes)] := conf;
-                end;
-            if Assigned(FOnOCRLine)
-               then FOnOCRLine(1);
-          end
-            else writeln('empty box: ', x);
+                     //boxaaAddBoxa(FBoxes, wa, 0);
+                     //y := boxaaGetCount(FBoxes);
+                     //FConfidenceRating[boxaaGetCount(FBoxes)] := conf;
+                     tesseract_DeleteWordConfidences(conf);
+                     boxaDestroy(@wa);
+                  end;
+              if Assigned(FOnOCRLine)
+                 then FOnOCRLine(1);
+            end
+          else writeln('empty box: ', x);
          end;
-
-
-
 
     boxDestroy(@ba);
     ptaDestroy(@pa);
     numaDestroy(@na);
     pixDestroy(@TextRegion);
 
-    writeln('Fboxes linecount: ', boxaaGetCount(FBoxes));
+    //writeln('Fboxes linecount: ', boxaaGetCount(FBoxes));
    // writeln('FConfidenceRating sample: ', FConfidenceRating[2][0]);
 end;
 
