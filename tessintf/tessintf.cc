@@ -1,7 +1,6 @@
 #include "tessintf.h"
 #include "/usr/local/include/tesseract/baseapi.h"
 #include <stdio.h>
-#include <string.h>
 using namespace std;
 using namespace tesseract;
 
@@ -27,14 +26,29 @@ extern int EXPORTCALL tesseract_init(tessHandle APIHandle, const char* datapath,
   return APIHandle->Init(datapath, language, configs, configs_size, configs_global_only);
 }
 
+  /**
+   * Read a "config" file containing a set of variable, value pairs.
+   * Searches the standard places: tessdata/configs, tessdata/tessconfigs
+   * and also accepts a relative or absolute path name.
+   */
 extern void EXPORTCALL tesseract_ReadConfigFile(tessHandle APIHandle, const char* filename, bool global_only){
   APIHandle->ReadConfigFile(filename, global_only);
 }
 
+  /**
+   * Provide an image for Tesseract to recognize. 
+   * Tesseract doesn't take a copy or ownership or pixDestroy the image, so
+   * it must persist until after Recognize.
+   */
 extern void EXPORTCALL tesseract_SetImage(tessHandle APIHandle, const Pix* pix){
    APIHandle->SetImage( pix );
 }
 
+  /**
+   * Restrict recognition to a sub-rectangle of the image. Call after SetImage.
+   * Each SetRectangle clears the recogntion results so multiple rectangles
+   * can be recognized with the same image.
+   */
 extern void EXPORTCALL tesseract_SetRectangle(tessHandle APIHandle, int left, int top, int width, int height){
    APIHandle->SetRectangle(left, top, width, height);
 }
@@ -57,24 +71,32 @@ extern void EXPORTCALL tesseract_Clear(tessHandle APIHandle){
   APIHandle->Clear();
 }
 
+  /**
+   * Call between pages or documents etc to free up memory and forget
+   * adaptive data.
+   */
 extern void EXPORTCALL tesseract_ClearAdaptiveClassifier(tessHandle APIHandle){
   APIHandle->ClearAdaptiveClassifier();
 }
 
-// Set the value of an internal "variable" (of either old or new types).
-// Supply the name of the variable and the value as a string, just as
-// you would in a config file.
-// Returns false if the name lookup failed.
-// SetVariable may be used before Init, to set things that control
-// initialization, but note that on End all settings are lost and
-// the next Init will use the defaults unless SetVariable is used again.
+  /**
+   * Set the value of an internal "variable" (of either old or new types).
+   * Supply the name of the variable and the value as a string, just as
+   * you would in a config file.
+   * Returns false if the name lookup failed.
+   * SetVariable may be used before Init, to set things that control
+   * initialization, but note that on End all settings are lost and
+   * the next Init will use the defaults unless SetVariable is used again.
+   */
 extern bool EXPORTCALL tesseract_SetVariable(tessHandle APIHandle, const char* variable, const char* value){
    return APIHandle->SetVariable(variable, value) ;
 }
 
-// Set the current page segmentation mode. Defaults to PSM_AUTO.
-// The mode is stored as an INT_VARIABLE so it can also be modified by
-// ReadConfigFile or SetVariable("tessedit_pageseg_mode", mode as string).
+  /**
+   * Set the current page segmentation mode. Defaults to PSM_AUTO.
+   *The mode is stored as an INT_VARIABLE so it can also be modified by
+   * ReadConfigFile or SetVariable("tessedit_pageseg_mode", mode as string).
+   */
 extern void EXPORTCALL tesseract_SetPageSegMode(tessHandle APIHandle, int mode){
    PageSegMode segmode = (PageSegMode)mode;
    APIHandle->SetPageSegMode(segmode);
@@ -158,6 +180,15 @@ extern char* EXPORTCALL tesseract_GetUNLVText(tessHandle APIHandle){
    return APIHandle->GetUNLVText();
 }
 
+  /**
+   * Deletes a char array returned by tesseract_Get*Text
+   */
+extern void EXPORTCALL tesseract_DeleteString(char* pCstr){
+  delete[] pCstr;  
+  pCstr=0;
+}
+
+
   /** Returns the (average) confidence value between 0 and 100. */
 extern int EXPORTCALL tesseract_MeanTextConf(tessHandle APIHandle){
    return APIHandle->MeanTextConf();
@@ -171,6 +202,14 @@ extern int EXPORTCALL tesseract_MeanTextConf(tessHandle APIHandle){
    */
 extern int* EXPORTCALL tesseract_AllWordConfidences(tessHandle APIHandle){
    return APIHandle->AllWordConfidences();
+}
+
+  /**
+   * Deletes a value returned by tesseract_AllWordConfidences
+   */
+extern void EXPORTCALL tesseract_DeleteWordConfidences(int* pconf){
+  delete[] pconf;  
+  pconf=0;
 }
 
 

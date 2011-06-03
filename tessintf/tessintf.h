@@ -59,18 +59,8 @@ extern char* EXPORTCALL tesseract_GetUTF8Text(tessHandle APIHandle);
 
 extern Pix* EXPORTCALL tesseract_GetThresholdedImage(tessHandle APIHandle);
 
-  /**
-   * Free up recognition results and any stored image data, without actually
-   * freeing any recognition data that would be time-consuming to reload.
-   * Afterwards, you must call SetImage or TesseractRect before doing
-   * any Recognize or Get* operation.
-   */
 extern void EXPORTCALL tesseract_Clear(tessHandle APIHandle);
 
-  /**
-   * Call between pages or documents etc to free up memory and forget
-   * adaptive data.
-   */
 extern void EXPORTCALL tesseract_ClearAdaptiveClassifier(tessHandle APIHandle);
 
 extern bool EXPORTCALL tesseract_SetVariable(tessHandle APIHandle, const char* variable, const char* value);
@@ -93,9 +83,13 @@ extern char* EXPORTCALL tesseract_GetBoxText(tessHandle APIHandle, int page_numb
 
 extern char* EXPORTCALL tesseract_GetUNLVText(tessHandle APIHandle);
 
+extern void EXPORTCALL tesseract_DeleteString(char* pCstr);
+
 extern int EXPORTCALL tesseract_MeanTextConf(tessHandle APIHandle);
 
 extern int* EXPORTCALL tesseract_AllWordConfidences(tessHandle APIHandle);
+
+extern void EXPORTCALL tesseract_DeleteWordConfidences(int* pconf);
 
 #ifdef __cplusplus
 }

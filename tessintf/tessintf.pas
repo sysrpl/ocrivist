@@ -31,6 +31,7 @@ type
 {  TBoxa = Pointer;
   TPixa = Pointer;
   PPixa = ^TPixa;}
+  PPInteger = ^PInteger;
 
   TPageSegMode = (
     PSM_AUTO,           ///< Fully automatic page segmentation.
@@ -74,16 +75,19 @@ function tesseract_GetRegions( APIHandle: TTesseract; pixa: PPixArray): TBoxArra
 
 function tesseract_GetTextLines( APIHandle: TTesseract; pixa: PPixArray; blockids: PIntegerArray): TBoxArray; stdcall; external LIBTESSINTF;
 
-function tesseract_GetWords( APIHandle: TTesseract; pixa: PPixArray ): TBoxArray; stdcall; external LIBTESSINTF;
+function tesseract_GetWords( APIHandle: TTesseract; pixa: PPixArray ): PBoxArray; stdcall; external LIBTESSINTF;
 
 function tesseract_GetHOCRText( APIHandle: TTesseract; page_id: Integer ): PChar; stdcall; external LIBTESSINTF;
 
 function tesseract_GetUNLVText( APIHandle: TTesseract ): PChar; stdcall; external LIBTESSINTF;
 
+procedure tesseract_DeleteString(pCstr: PChar); stdcall; external LIBTESSINTF;
+
 function tesseract_MeanTextConf( APIHandle: TTesseract ): Integer; stdcall; external LIBTESSINTF;
 
 function tesseract_AllWordConfidences( APIHandle: TTesseract ): PInteger; stdcall; external LIBTESSINTF;
 
+procedure tesseract_DeleteWordConfidences( pconf: PInteger); stdcall; external LIBTESSINTF;
 
 
 implementation
