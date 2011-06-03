@@ -230,6 +230,7 @@ begin
         sane_close(ScannerHandle);
         sane_exit;
       end;
+  if PDevices <> nil then Freemem(PDevices);
 end;
 
 procedure TMainForm.FormKeyDown ( Sender: TObject; var Key: Word;
