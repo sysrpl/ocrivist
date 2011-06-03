@@ -44,6 +44,7 @@ type
     OnChangeScanner: TNotifyEvent;
     procedure InitResolution( saneoption: SANE_Option_Descriptor );
     procedure InitMode( mode: SANE_Option_Descriptor );
+    function CheckDevices: Integer;
     function GetColorMode: string;
     function GetResolution: Integer;
     function GetNextCounterValue: Integer;
@@ -54,7 +55,7 @@ type
 var
   ScannerForm: TScannerForm;
   ScannerHandle: SANE_Handle;
-  Devices: DeviceArray;
+  PDevices: PDeviceArray;
   devicecount: Integer;
 
 implementation
@@ -67,24 +68,7 @@ uses ScanUtils;
 
 procedure TScannerForm.FormCreate ( Sender: TObject ) ;
 begin
-  ScannerHandle := nil;
-  if sane_init(nil, nil) = SANE_STATUS_GOOD then
-     if sane_get_devices ( @devices, SANE_TRUE) = SANE_STATUS_GOOD then
-     begin
-       devicecount := 0;
-       while Devices[devicecount] <> nil do
-             begin
-               DeviceComboBox.Items.Add(Devices[devicecount]^.model);
-               Inc(devicecount);
-             end;
-       Application.ProcessMessages;
-       if devicecount>0 then
-         begin
-           DeviceComboBox.ItemIndex := 0;
-           DeviceComboBoxChange(nil);
-         end;
-     end;
- PaperFormatBoxChange(nil);
+  CheckDevices;
 end;
 
 procedure TScannerForm.PaperSideEditChange ( Sender: TObject ) ;
@@ -166,6 +150,39 @@ begin
   if ModeComboBox.Enabled then ModeComboBox.ItemIndex := 0 else ModeComboBox.ItemIndex := -1;
 end;
 
+function TScannerForm.CheckDevices: Integer;
+var
+  res: SANE_Status;
+begin
+ Result := 0;
+ PDevices := nil;
+  ScannerHandle := nil;
+  res := sane_init(nil, nil);
+  if res = SANE_STATUS_GOOD then
+     begin
+       Getmem(PDevices, sizeof(PDevices));
+       res := sane_get_devices ( PDevices, SANE_TRUE);
+       if res = SANE_STATUS_GOOD then
+       begin
+         //Devices := PDevicelist^;
+         devicecount := 0;
+         while PDevices^[devicecount] <> nil do
+               begin
+                 DeviceComboBox.Items.Add(PDevices^[devicecount]^.model);
+                 Inc(devicecount);
+               end;
+         Application.ProcessMessages;
+         if devicecount>0 then
+           begin
+             DeviceComboBox.ItemIndex := 0;
+             DeviceComboBoxChange(nil);
+           end;
+       end;
+     end;
+ PaperFormatBoxChange(nil);
+ Result := devicecount;
+end;
+
 function TScannerForm.GetColorMode: string;
 begin
   Result := '';
@@ -220,7 +237,7 @@ begin
   if ScannerHandle<>nil then sane_close(ScannerHandle) ;
   if DeviceComboBox.ItemIndex>-1 then
      begin
-       DevName := Devices[DeviceComboBox.ItemIndex]^.name;
+       DevName := PDevices^[DeviceComboBox.ItemIndex]^.name;
        if sane_open(PChar(DevName), @ScannerHandle) = SANE_STATUS_GOOD then
           begin
             InitResolution(SaneGetOption(ScannerHandle, SANE_NAME_SCAN_RESOLUTION));
