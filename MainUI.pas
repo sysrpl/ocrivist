@@ -380,6 +380,8 @@ begin
   Invalidate;
   for x := 0 to Project.CurrentPage.SelectionCount-1 do
       ICanvas.AddSelection(Project.CurrentPage.Selection[x]);
+  if Project.CurrentPage.OCRData<>nil
+     then SynMemo1.Text := Project.CurrentPage.Text;
 end;
 
 procedure TMainForm.ThumbnailListBoxDrawItem ( Control: TWinControl; Index: Integer;
@@ -470,9 +472,8 @@ begin
   OCRJob.OnOCRLine := @ShowOCRProgress;
   for x := 0 to Project.CurrentPage.SelectionCount-1 do
       OCRJob.RecognizeRect( Project.CurrentPage.Selection[x] );
-  SynMemo1.Text := OCRJob.Text;
-  Project.CurrentPage.Text.Text := OCRJob.Text;
-  OCRJob.Free;
+  Project.CurrentPage.OCRData := OCRJob;
+  SynMemo1.Text := Project.CurrentPage.Text;
   StatusBar.Panels[1].Text := '';
 end;
 
@@ -546,6 +547,7 @@ begin
  If Project.ItemIndex>=0
   then for X := Project.CurrentPage.SelectionCount-1 downto 0 do
        ICanvas.DeleteSelector(X);
+ SynMemo1.Clear;
  Project.AddPage(ICanvas.Picture);
  thumbBMP := Project.CurrentPage.Thumbnail;
  if thumbBMP<>nil then

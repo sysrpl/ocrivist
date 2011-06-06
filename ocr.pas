@@ -11,6 +11,19 @@ type
 
    TConfidenceList = array of PInteger;
 
+   TWordData = record
+     Start: Integer;
+     Length: Integer;
+     Box: TRect;
+     Confidence: Byte;
+   end;
+
+   TLineData = record
+     Index: Integer;
+     Box: TRect;
+     Words: Array of TWordData;
+   end;
+
   { TTesseractPage }
 
   TTesseractPage = class(TObject)
@@ -21,13 +34,13 @@ type
     FBoxes: PBoxArrayArray;
     FConfidenceRating: TConfidenceList;
     FText: String;
+    FLines: array of TLineData;
+    FLineCount: Integer;
   public
     constructor Create( PixIn: PLPix );
     destructor Destroy; override;
     function RecognizeRect( inRect: TRect ): integer;
     property Text: string read FText;
-    property WordBoxes: PBoxArrayArray read FBoxes;
-    property WordConfidence: TConfidenceList read FConfidenceRating;
     property OnOCRLine: TProgressCallback read FOnOCRLine write FOnOCRLine;
   end;
 
@@ -44,11 +57,10 @@ begin
    then FPageImage := pixThresholdToBinary(PixIn, BIN_THRESHOLD)
    else FPageImage := pixClone(PixIn);
   FTesseract := tesseract_new(nil, nil);
-  if FTesseract=nil then writeln('tessearct_new failed :(');
-//  tesseract_SetImage(t, ICanvas.Picture);
+  if FTesseract=nil then writeln('tesseract_new failed :(');
   tesseract_SetImage(FTesseract, FPageImage);
-  FBoxes := boxaaCreate(0);
-  SetLength(FConfidenceRating, 20);
+  FLineCount := 0;
+  SetLength(FLines, FLineCount);
 end;
 
 destructor TTesseractPage.Destroy;
@@ -79,6 +91,8 @@ var
   boxCount: LongInt;
   lineNum: Longint;
   wbx, wby, wbw, wbh: Longint;
+  LineData: TLineData;
+  WordData: TWordData;
 
   procedure AdjustToArea( abox: PLBox; lineref: integer );
   var
@@ -137,14 +151,20 @@ begin
          writeln( 'Lineindex: ', FormatFloat('0.00', lineindex));
        end;
 
+     SetLength(FLines, FLineCount + linecount);
      writeln('Linecount: ', linecount);
-     SetLength(FConfidenceRating, linecount+1); //TODO: work out why linecount+0 causes crash
+     writeln('FLineCount: ', FLineCount);
 
       // --------- OCR inRect one line at a time to allow for progress callback --------
      for x := 0 to linecount-1 do
           begin
             wa := nil;
             R := ra[x];
+            FLines[FLineCount + x].Index := x;
+            FLines[FLineCount + x].Box := Bounds(inRect.Left + R.Left,
+                                                 inRect.Top + R.Top,
+                                                 R.Right-R.Left,
+                                                 R.Bottom-R.Top);
             writeln(Format('ra(%d): %d %d %d %d', [x, R.Left, R.Top, R.Right, R.Bottom]));
             if RectIsValid(R) then
               begin
@@ -164,6 +184,7 @@ begin
               n := length(Ftext);
               if FText[n]=#10 then SetLength(FText, n-1);
               wa := tesseract_GetWords(FTesseract, nil);
+              SetLength(FLines[FLineCount + x].Words, boxaGetCount(wa));
               if wa<>nil then
                   begin
                      writeln('Tesseract wordcount: ', boxaGetCount(wa));
@@ -178,12 +199,11 @@ begin
                               AdjustToArea(b, x);
                               boxaReplaceBox(wa, n, b);
                             end;
+                            FLines[FLineCount + x].Words[n].Confidence := conf[n];
+                            FLines[FLineCount + x].Words[n].Box := BoxToRect(b);
                           end;
                      //writeln( boxaWrite(Pchar('/tmp/adjusted-tessboxes' + IntToStr(x) + '.txt'), wa));
 
-                     //boxaaAddBoxa(FBoxes, wa, 0);
-                     //y := boxaaGetCount(FBoxes);
-                     //FConfidenceRating[boxaaGetCount(FBoxes)] := conf;
                      tesseract_DeleteWordConfidences(conf);
                      boxaDestroy(@wa);
                   end;
@@ -192,14 +212,13 @@ begin
             end
           else writeln('empty box: ', x);
          end;
-
+    FLineCount := FLineCount + linecount;
     boxDestroy(@ba);
     ptaDestroy(@pa);
     numaDestroy(@na);
     pixDestroy(@TextRegion);
 
-    //writeln('Fboxes linecount: ', boxaaGetCount(FBoxes));
-   // writeln('FConfidenceRating sample: ', FConfidenceRating[2][0]);
+    writeln('FConfidenceRating sample: ', FLines[2].Words[0].Confidence);
 end;
 
 end.

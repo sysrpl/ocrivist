@@ -5,7 +5,7 @@ unit OcrivistData;
 interface
 
 uses
-  Classes, SysUtils, leptonica, selector, Graphics;
+  Classes, SysUtils, leptonica, selector, Graphics, ocr;
 
 type
 
@@ -16,15 +16,17 @@ type
     FTitle: string;
     FTempFile: TFilename;
     FThumbnail: TBitmap;
-    FText: TStringlist;
     FSelections: array of TRect;
     FModified: Boolean;
     FPix:PLPix;
+    FOCRData: TTesseractPage;
   private
     FActive: Boolean;
+    function getOCRText: string;
     function GetSelection ( aIndex: Integer ) : TRect;
     function GetSelectionCount: Integer;
     procedure SetActive ( const AValue: Boolean ) ;
+    procedure SetOCRData ( const AValue: TTesseractPage ) ;
     procedure SetPageImage ( const AValue: PLPix ) ;
     procedure SetSelection ( aIndex: Integer ; const AValue: TRect ) ;
     procedure MakeThumbnail;
@@ -36,7 +38,7 @@ type
     procedure AddSelection ( Sel: TRect );
     procedure DeleteSelection ( aIndex: Integer );
     function LoadFromFile: PLPix;
-    property Text: TStringList read FText write FText;
+    property Text: string read getOCRText;
     property Selection[ aIndex: Integer ]: TRect read GetSelection write SetSelection;
     property SelectionCount: Integer read GetSelectionCount;
     property Title: string read FTitle write FTitle;
@@ -44,6 +46,7 @@ type
     property PageImage: PLPix read FPix write SetPageImage;
     property Thumbnail: TBitmap read FThumbnail;
     property Active: Boolean read FActive write SetActive;
+    property OCRData: TTesseractPage read FOCRData write SetOCRData;
   end;
 
   { TOcrivistProject }
@@ -187,9 +190,9 @@ begin
            FileWrite(F, bytes, SizeOf(bytes));                 //1 - Integer - length of string Title
            if bytes>0 then
               FileWrite(F, databuf[1], bytes);                    //2 - array of char - string Title
-           bytes := Length(aPage.Text.Text);
+           bytes := Length(aPage.Text);
            FileWrite(F, bytes, SizeOf(bytes));                 //3 - Integer - length of string Text
-           databuf := aPage.Text.Text;                         //4 - array of char - = string Text
+           databuf := aPage.Text;                              //4 - array of char - = string Text
            if bytes>0 then
               FileWrite(F, databuf[1], bytes);
            pageImage := pixClone(aPage.PageImage);
@@ -246,22 +249,15 @@ begin
            //aPage := TOcrivistPage(FPages[page]);
            aPage := TOcrivistPage.Create(nil);
            FPages[page] := aPage;
-           //databuf := aPage.FTitle;
-           //bytes := Length(databuf);
            FileRead(F, bytes, SizeOf(bytes));                 //1 - Integer - length of string Title
            SetLength(apage.FTitle, bytes+1);
            if bytes>0 then
               FileRead(F, apage.FTitle[1], bytes);                    //2 - array of char - string Title
-//           aPage.FTitle := databuf;
-           //bytes := Length(aPage.Text.Text);
            FileRead(F, bytes, SizeOf(bytes));                 //3 - Integer - length of string Text
            SetLength(strbuf, bytes+1);
-           //databuf := aPage.Text.Text;                         //4 - array of char - = string Text
            if bytes>0 then
               FileRead(F, strbuf[1], bytes);
-           aPage.Text.Text := strbuf;
-           //apage.Text.Text := databuf;
-           //pageImage := pixClone(aPage.PageImage);
+//           aPage.OCRData.Text := strbuf;         //TODO : decide how to repopulate OCRData.Text
            FileRead(F, bytecount, SizeOf(bytecount));    //5 - Integer - length of image data
            if bytecount>0 then
               try
@@ -318,6 +314,13 @@ begin
      else Raise Exception.CreateFmt('Error in GetSelection: Index out of range (%d)', [aIndex]);
 end;
 
+function TOcrivistPage.getOCRText: string;
+begin
+  Result := '';
+  if Assigned(FOCRData)
+     then Result := FOCRData.Text;
+end;
+
 function TOcrivistPage.GetSelectionCount: Integer;
 begin
   Result := Length(FSelections);
@@ -337,16 +340,24 @@ begin
   FActive := AValue;
 end;
 
+procedure TOcrivistPage.SetOCRData ( const AValue: TTesseractPage ) ;
+begin
+  if AValue=FOCRData then exit;
+  if Assigned(FOCRData)
+     then FOCRData.Free;
+  FOCRData := AValue;
+  FModified := true;
+end;
+
 procedure TOcrivistPage.SetPageImage ( const AValue: PLPix ) ;
 begin
   if AValue<>FPix then
         begin
           writeln('setting new pix in OctrivistPage');
-//          pixDestroy(@FPix);
-          FPix := AValue;
-          MakeThumbnail;
+          FPix := AValue;  // Note: TOcrivistPage is not responsible for destroying previous PIX
+          //MakeThumbnail;
+          SaveToFileBackground(Fpix, '');
         end;
-  //SaveToTempfile(AValue, '');
 end;
 
 procedure TOcrivistPage.SetSelection ( aIndex: Integer ; const AValue: TRect
@@ -367,16 +378,16 @@ begin
        if Assigned(FThumbnail) then FThumbnail.Free;
        FThumbnail := TBitmap.Create;
        ScaleToBitmap(tPix, FThumbnail, 1);
-       pixDestroy(@tPix);
-       FThumbnail.SaveToFile('/tmp/thumb.bmp');
+       pixDestroy(@tPix);                         //TODO: update pagelist thumbnails
+       //FThumbnail.SaveToFile('/tmp/thumb.bmp');
      end;
 end;
 
 constructor TOcrivistPage.Create( pix: PLPix );
 begin
-  FText := TStringList.Create;
   FThumbnail := nil;
   FActive := true;
+  FOCRData := nil;
   {if pix <> nil
      then SaveToTempfile(pix, GetTempDir);}
   FPix := pix;
@@ -392,8 +403,7 @@ destructor TOcrivistPage.Destroy;
 var
   c: Integer;
 begin
-  FText.Free;
-  //if FileExists(FTempFile) then DeleteFile(FTempFile);
+  if Assigned(FOCRData) then FOCRData.Free;
   if Assigned(FThumbnail) then FThumbnail.Free;
   inherited Destroy;
 end;
