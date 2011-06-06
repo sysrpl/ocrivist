@@ -39,6 +39,7 @@ function ScaleToBitmap( pix: PLPix;  bmp: TBitmap; scalexy: Single ): integer;
 function CropPix( pix: PLPix; cropRect: TRect ): PLPix;
 function CropPix( pix: PLPix; x, y, w, h: longint ): PLPix;
 function ScanToPix( h: SANE_Handle; resolution: integer; scanmode: string; progresscb: TProgressCallback ): PLPix;
+function BoxToRect( aBox: PLBox ): TRect;
 
 implementation
 
@@ -145,6 +146,15 @@ begin
         finally
           if data<>nil then Freemem(data);
         end;
+end;
+
+function BoxToRect ( aBox: PLBox ) : TRect;
+var
+  x, y, w, h: Longint;
+begin
+  Result := Bounds( 0, 0, 0, 0);
+  if boxGetGeometry(aBox, @x, @y, @w, @h)=0 then
+     Result := Bounds(x, y, w, h);
 end;
 
 end.
