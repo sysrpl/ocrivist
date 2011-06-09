@@ -48,7 +48,7 @@ type
     PageMenu: TMenuItem;
     ScanPageMenuItem: TMenuItem;
     SaveAsMenuItem: TMenuItem;
-    SaveProjectDialog: TSaveDialog;
+    SaveDialog: TSaveDialog;
     SaveProjectMenuItem: TMenuItem;
     OpenProjectMenuItem: TMenuItem;
     ExitMenuItem: TMenuItem;
@@ -284,7 +284,13 @@ var
   fn: String;
   x: Integer;
 begin
-  if SaveProjectDialog.Execute then
+ with SaveDialog do
+      begin
+        DefaultExt := '.djvu';
+        Filter := 'Djvu Files|*.djvu|All Files|*';
+        Title := 'Export project to djvu...';
+      end;
+ if SaveDialog.Execute then
      for x := 0 to Project.PageCount-1 do
         try
           p := Project.Pages[x].PageImage;
@@ -296,7 +302,7 @@ begin
           Application.ProcessMessages;
           pixWrite(PChar(fn), p, IFF_PNM);
           if djvumakepage(fn, '/tmp/test.djvu')=0
-             then djvuaddpage(SaveProjectDialog.FileName, '/tmp/test.djvu')
+             then djvuaddpage(SaveDialog.FileName, '/tmp/test.djvu')
              else ShowMessage('Error when encoding page ' + IntToStr(x+1));
         finally
           StatusBar.Panels[1].Text := '';
@@ -434,8 +440,14 @@ end;
 
 procedure TMainForm.SaveAsMenuItemClick ( Sender: TObject ) ;
 begin
-  if SaveProjectDialog.Execute
-    then Project.SaveToFile(SaveProjectDialog.FileName);
+ with SaveProjectDialog do
+      begin
+        DefaultExt := '.ovp';
+        Filter := 'Ocrivist Projects|*.ovp|All Files|*';
+        Title := 'Save project as ..';
+      end;
+  if SaveDialog.Execute
+    then Project.SaveToFile(SaveDialog.FileName);
 end;
 
 procedure TMainForm.ScanPageMenuItemClick ( Sender: TObject ) ;

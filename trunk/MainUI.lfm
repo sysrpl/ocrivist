@@ -1084,7 +1084,7 @@ object MainForm: TMainForm
       end
     end
   end
-  object SaveProjectDialog: TSaveDialog
+  object SaveDialog: TSaveDialog
     Title = 'Save project as'
     DefaultExt = '.ovp'
     Filter = 'Ocrivist Projects|*.ovp|All Files|*'
