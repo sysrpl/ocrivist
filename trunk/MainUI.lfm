@@ -13,6 +13,7 @@ object MainForm: TMainForm
   OnDestroy = FormDestroy
   OnKeyDown = FormKeyDown
   LCLVersion = '0.9.29'
+  WindowState = wsMaximized
   object ListboxPanel: TPanel
     Left = 0
     Height = 547
@@ -5253,7 +5254,7 @@ object MainForm: TMainForm
     Entity = False
     DollarVariables = False
     ActiveDot = False
-    left = 984
-    top = 472
+    left = 784
+    top = 520
   end
 end

@@ -171,13 +171,15 @@ begin
                        else NewPage := 0;
                      end
                   else NewPage := -1;
-                  TBitmap( ThumbnailListBox.Items.Objects[DelPage] ).Free;
                   ThumbnailListBox.Items.Delete(DelPage);
                   ThumbnailListBox.ItemIndex := NewPage;
                   Project.DeletePage(DelPage);
                   if ThumbnailListBox.Count>0
                      then ThumbnailListBoxClick(ThumbnailListBox)
                      else ICanvas.Picture := nil;
+                  if ThumbnailListBox.Count>1
+                   then pagecountLabel.Caption := Format('%d pages', [ThumbnailListBox.Count])
+                   else pagecountLabel.Caption := #32;  // if label is empty it changes its height
                   DelPageButton.Enabled := ThumbnailListBox.Count>0;
                 end;
 end;
