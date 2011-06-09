@@ -40,6 +40,11 @@ extern "C"
 {
 #endif
 
+
+ /** 
+  * NOTE: tessintf.cc includes documentation for all of the following methods 
+  **/
+
 typedef unsigned int U_Int;
 
 extern tessHandle EXPORTCALL tesseract_new(const char* datapath, const char* language);

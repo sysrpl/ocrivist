@@ -6,6 +6,11 @@ using namespace tesseract;
 
 extern "C"{
 
+  /**
+   * Creates a new instance of TessBaseAPI and initialises it.
+   * datapath and language may be NULL, in which case defaults are used
+   * Returns a handle to the TessBaseAPI instance.
+   */
 tessHandle EXPORTCALL tesseract_new(const char* datapath, const char* language){
 TessBaseAPI* Tess = new TessBaseAPI;
 if (Tess->Init(datapath, language, NULL, 0, 1)!=0){
@@ -17,10 +22,38 @@ else {
   }
 };
 
+  /**
+   * Destroys an instance of TessBaseAPI created by tesseract_new
+   */
 extern void EXPORTCALL tesseract_destroy(tessHandle APIHandle){
   delete APIHandle;
 }
 
+  /**
+   * Provides more controlled form of initialising tesseract than performed
+   * in tesseract_new
+   *  
+   * Eventually instances will be thread-safe and totally independent,
+   * but for now, they all point to the same underlying engine,
+   * and are NOT RE-ENTRANT OR THREAD-SAFE. For now:
+   * it is safe to Init multiple TessBaseAPIs in the same language, use them
+   * sequentially, and End or delete them all, but once one is Ended, you can't
+   * do anything other than End the others. After End, it is safe to Init
+   * again on the same one.
+   *
+   * The datapath must be the name of the data directory (no ending /) or
+   * some other file in which the data directory resides (for instance argv[0].)
+   * The language is (usually) an ISO 639-3 string or NULL will default to eng.
+   * It is entirely safe (and eventually will be efficient too) to call
+   * Init multiple times on the same instance to change language, or just
+   * to reset the classifier.
+   * WARNING: On changing languages, all Variables are reset back to their
+   * default values. If you have a rare need to set a Variable that controls
+   * initialization for a second call to Init you should explicitly
+   * call End() and then use SetVariable before Init. This is only a very
+   * rare use case, since there are very few uses that require any variables
+   * to be set before Init.
+   */
 extern int EXPORTCALL tesseract_init(tessHandle APIHandle, const char* datapath, const char* language,
            char **configs, int configs_size, bool configs_global_only){
   return APIHandle->Init(datapath, language, configs, configs_size, configs_global_only);
@@ -53,10 +86,19 @@ extern void EXPORTCALL tesseract_SetRectangle(tessHandle APIHandle, int left, in
    APIHandle->SetRectangle(left, top, width, height);
 }
 
+  /**
+   * The recognized text is returned as a char* which is coded
+   * as UTF8 and must be freed with tesseract_DeleteString.
+   */
 extern char* EXPORTCALL tesseract_GetUTF8Text(tessHandle APIHandle){
    return APIHandle->GetUTF8Text();
 }
 
+  /**
+   * Get a copy of the internal thresholded image from Tesseract.
+   * Caller takes ownership of the Pix and must pixDestroy it.
+   * May be called any time after SetImage, or after TesseractRect.
+   */
 extern Pix* EXPORTCALL tesseract_GetThresholdedImage(tessHandle APIHandle){
   return APIHandle->GetThresholdedImage();
 }
@@ -102,7 +144,8 @@ extern void EXPORTCALL tesseract_SetPageSegMode(tessHandle APIHandle, int mode){
    APIHandle->SetPageSegMode(segmode);
 }
 
-extern int EXPORTCALL tesseract_GetPageSegMode(tessHandle APIHandle){
+  /** Return the current page segmentation mode. */
+ extern int EXPORTCALL tesseract_GetPageSegMode(tessHandle APIHandle){
    return (int)APIHandle->GetPageSegMode();
 }
 
@@ -163,7 +206,7 @@ extern Boxa* EXPORTCALL tesseract_GetWords(tessHandle APIHandle, Pixa** pixa){
   /**
    * The recognized text is returned as a char* which is coded in the same
    * format as a box file used in training. Returned string must be freed with
-   * the delete [] operator.
+   * tesseract_DeleteString.
    * Constructs coordinates in the original image - not just the rectangle.
    * page_number is a 0-base page index that will appear in the box file.
    */
@@ -174,7 +217,7 @@ extern Boxa* EXPORTCALL tesseract_GetWords(tessHandle APIHandle, Pixa** pixa){
   /**
    * The recognized text is returned as a char* which is coded
    * as UNLV format Latin-1 with specific reject and suspect codes
-   * and must be freed with the delete [] operator.
+   * and must be freed with tesseract_DeleteString.
    */
 extern char* EXPORTCALL tesseract_GetUNLVText(tessHandle APIHandle){
    return APIHandle->GetUNLVText();
@@ -196,7 +239,8 @@ extern int EXPORTCALL tesseract_MeanTextConf(tessHandle APIHandle){
 
   /**
    * Returns all word confidences (between 0 and 100) in an array, terminated
-   * by -1.  The calling function must delete [] after use.
+   * by -1.  The calling function must delete the result with
+   * tesseract_DeleteWordConfidences after use.
    * The number of confidences should correspond to the number of space-
    * delimited words in GetUTF8Text.
    */
