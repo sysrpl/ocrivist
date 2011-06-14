@@ -391,6 +391,7 @@ end;
 procedure TPageViewer.MouseDown ( Button: TMouseButton; Shift: TShiftState; X,
   Y: Integer ) ;
 begin
+  if FBitmap=nil then exit;
   if mbLeft in [Button] then
         begin
           FSelecting := true;
@@ -404,7 +405,7 @@ end;
 
 procedure TPageViewer.MouseMove ( Shift: TShiftState; X, Y: Integer ) ;
 begin
-  //inherited MouseMove ( Shift, X, Y ) ;
+  if FBitmap=nil then exit;
   if FSelecting then
         begin
           FSelectRect.BottomRight := Point(X,Y);
@@ -415,6 +416,7 @@ end;
 procedure TPageViewer.MouseUp ( Button: TMouseButton; Shift: TShiftState; X,
   Y: Integer ) ;
 begin
+  if FBitmap=nil then exit;
   inherited MouseUp ( Button, Shift, X, Y ) ;
   if FSelecting then
         begin
@@ -428,7 +430,7 @@ end;
 procedure TPageViewer.SelectionChange(Sender: TObject);
 begin
   FRealSelections[ TSelector(Sender).Tag ] := UnScaleRect(TSelector(Sender).Selection, Scale);
-  //FIXME: use of Tag is inconsistent
+  //TODO: check that use of Tag is reliable
 end;
 
 procedure TPageViewer.SelectionGrabFocus ( Sender: TObject ) ;
