@@ -32,7 +32,6 @@ type
     pagecountLabel: TLabel;
     SelModeMenu: TPopupMenu;
     MenuItem1: TMenuItem;
-    DeskewMenuItem: TMenuItem;
     RotateRMenuItem: TMenuItem;
     RotateLMenuItem: TMenuItem;
     SetScannerMenuItem: TMenuItem;
@@ -99,6 +98,14 @@ type
     procedure DeskewButtonClick ( Sender: TObject ) ;
     procedure SelTextButtonClick ( Sender: TObject ) ;
     procedure AnalyseButtonClick ( Sender: TObject ) ;
+    procedure ThumbnailListBoxDragDrop ( Sender, Source: TObject; X, Y: Integer
+      ) ;
+    procedure ThumbnailListBoxDragOver ( Sender, Source: TObject; X,
+      Y: Integer; State: TDragState; var Accept: Boolean ) ;
+    procedure ThumbnailListBoxMouseDown ( Sender: TObject;
+      Button: TMouseButton; Shift: TShiftState; X, Y: Integer ) ;
+    procedure ThumbnailListBoxMouseUp ( Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer ) ;
     procedure UpdateScannerStatus ( Sender: TObject ) ;
     procedure ThumbnailListBoxClick ( Sender: TObject ) ;
     procedure ThumbnailListBoxDrawItem ( Control: TWinControl; Index: Integer;
@@ -114,6 +121,8 @@ type
     { private declarations }
     Project: TOcrivistProject;
     AddingThumbnail: Boolean;
+    ThumbnailStartPoint: TPoint;
+    DraggingThumbnail: Boolean;
     procedure MakeSelection ( Sender: TObject );
     procedure SelectionChange ( Sender: TObject );
     procedure UpdateThumbnail ( Sender: TObject );
@@ -217,6 +226,7 @@ begin
   Project := TOcrivistProject.Create;
   Project.Title := 'Default Project';
   AddingThumbnail := false;
+  DraggingThumbnail := false;
 end;
 
 procedure TMainForm.FormDestroy ( Sender: TObject ) ;
@@ -368,11 +378,54 @@ begin
        pixDestroy(@BinaryPix);
 end;
 
+procedure TMainForm.ThumbnailListBoxDragDrop ( Sender, Source: TObject; X,
+  Y: Integer ) ;
+var
+    DropPosition, StartPosition: Integer;
+    DropPoint: TPoint;
+ begin
+    DropPoint.X := X;
+    DropPoint.Y := Y;
+    DraggingThumbnail := false;
+    with Source as TListBox do
+      begin
+        StartPosition := ItemAtPos(ThumbnailStartPoint, True) ;
+        DropPosition := ItemAtPos(DropPoint, True) ;
+        writeln(StartPosition, ' --> ', DropPosition);
+        Items.Move(StartPosition, DropPosition) ;
+        // Now apply move to contents of TOcrivistProject, too
+        Project.MovePage(StartPosition, DropPosition);
+        ThumbnailListBox.ItemIndex := DropPosition;
+        ThumbnailListBoxClick( ThumbnailListBox );
+      end;
+ end;
+
+procedure TMainForm.ThumbnailListBoxDragOver ( Sender, Source: TObject; X,
+  Y: Integer; State: TDragState; var Accept: Boolean ) ;
+begin
+  Accept := Source = ThumbnailListBox;
+  TListBox(Sender).ItemIndex := TListBox(Sender).ItemAtPos(Point(X, Y), true);
+end;
+
+procedure TMainForm.ThumbnailListBoxMouseDown ( Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer ) ;
+begin
+  ThumbnailStartPoint.X := X;
+  ThumbnailStartPoint.Y := Y;
+  DraggingThumbnail := true;
+end;
+
+procedure TMainForm.ThumbnailListBoxMouseUp ( Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer ) ;
+begin
+    DraggingThumbnail := false;
+end;
+
 procedure TMainForm.UpdateScannerStatus ( Sender: TObject ) ;
 begin
   ScanPageMenuItem.Enabled := ScannerHandle<>nil;
   if ScannerHandle=nil then writeln('ScannerHandle is nil')
-  else writeln('ScannerHandle ok');;
+  else writeln('ScannerHandle ok');
 end;
 
 procedure TMainForm.ThumbnailListBoxClick ( Sender: TObject ) ;
@@ -403,8 +456,6 @@ begin
   TListbox(Control).Canvas.Rectangle(ARect);
   TListbox(Control).Canvas.Draw(LeftOffset, ARect.Top + TListbox(Control).Canvas.TextHeight('Yy')+2, TBitmap(TListbox(Control).Items.Objects[Index]));
   TListbox(Control).Canvas.TextOut(2, ARect.Top + 2, IntToStr(Index+1) + #32 + TListbox(Control).Items[Index]);
-  TListbox(Control).Canvas.Pen.Color := clBlack;
-  TListbox(Control).Canvas.Frame(ARect);
 end;
 
 procedure TMainForm.LoadPageMenuItemClick ( Sender: TObject ) ;
@@ -440,7 +491,7 @@ end;
 
 procedure TMainForm.SaveAsMenuItemClick ( Sender: TObject ) ;
 begin
- with SaveProjectDialog do
+ with SaveDialog do
       begin
         DefaultExt := '.ovp';
         Filter := 'Ocrivist Projects|*.ovp|All Files|*';

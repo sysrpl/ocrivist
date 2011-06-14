@@ -70,6 +70,7 @@ type
     procedure SaveToFile( FileName: TFilename );
     function LoadfromFile( FileName: TFilename ): integer;
     procedure DeletePage( aIndex: Integer );
+    procedure MovePage( sourceIndex, destIndex: Integer );
     procedure AddPage( Pix: PLPix );
     property Pages[aIndex: Integer]: TOcrivistPage read GetPage write PutPage;
     property Title: string read FTitle write FTitle;
@@ -288,6 +289,26 @@ begin
        if (FcurrentPage<0) and (PageCount>0) then FcurrentPage := 0;
      end
      else Raise Exception.Create('Page index out of range (' + IntToStr(aIndex) + ')');
+end;
+
+procedure TOcrivistProject.MovePage ( sourceIndex, destIndex: Integer ) ;
+var
+  tempPage: TOcrivistPage;
+  x: LongInt;
+begin
+  tempPage := FPages[sourceIndex];
+  if sourceIndex>destIndex then
+     begin
+       for x := sourceIndex downto destIndex+1 do
+         FPages[x] := FPages[x-1];
+       Fpages[destIndex] := tempPage;
+     end
+  else
+     begin
+       for x := sourceIndex to destIndex-1 do
+         FPages[x] := FPages[x+1];
+       Fpages[destIndex] := tempPage;
+     end;
 end;
 
 procedure TOcrivistProject.AddPage ( Pix: PLPix ) ;
