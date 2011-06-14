@@ -1,7 +1,7 @@
 object MainForm: TMainForm
-  Left = 0
+  Left = 126
   Height = 637
-  Top = 143
+  Top = 334
   Width = 1072
   ActiveControl = ListboxPanel
   Caption = 'Ocrivist'
@@ -35,12 +35,17 @@ object MainForm: TMainForm
       Top = 1
       Width = 128
       Anchors = [akTop, akLeft, akRight, akBottom]
+      DragMode = dmAutomatic
       Items.Strings = (
         ''
       )
       ItemHeight = 0
       OnClick = ThumbnailListBoxClick
+      OnDragDrop = ThumbnailListBoxDragDrop
+      OnDragOver = ThumbnailListBoxDragOver
       OnDrawItem = ThumbnailListBoxDrawItem
+      OnMouseDown = ThumbnailListBoxMouseDown
+      OnMouseUp = ThumbnailListBoxMouseUp
       Style = lbOwnerDrawVariable
       TabOrder = 0
     end
