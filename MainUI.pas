@@ -613,8 +613,8 @@ var
 begin
   if ICanvas.SelectionMode=smSelect then
     begin
-      ICanvas.AddSelection(UnScaleRect(ICanvas.CurrentSelection, ICanvas.Scale));
-      Project.CurrentPage.AddSelection( UnScaleRect (ICanvas.CurrentSelection, ICanvas.Scale) )
+      ICanvas.AddSelection(ICanvas.CurrentSelection);
+      Project.CurrentPage.AddSelection(ICanvas.CurrentSelection);
     end;
 end;
 
@@ -690,7 +690,7 @@ begin
  if Project.CurrentPage=nil then exit;
  newpix := nil;
  oldpix := ICanvas.Picture;
- newpix := CropPix( oldpix, ScaleRect( ICanvas.CurrentSelection , 100/ICanvas.Scale));
+ newpix := CropPix( oldpix,  ICanvas.CurrentSelection );
  if newpix <> nil then
    begin
      ICanvas.ClearSelection;

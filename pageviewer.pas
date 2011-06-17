@@ -193,19 +193,12 @@ begin
       then FOnChangeBitmap(Self);
 end;
 
-{function TPageViewer.GetScale: Integer;
-begin
-  writeln('GetScale(float): ', FormatFloat( '0.00', FScale ));
-  Result := round(FScale*100);
-  writeln('GetScale(int): ', Result);
-end;}
-
 function TPageViewer.GetSelection: TRect;
 begin
-  Result.Top := FVertScrollBar.Position + FSelectRect.Top;
-  Result.Left := FHorzScrollBar.Position + FSelectRect.Left;
-  Result.Bottom := FVertScrollBar.Position + FSelectRect.Bottom;
-  Result.Right := FHorzScrollBar.Position + FSelectRect.Right;
+  Result.Top := FVertScrollBar.Position + Trunc(FSelectRect.Top/FScale);
+  Result.Left := FHorzScrollBar.Position + Trunc(FSelectRect.Left/FScale);
+  Result.Bottom := FVertScrollBar.Position + Trunc(FSelectRect.Bottom/FScale);
+  Result.Right := FHorzScrollBar.Position + Trunc(FSelectRect.Right/FScale);
 end;
 
 procedure TPageViewer.SetMode ( const AValue: TViewermode ) ;
