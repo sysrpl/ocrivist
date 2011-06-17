@@ -63,10 +63,16 @@ begin
 end;
 
 constructor TTesseractPage.Create ( PixIn: PLPix ) ;
+var
+  d: LongInt;
 begin
-  if pixGetDepth(PixIn) > 1
-   then FPageImage := pixThresholdToBinary(PixIn, BIN_THRESHOLD)
-   else FPageImage := pixClone(PixIn);
+  d := pixGetDepth(PixIn);
+  if d = 32
+     then FPageImage := pixGenerateMaskByBand32(PixIn, BIN_THRESHOLD, BIN_THRESHOLD, BIN_THRESHOLD)
+  else if d >=4
+     then FPageImage := pixThresholdToBinary(PixIn, BIN_THRESHOLD)
+  else FPageImage := pixClone(PixIn);
+//  pixWrite('/tmp/testOCRimage.bmp', FPageImage, IFF_BMP);
   FTesseract := tesseract_new(nil, nil);
   if FTesseract=nil then writeln('tesseract_new failed :(');
   tesseract_SetImage(FTesseract, FPageImage);
