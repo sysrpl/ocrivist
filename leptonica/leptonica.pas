@@ -67,6 +67,11 @@ const
       IFF_DEFAULT        = 17;
       IFF_SPIX           = 18;
 
+      REMOVE_CMAP_TO_BINARY     = 0;
+      REMOVE_CMAP_TO_GRAYSCALE  = 1;
+      REMOVE_CMAP_TO_FULL_COLOR = 2;
+      REMOVE_CMAP_BASED_ON_SRC  = 3;
+
 type
 
   PLPix = ^TLPix;
@@ -378,11 +383,9 @@ function pixRotate180( pixd, pixs: PLPix): PLPix; cdecl; external LIBLEPT;
  *          RGB image.  This would typically be used for image analysis.
  *      (3) The standard color byte order (RGBA) is assumed.
  *}
-  function pixScaleRGBToGrayFast( pix: PLPix; pw, ph: Single): PLPix; cdecl; external LIBLEPT;
+  function pixScaleRGBToGrayFast( pix: PLPix; factor, color: Longint ): PLPix; cdecl; external LIBLEPT;
 
-
-
-  { *  pixReadHeader()
+ { *  pixReadHeader()
    *
    *      Input:  filename (with full pathname or in local directory)
    *              &format (<optional return> file format)
@@ -555,6 +558,139 @@ function pixRotate180( pixd, pixs: PLPix): PLPix; cdecl; external LIBLEPT;
  *}
 function pixGenHalftoneMask( pixs: PLPix; ppixtext: PPLPix; phtfound: PInteger; debug: Integer = 0): PLPix; cdecl; external LIBLEPT;
 
+{*--------------------------------------------------------------------*
+ *                 Thresholding from 32 bpp rgb to 1 bpp              *
+ *--------------------------------------------------------------------*/
+/*!
+ *  pixGenerateMaskByBand32()
+ *
+ *      Input:  pixs (32 bpp)
+ *              refval (reference rgb value)
+ *              delm (max amount below the ref value for any component)
+ *              delp (max amount above the ref value for any component)
+ *      Return: pixd (1 bpp), or null on error
+ *
+ *  Notes:
+ *      (1) Generates a 1 bpp mask pixd, the same size as pixs, where
+ *          the fg pixels in the mask are those where each component
+ *          is within -delm to +delp of the reference value.
+ *}
+function pixGenerateMaskByBand32( pixs: PLPix; refval: Cardinal; delm, delp: Longint): PLPix; cdecl; external LIBLEPT;
+
+{*!
+ *  pixGenerateMaskByBand()
+ *
+ *      Input:  pixs (4 or 8 bpp, or colormapped)
+ *              lower, upper (two pixel values from which a range, either
+ *                            between (inband) or outside of (!inband),
+ *                            determines which pixels in pixs cause us to
+ *                            set a 1 in the dest mask)
+ *              inband (1 for finding pixels in [lower, upper];
+ *                      0 for finding pixels in [0, lower) union (upper, 255])
+ *              usecmap (1 to retain cmap values; 0 to convert to gray)
+ *      Return: pixd (1 bpp), or null on error
+ *
+ *  Notes:
+ *      (1) Generates a 1 bpp mask pixd, the same size as pixs, where
+ *          the fg pixels in the mask are those either within the specified
+ *          band (for inband == 1) or outside the specified band
+ *          (for inband == 0).
+ *      (2) If pixs is colormapped, @usecmap determines if the colormap
+ *          values are used, or if the colormap is removed to gray and
+ *          the gray values are used.  For the latter, it generates
+ *          an approximate grayscale value for each pixel, and then looks
+ *          for gray pixels with the value @val.
+ *}
+function pixGenerateMaskByBand( pixs: PLPix; lower, upper, inband, usecmap: Longint): PLPix; cdecl; external LIBLEPT;
+
+{*--------------------------------------------------------------------*
+ *       Generate a binary mask from pixels of particular value(s)    *
+ *--------------------------------------------------------------------*/
+/*!
+ *  pixGenerateMaskByValue()
+ *
+ *      Input:  pixs (4 or 8 bpp, or colormapped)
+ *              val (of pixels for which we set 1 in dest)
+ *              usecmap (1 to retain cmap values; 0 to convert to gray)
+ *      Return: pixd (1 bpp), or null on error
+ *
+ *  Notes:
+ *      (1) @val is the gray value of the pixels that we are selecting.
+ *      (2) If pixs is colormapped, @usecmap determines if the colormap
+ *          values are used, or if the colormap is removed to gray and
+ *          the gray values are used.  For the latter, it generates
+ *          an approximate grayscale value for each pixel, and then looks
+ *          for gray pixels with the value @val.
+ *}
+function pixGenerateMaskByValue( pixs: PLPix; val, usecmap: Longint ): PLPix; cdecl; external LIBLEPT;
+
+{*-------------------------------------------------------------*
+ *               Conversion from colormapped pix               *
+ *-------------------------------------------------------------*/
+/*!
+ *  pixRemoveColormap()
+ *
+ *      Input:  pixs (see restrictions below)
+ *              type (REMOVE_CMAP_TO_BINARY,
+ *                    REMOVE_CMAP_TO_GRAYSCALE,
+ *                    REMOVE_CMAP_TO_FULL_COLOR,
+ *                    REMOVE_CMAP_BASED_ON_SRC)
+ *      Return: new pix, or null on error
+ *
+ *  Notes:
+ *      (1) If there is no colormap, a clone is returned.
+ *      (2) Otherwise, the input pixs is restricted to 1, 2, 4 or 8 bpp.
+ *      (3) Use REMOVE_CMAP_TO_BINARY only on 1 bpp pix.
+ *      (4) For grayscale conversion from RGB, use a weighted average
+ *          of RGB values, and always return an 8 bpp pix, regardless
+ *          of whether the input pixs depth is 2, 4 or 8 bpp.
+ *}
+function pixRemoveColormap( pixs: PLPix; newtype: Longint ): PLPix; cdecl; external LIBLEPT;
+
+{*-------------------------------------------------------------*
+ *            Conversion from RGB color to grayscale           *
+ *-------------------------------------------------------------*/
+/*!
+ *  pixConvertRGBToLuminance()
+ *
+ *      Input:  pix (32 bpp RGB)
+ *      Return: 8 bpp pix, or null on error
+ *
+ *  Notes:
+ *      (1) Use a standard luminance conversion.
+ *}
+function pixConvertRGBToLuminance( pixs: PLPix ): PLPix; cdecl; external LIBLEPT;
+
+{*!
+ *  pixConvertRGBToGray()
+ *
+ *      Input:  pix (32 bpp RGB)
+ *              rwt, gwt, bwt  (non-negative; these should add to 1.0,
+ *                              or use 0.0 for default)
+ *      Return: 8 bpp pix, or null on error
+ *
+ *  Notes:
+ *      (1) Use a weighted average of the RGB values.
+ *}
+function pixConvertRGBToGray( pixs: PLPix; rwt, gwt, bwt: Single ): PLPix; cdecl; external LIBLEPT;
+
+{*!
+ *  pixConvertRGBToGrayFast()
+ *
+ *      Input:  pix (32 bpp RGB)
+ *      Return: 8 bpp pix, or null on error
+ *
+ *  Notes:
+ *      (1) This function should be used if speed of conversion
+ *          is paramount, and the green channel can be used as
+ *          a fair representative of the RGB intensity.  It is
+ *          several times faster than pixConvertRGBToGray().
+ *      (2) To combine RGB to gray conversion with subsampling,
+ *          use pixScaleRGBToGrayFast() instead.
+ *}
+function pixConvertRGBToGrayFast( pixs: PLPix ): PLPix; cdecl; external LIBLEPT;
+
+
 {/*------------------------------------------------------------------*
  *                         Textline extraction                      *
  *------------------------------------------------------------------*/
@@ -590,6 +726,7 @@ function pixGenTextlineMask( pixs: PLPix; ppixvws: PPLPix; ptlfound: PInteger; d
  *          the dest will be 1; otherwise, it will be 0
  *}
 function pixThresholdToBinary( pixs: PLPix; thresh: Integer): PLPix; cdecl; external LIBLEPT;
+
 
 {*!
  *  pixWrite()
