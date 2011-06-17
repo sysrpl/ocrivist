@@ -1,5 +1,5 @@
 object MainForm: TMainForm
-  Left = 126
+  Left = 204
   Height = 637
   Top = 334
   Width = 1072
@@ -1093,6 +1093,7 @@ object MainForm: TMainForm
     Title = 'Save project as'
     DefaultExt = '.ovp'
     Filter = 'Ocrivist Projects|*.ovp|All Files|*'
+    Options = [ofOverwritePrompt, ofEnableSizing, ofViewDetail]
     left = 40
     top = 200
   end
