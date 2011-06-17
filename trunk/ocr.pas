@@ -12,6 +12,7 @@ type
    TConfidenceList = array of PInteger;
 
    TWordData = record
+     Text: string;
      Start: Integer;
      Length: Integer;
      Box: TRect;
@@ -21,6 +22,7 @@ type
    TLineData = record
      Index: Integer;
      Box: TRect;
+     WordCount: Integer;
      Words: Array of TWordData;
    end;
 
@@ -36,12 +38,15 @@ type
     FText: String;
     FLines: array of TLineData;
     FLineCount: Integer;
+    function GetLines ( lineIndex: Integer ) : TLineData;
   public
     constructor Create( PixIn: PLPix );
     destructor Destroy; override;
     function RecognizeRect( inRect: TRect ): integer;
     property Text: string read FText;
     property OnOCRLine: TProgressCallback read FOnOCRLine write FOnOCRLine;
+    property Lines[ lineIndex: Integer ]: TLineData read GetLines;
+    property Linecount: Integer read FLineCount;
   end;
 
 const
@@ -50,6 +55,12 @@ const
 implementation
 
 { TTesseractPage }
+
+function TTesseractPage.GetLines ( lineIndex: Integer ) : TLineData;
+begin
+  if (lineIndex>=0) and (lineIndex<FLineCount)
+     then Result := FLines[lineIndex];
+end;
 
 constructor TTesseractPage.Create ( PixIn: PLPix ) ;
 begin
@@ -79,7 +90,7 @@ var
   na: PNumArray;
   x: Integer;
   lineindex: integer;
-  linecount: Integer;
+  lncount: Integer;
   ra : array[0..255] of TRect;
   n: Integer;
   R: TRect;
@@ -93,6 +104,8 @@ var
   wbx, wby, wbw, wbh: Longint;
   LineData: TLineData;
   WordData: TWordData;
+  wordpos: Integer;
+  wordend: Integer;
 
   procedure AdjustToArea( abox: PLBox; lineref: integer );
   var
@@ -123,7 +136,7 @@ begin
     writeln(Format('inRect: %d %d %d %d', [inrect.Left, inRect.Top, inRect.Right, inRect.Bottom]));
     writeln( pixGetWordsInTextlines(TextRegion, 1, 20, 20, 200, 500, @ba, @pa, @na) );
     writeln('Boxarray.Getcount: ', boxaGetCount(ba));
-    linecount := 0;
+    lncount := 0;
 
      // --------- loop through word boxes to construct line boxes --------
     n := 0;
@@ -131,7 +144,7 @@ begin
     lineindex := 0;
     while numaGetIValue(na, n, @linenum)=0 do
        begin
-         Inc(linecount);
+         Inc(lncount);
          R.Left := 0;
          R.Top := inRect.Bottom-inRect.Top;
          R.Right := 0;
@@ -151,12 +164,12 @@ begin
          writeln( 'Lineindex: ', FormatFloat('0.00', lineindex));
        end;
 
-     SetLength(FLines, FLineCount + linecount);
-     writeln('Linecount: ', linecount);
+     SetLength(FLines, FLineCount + lncount);
+     writeln('Lncount: ', lncount);
      writeln('FLineCount: ', FLineCount);
 
       // --------- OCR inRect one line at a time to allow for progress callback --------
-     for x := 0 to linecount-1 do
+     for x := 0 to lncount-1 do
           begin
             wa := nil;
             R := ra[x];
@@ -177,7 +190,6 @@ begin
               try
                 UTF8Text := tesseract_GetUTF8Text(FTesseract);
                 FText := Ftext + UTF8Text;
-                tesseract_DeleteString(UTF8Text);
                 except
                 writeln('error in GetUTF8Text');
               end;
@@ -185,6 +197,9 @@ begin
               if FText[n]=#10 then SetLength(FText, n-1);
               wa := tesseract_GetWords(FTesseract, nil);
               SetLength(FLines[FLineCount + x].Words, boxaGetCount(wa));
+              FLines[FLineCount + x].Wordcount := boxaGetCount(wa);
+              wordpos := 1;
+              wordend := 1;
               if wa<>nil then
                   begin
                      writeln('Tesseract wordcount: ', boxaGetCount(wa));
@@ -201,18 +216,26 @@ begin
                             end;
                             FLines[FLineCount + x].Words[n].Confidence := conf[n];
                             FLines[FLineCount + x].Words[n].Box := BoxToRect(b);
+                            while UTF8Text[wordend]>#32 do Inc(wordend);
+                            Inc(wordend);
+                            FLines[FLineCount + x].Words[n].Start := wordpos;
+                            FLines[FLineCount + x].Words[n].Length := wordend-wordpos;
+                            FLines[FLineCount + x].Words[n].Text := Copy(UTF8Text, wordpos, wordend-wordpos);
+                            while UTF8Text[wordend]<=#32 do Inc(wordend);
+                            wordpos := wordend+1;
                           end;
                      //writeln( boxaWrite(Pchar('/tmp/adjusted-tessboxes' + IntToStr(x) + '.txt'), wa));
 
                      tesseract_DeleteWordConfidences(conf);
                      boxaDestroy(@wa);
                   end;
+              tesseract_DeleteString(UTF8Text);
               if Assigned(FOnOCRLine)
                  then FOnOCRLine(1);
             end
           else writeln('empty box: ', x);
          end;
-    FLineCount := FLineCount + linecount;
+    FLineCount := FLineCount + lncount;
     boxDestroy(@ba);
     ptaDestroy(@pa);
     numaDestroy(@na);

@@ -291,8 +291,30 @@ procedure TMainForm.DjvuButtonClick ( Sender: TObject ) ;
 var
   p: PLPix;
   d: LongInt;
+  w, h: Longint;
   fn: String;
+  HiddenText: PChar;
   x: Integer;
+  data: TStringList;
+  lin: TLineData;
+  lline: Integer;
+  wword: Integer;
+
+  function DjvuescapeText( inStr: string ): string;
+  var
+    cc: Integer;
+  begin
+    for cc := length(inStr) downto 1 do
+       begin
+         if inStr[cc]='"'
+            then insert('\', inStr, cc)
+         else if inStr[cc]='\'
+            then insert('\', inStr, cc)
+         else if inStr[cc]<#31
+            then Delete(inStr, cc, 1);
+       end;
+    Result := inStr;
+  end;
 begin
  with SaveDialog do
       begin
@@ -303,19 +325,52 @@ begin
  if SaveDialog.Execute then
      for x := 0 to Project.PageCount-1 do
         try
+          HiddenText := nil;
+          data := TStringList.Create;
+          data.Add('select; remove-txt');
+          data.Add('# -------------------------------------');
+          data.Add('select 1');
+          data.Add('set-txt');
+
           p := Project.Pages[x].PageImage;
-          d := pixGetDepth(p);
+          pixGetDimensions(p, @w, @h, @d);
           if d=1
              then fn := '/tmp/test.pnm'
              else fn := '/tmp/test.pbm';
           StatusBar.Panels[1].Text := 'Processing page ' + IntToStr(x+1);
           Application.ProcessMessages;
+          if Project.Pages[x].OCRData <> nil then
+             begin
+                data.Add(Format('(page 0 0 %d %d', [w, h]));
+                for lline := 0 to Project.Pages[x].OCRData.Linecount-1 do
+                   if Project.Pages[x].OCRData.Lines[lline].WordCount>0 then
+                   begin
+                     lin := Project.Pages[x].OCRData.Lines[lline];
+                     data.Add( Format(' (line %d %d %d %d', [lin.Box.Left,
+                                                             h-lin.Box.Bottom,
+                                                             lin.Box.Right,
+                                                             h-lin.Box.Top]));
+                     for wword := 0 to lin.WordCount-1 do
+                         data.Add( Format('  (word %d %d %d %d "%s")', [lin.Words[wword].Box.Left,
+                                                             h-lin.Words[wword].Box.Bottom,
+                                                             lin.Words[wword].Box.Right,
+                                                             h-lin.Words[wword].Box.Top,
+                                                             DjvuescapeText( lin.Words[wword].Text )] ));
+                     data.Strings[data.Count-1] := data.Strings[data.Count-1] + ')';
+                   end;
+                data.Strings[data.Count-1] := data.Strings[data.Count-1] + ')';
+                HiddenText := '/tmp/test.txt';
+                data.SaveToFile(HiddenText);
+             end;
           pixWrite(PChar(fn), p, IFF_PNM);
-          if djvumakepage(fn, '/tmp/test.djvu')=0
+          if FileExistsUTF8(SaveDialog.FileName)
+             then DeleteFileUTF8(SaveDialog.FileName);
+          if djvumakepage(fn, '/tmp/test.djvu', HiddenText)=0
              then djvuaddpage(SaveDialog.FileName, '/tmp/test.djvu')
              else ShowMessage('Error when encoding page ' + IntToStr(x+1));
         finally
           StatusBar.Panels[1].Text := '';
+          data.Free;
         end;
 end;
 

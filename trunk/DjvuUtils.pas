@@ -10,12 +10,12 @@ uses
 type
   Tdjvuencoder = (encC44, encCJB2);
 
-function djvumakepage( sourceimage, dest: TFilename ): Integer;
+function djvumakepage( sourceimage, dest: TFilename; dsedtext: PChar ): Integer;
 function djvuaddpage( docname, pagename: TFilename ): Integer;
 
 implementation
 
-function djvumakepage ( sourceimage, dest: TFilename ) : Integer;
+function djvumakepage ( sourceimage, dest: TFilename; dsedtext: PChar ): Integer;
 var
   Encoder: TProcess;
  //workfolder: String;
@@ -36,6 +36,12 @@ begin
   Encoder.CommandLine := cmd + sourceimage + #32 + dest;
   Encoder.Execute;
   Result := Encoder.ExitStatus;
+  if dsedtext<> nil then
+     begin
+       Encoder.CommandLine := 'djvused ' + dest + ' -f ' + dsedtext + ' -s';
+       Encoder.Execute;
+       Result := Encoder.ExitStatus;
+     end;
   Encoder.Free;
 end;
 
