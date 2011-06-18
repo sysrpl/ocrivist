@@ -376,7 +376,7 @@ begin
         begin
           writeln('setting new pix in OctrivistPage');
           FPix := AValue;  // Note: TOcrivistPage is not responsible for destroying previous PIX
-          //MakeThumbnail;
+          MakeThumbnail;
           SaveToFileBackground(Fpix, '');
         end;
 end;
@@ -399,8 +399,7 @@ begin
        if Assigned(FThumbnail) then FThumbnail.Free;
        FThumbnail := TBitmap.Create;
        ScaleToBitmap(tPix, FThumbnail, 1);
-       pixDestroy(@tPix);                         //TODO: update pagelist thumbnails
-       //FThumbnail.SaveToFile('/tmp/thumb.bmp');
+       pixDestroy(@tPix);
      end;
 end;
 
