@@ -387,7 +387,7 @@ begin
      begin
        ICanvas.Picture := newpix;
        Project.CurrentPage.PageImage := newpix;
-      if oldpix<>nil then pixDestroy(@oldpix);
+       if oldpix<>nil then pixDestroy(@oldpix);
      end;
 end;
 
@@ -536,11 +536,16 @@ begin
 end;
 
 procedure TMainForm.OpenProjectMenuItemClick ( Sender: TObject ) ;
+var
+  x: Integer;
 begin
   if OpenDialog.Execute then
     begin
       Project.LoadfromFile(OpenDialog.FileName);
-      ICanvas.Picture := Project.Pages[0].PageImage;
+      for x := 0 to Project.PageCount-1 do
+         ThumbnailListBox.Items.AddObject( Project.Pages[x].Title, Project.Pages[x].Thumbnail );
+      ThumbnailListBox.ItemIndex := 0;
+      ThumbnailListBoxClick(ThumbnailListBox);
     end;
 end;
 
@@ -626,6 +631,7 @@ begin
   Project.CurrentPage.Selection[SelectionId] := UnScaleRect(TSelector(Sender).Selection, ICanvas.Scale);
 end;
 
+// called by ICanvas when page image is changed
 procedure TMainForm.UpdateThumbnail ( Sender: TObject ) ;
 var
   thumbBMP: TBitmap;
