@@ -15,6 +15,7 @@ type
   { TMainForm }
 
   TMainForm = class ( TForm )
+    DeskewMenuItem: TMenuItem;
     ImageList1: TImageList;
     LoadModeMenu: TPopupMenu;
     LoadModeFileButton: TMenuItem;
@@ -23,6 +24,7 @@ type
     ExportDjvuButton: TMenuItem;
     ExportTextButton: TMenuItem;
     ExportPDFButton: TMenuItem;
+    ImportMenuItem: TMenuItem;
     Panel1: TPanel;
     Panel2: TPanel;
     Panel3: TPanel;
@@ -92,6 +94,7 @@ type
     procedure FormDestroy ( Sender: TObject ) ;
     procedure FormKeyDown ( Sender: TObject; var Key: Word; Shift: TShiftState
       ) ;
+    procedure ImportMenuItemClick ( Sender: TObject ) ;
     procedure LoadModeOptionClick(Sender: TObject);
     procedure RotateButtonClick ( Sender: TObject ) ;
     procedure DjvuButtonClick ( Sender: TObject ) ;
@@ -255,6 +258,37 @@ begin
      end;
 end;
 
+procedure TMainForm.ImportMenuItemClick ( Sender: TObject ) ;
+var
+  pages: LongInt;
+  x: Integer;
+  newpage: PLPix;
+  pagename: String;
+  tempfile: String;
+begin
+  if OpenDialog.Execute then
+    begin
+      pages := djvuGetDocInfo(OpenDialog.FileName).PageCount;
+      for x := 1 to pages do
+         begin
+           StatusBar.Panels[1].Text := 'Importing page ' + IntToStr(x);
+           Application.ProcessMessages;
+           tempfile := '/tmp/temppage.tif';
+           if FileExistsUTF8(tempfile) then DeleteFileUTF8(tempfile);
+           if djvuExtractPage(OpenDialog.FileName, tempfile, x)
+              then newpage := pixRead( PChar(tempfile) );
+           if newpage <> nil then
+             begin
+               pagename :=  ExtractFileNameOnly(OpenDialog.FileName)+IntToStr(x);
+               pixSetText(newpage, PChar(pagename));
+               LoadPage(newpage);
+             end;
+           if FileExistsUTF8(tempfile) then DeleteFileUTF8(tempfile);
+         end;
+    end;
+    StatusBar.Panels[1].Text := '';
+end;
+
 procedure TMainForm.LoadModeOptionClick(Sender: TObject);
 begin
   case TMenuItem(Sender).Tag of
@@ -323,55 +357,57 @@ begin
         Title := 'Export project to djvu...';
       end;
  if SaveDialog.Execute then
-     for x := 0 to Project.PageCount-1 do
-        try
-          HiddenText := nil;
-          data := TStringList.Create;
-          data.Add('select; remove-txt');
-          data.Add('# -------------------------------------');
-          data.Add('select 1');
-          data.Add('set-txt');
-
-          p := Project.Pages[x].PageImage;
-          pixGetDimensions(p, @w, @h, @d);
-          if d=1
-             then fn := '/tmp/test.pnm'
-             else fn := '/tmp/test.pbm';
-          StatusBar.Panels[1].Text := 'Processing page ' + IntToStr(x+1);
-          Application.ProcessMessages;
-          if Project.Pages[x].OCRData <> nil then
-             begin
-                data.Add(Format('(page 0 0 %d %d', [w, h]));
-                for lline := 0 to Project.Pages[x].OCRData.Linecount-1 do
-                   if Project.Pages[x].OCRData.Lines[lline].WordCount>0 then
-                   begin
-                     lin := Project.Pages[x].OCRData.Lines[lline];
-                     data.Add( Format(' (line %d %d %d %d', [lin.Box.Left,
-                                                             h-lin.Box.Bottom,
-                                                             lin.Box.Right,
-                                                             h-lin.Box.Top]));
-                     for wword := 0 to lin.WordCount-1 do
-                         data.Add( Format('  (word %d %d %d %d "%s")', [lin.Words[wword].Box.Left,
-                                                             h-lin.Words[wword].Box.Bottom,
-                                                             lin.Words[wword].Box.Right,
-                                                             h-lin.Words[wword].Box.Top,
-                                                             DjvuescapeText( lin.Words[wword].Text )] ));
-                     data.Strings[data.Count-1] := data.Strings[data.Count-1] + ')';
-                   end;
-                data.Strings[data.Count-1] := data.Strings[data.Count-1] + ')';
-                HiddenText := '/tmp/test.txt';
-                data.SaveToFile(HiddenText);
-             end;
-          pixWrite(PChar(fn), p, IFF_PNM);
-          if FileExistsUTF8(SaveDialog.FileName)
+     begin
+       if FileExistsUTF8(SaveDialog.FileName)
              then DeleteFileUTF8(SaveDialog.FileName);
-          if djvumakepage(fn, '/tmp/test.djvu', HiddenText)=0
-             then djvuaddpage(SaveDialog.FileName, '/tmp/test.djvu')
-             else ShowMessage('Error when encoding page ' + IntToStr(x+1));
-        finally
-          StatusBar.Panels[1].Text := '';
-          data.Free;
-        end;
+       for x := 0 to Project.PageCount-1 do
+          try
+            HiddenText := nil;
+            data := TStringList.Create;
+            data.Add('select; remove-txt');
+            data.Add('# -------------------------------------');
+            data.Add('select 1');
+            data.Add('set-txt');
+
+            p := Project.Pages[x].PageImage;
+            pixGetDimensions(p, @w, @h, @d);
+            if d=1
+               then fn := '/tmp/test.pnm'
+               else fn := '/tmp/test.pbm';
+            StatusBar.Panels[1].Text := 'Processing page ' + IntToStr(x+1);
+            Application.ProcessMessages;
+            if Project.Pages[x].OCRData <> nil then
+               begin
+                  data.Add(Format('(page 0 0 %d %d', [w, h]));
+                  for lline := 0 to Project.Pages[x].OCRData.Linecount-1 do
+                     if Project.Pages[x].OCRData.Lines[lline].WordCount>0 then
+                     begin
+                       lin := Project.Pages[x].OCRData.Lines[lline];
+                       data.Add( Format(' (line %d %d %d %d', [lin.Box.Left,
+                                                               h-lin.Box.Bottom,
+                                                               lin.Box.Right,
+                                                               h-lin.Box.Top]));
+                       for wword := 0 to lin.WordCount-1 do
+                           data.Add( Format('  (word %d %d %d %d "%s")', [lin.Words[wword].Box.Left,
+                                                               h-lin.Words[wword].Box.Bottom,
+                                                               lin.Words[wword].Box.Right,
+                                                               h-lin.Words[wword].Box.Top,
+                                                               DjvuescapeText( lin.Words[wword].Text )] ));
+                       data.Strings[data.Count-1] := data.Strings[data.Count-1] + ')';
+                     end;
+                  data.Strings[data.Count-1] := data.Strings[data.Count-1] + ')';
+                  HiddenText := '/tmp/test.txt';
+                  data.SaveToFile(HiddenText);
+               end;
+            pixWrite(PChar(fn), p, IFF_PNM);
+            if djvumakepage(fn, '/tmp/test.djvu', HiddenText)=0
+               then djvuaddpage(SaveDialog.FileName, '/tmp/test.djvu')
+               else ShowMessage('Error when encoding page ' + IntToStr(x+1));
+          finally
+            StatusBar.Panels[1].Text := '';
+            data.Free;
+          end;
+     end;
 end;
 
 procedure TMainForm.DeskewButtonClick ( Sender: TObject ) ;
