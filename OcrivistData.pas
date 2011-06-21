@@ -23,6 +23,7 @@ type
   private
     FActive: Boolean;
     function getOCRText: string;
+    function GetPageImage: PLPix;
     function GetSelection ( aIndex: Integer ) : TRect;
     function GetSelectionCount: Integer;
     procedure SetActive ( const AValue: Boolean ) ;
@@ -43,7 +44,7 @@ type
     property SelectionCount: Integer read GetSelectionCount;
     property Title: string read FTitle write FTitle;
     property Modified: Boolean read FModified write FModified;
-    property PageImage: PLPix read FPix write SetPageImage;
+    property PageImage: PLPix read GetPageImage write SetPageImage;
     property Thumbnail: TBitmap read FThumbnail;
     property Active: Boolean read FActive write SetActive;
     property OCRData: TTesseractPage read FOCRData write SetOCRData;
@@ -160,12 +161,17 @@ procedure TOcrivistProject.SaveToFile ( FileName: TFilename ) ;
 var
   F: THandle;
   databuf: string;
+  buffer: array of byte;
   tempbuf: PByteArray;
   bytes: Integer;
   page: Integer;
   aPage: TOcrivistPage;
   bytecount: Integer;
   pageImage: PLPix;
+  llines: Integer;
+  aline: TLineData;
+  wwords: Integer;
+  memstream: TMemoryStream;
 begin
   if FileExists(FileName)
      then DeleteFile(FileName);
@@ -180,7 +186,7 @@ begin
        bytes := Length(FTitle);
        FileWrite(F, bytes, SizeOf(bytes));                     //5 - Integer - length of string FTitle
        if bytes>0 then
-              FileWrite(F, FTitle[1], Length(FTitle));                //6 - array of char - string FTitle
+              FileWrite(F, FTitle[1], Length(FTitle));         //6 - array of char - string FTitle
        bytes := Length(FPages);
        FileWrite(F, bytes, SizeOf(bytes));                     //7 - Integer - number of pages in project
        for page := 0 to Length(FPages)-1 do
@@ -190,27 +196,54 @@ begin
            bytes := Length(databuf);
            FileWrite(F, bytes, SizeOf(bytes));                 //1 - Integer - length of string Title
            if bytes>0 then
-              FileWrite(F, databuf[1], bytes);                    //2 - array of char - string Title
+              FileWrite(F, databuf[1], bytes);                 //2 - array of char - string Title
            bytes := Length(aPage.Text);
            FileWrite(F, bytes, SizeOf(bytes));                 //3 - Integer - length of string Text
            databuf := aPage.Text;                              //4 - array of char - = string Text
            if bytes>0 then
               FileWrite(F, databuf[1], bytes);
-           pageImage := pixClone(aPage.PageImage);
-           if pageImage<>nil then
-              try
-                if pixWriteMem(@tempbuf, @bytecount, pageImage, IFF_TIFF_ZIP)=0 then
+           databuf := aPage.FTempFile;
+           bytes := Length(databuf);
+           FileWrite(F, bytes, SizeOf(bytes));                 //5 - Integer - length of FTempFile
+           if bytes>0 then
+              FileWrite(F, databuf[1], bytes);                 //6 - array of char - = string FtempFile
+
+           memstream := TMemoryStream.Create;
+           try
+             aPage.FThumbnail.SaveToStream(memstream);
+             bytes := memstream.Size;
+             FileWrite(F, bytes, SizeOf(bytes));                 //7 - Integer - length of FThumbnail
+             memstream.Position := 0;
+             if bytes>0 then
+                begin
+                  SetLength(buffer, bytes);
+                  memstream.Read(buffer[0], bytes);
+                  FileWrite(F, buffer[0], bytes);                //8 - FThumbnail data
+                end;
+           finally
+             memstream.Free;
+           end;
+
+           if aPage.FOCRData <> nil
+              then bytes := aPage.FOCRData.Linecount
+              else bytes := 0;
+           FileWrite(F, bytes, SizeOf(bytes));                   //9 - Integer - FOCRData exists: TRUE= >0
+           if aPage.FOCRData <> nil then
+              for llines := 0 to aPage.FOCRData.Linecount-1 do
+              begin
+                aline := aPage.FOCRData.Lines[llines];
+                FileWrite(F, aline.Box, SizeOf(aline.Box));
+                FileWrite(F, aline.WordCount, SizeOf(aline.WordCount));
+                for wwords := 0 to aline.WordCount-1 do
                     begin
-                      writeln('writing image data ');
-                      FileWrite(F, bytecount, SizeOf(bytecount));    //5 - Integer - length of image data
-                      writeln('written data size: ', bytecount);
-                      FileWrite(F, tempbuf^[0], bytecount);          //6 - array of byte - image data
+                      Filewrite(F, aline.Words[wwords], SizeOf(aline.Words[wwords]));
+                      databuf := aline.Words[wwords].Text;
+                      bytes := Length(databuf);
+                      FileWrite(F, bytes, SizeOf(bytes));// Integer - length of aline.Words[wwords].Text
+                      if bytes>0 then
+                         FileWrite(F, databuf[1], bytes);// - array of char - = string Text
                     end;
-              finally
-                pixDestroy(@pageImage);
-              end
-           else
-               Raise Exception.Create('unable to open temporary page image ' + aPage.FTempFile);
+              end;
          end;
      finally
        FileClose(F);
@@ -228,6 +261,11 @@ var
   page: Integer;
   aPage: TOcrivistPage;
   bytecount: Integer;
+  lline: Integer;
+  wwords: Integer;
+  aWord: TWordData;
+  aLine: TLineData;
+  memstream: TMemoryStream;
 begin
   Result := -1;
   F := FileOpen(FileName, fmOpenRead);
@@ -239,35 +277,83 @@ begin
        FileRead(F, FPageWidth, SizeOf(FPageWidth));           //3 - Integer - page width
        FileRead(F, FPageHeight, SizeOf(FPageHeight));         //4 - Integer - page height;
        FileRead(F, bytes, SizeOf(bytes));                     //5 - Integer - length of string FTitle
-       SetLength(FTitle, bytes+1);
+       SetLength(FTitle, bytes);
        if bytes>0 then
-              FileRead(F, FTitle[1], bytes);                //6 - array of char - string FTitle
-       //bytes := Length(FPages);
+              FileRead(F, FTitle[1], bytes);                  //6 - array of char - string FTitle
        FileRead(F, bytes, SizeOf(bytes));                     //7 - Integer - number of pages in project
        SetLength(FPages, bytes);
-       for page := 0 to bytes-1 do
+       for page := 0 to PageCount-1 do
          begin
-           //aPage := TOcrivistPage(FPages[page]);
            aPage := TOcrivistPage.Create(nil);
+           aPage.FActive := false;                // do not load image until necessary
            FPages[page] := aPage;
            FileRead(F, bytes, SizeOf(bytes));                 //1 - Integer - length of string Title
            SetLength(apage.FTitle, bytes+1);
            if bytes>0 then
-              FileRead(F, apage.FTitle[1], bytes);                    //2 - array of char - string Title
+              FileRead(F, apage.FTitle[1], bytes);            //2 - array of char - string Title
            FileRead(F, bytes, SizeOf(bytes));                 //3 - Integer - length of string Text
-           SetLength(strbuf, bytes+1);
            if bytes>0 then
-              FileRead(F, strbuf[1], bytes);
-//           aPage.OCRData.Text := strbuf;         //TODO : decide how to repopulate OCRData.Text
-           FileRead(F, bytecount, SizeOf(bytecount));    //5 - Integer - length of image data
-           if bytecount>0 then
-              try
-                Getmem(tempbuf, bytecount);
-                FileRead(F, tempbuf[0], bytecount);      //6 - array of byte - image data
-                aPage.PageImage := pixReadMem(tempbuf, bytecount);
-              finally
-                Freemem(tempbuf);
+              begin
+                aPage.FOCRData := TTesseractPage.Create(nil);
+                 SetLength(strbuf, bytes);
+                 if bytes>0 then
+                    FileRead(F, strbuf[1], bytes);                  //4 - array of char - = string Text
+                    //writeln('Got Page Text=', strbuf);
+                 aPage.OCRData.Text := strbuf;
               end;
+           FileRead(F, bytes, SizeOf(bytes));                 //5 - Integer - length of FTempFile
+           SetLength(strbuf, bytes);
+           if bytes>0 then
+              begin
+                FileRead(F, strbuf[1], bytes);                //6 - array of char - = string FtempFile
+                aPage.FTempFile := strbuf;
+                if page=FcurrentPage
+                   then aPage.PageImage := aPage.LoadFromFileBackground;
+              end;
+
+           FileRead(F, bytes, SizeOf(bytes));                 //7 - Integer - size of FThumbnail
+           if bytes>0 then
+              try
+                memstream := TMemoryStream.Create;
+                SetLength(databuf, bytes);
+                FileRead(F, databuf[0], bytes);               //8 - FThumbnail data
+                memstream.Write(databuf[0], bytes);
+                SetLength(databuf, 0); // reduce memory used
+                memstream.Position := 0;
+                aPage.FThumbnail := TBitmap.Create;
+                aPage.Thumbnail.LoadFromStream(memstream);
+              finally
+                memstream.Free;
+              end;
+
+           FileRead(F, bytes, SizeOf(bytes));                 //9 - Integer - FOCRData exists: TRUE= >0
+           aPage.FOCRData.Linecount := bytes;
+           for lline := 0 to aPage.FOCRData.Linecount-1 do
+             begin
+               aLine.Index := lline;
+               FileRead(F, aLine.Box, SizeOf(aLine.Box));
+               FileRead(F, aLine.WordCount, SizeOf(aLine.WordCount));
+ //              writeln('wordcount=', aLine.WordCount);
+               SetLength(aLine.Words, aLine.WordCount);
+               aPage.FOCRData.Lines[lline] := aLine;
+               for wwords := 0 to aLine.WordCount-1 do
+                 begin
+                   FileRead(F, aWord, SizeOf(aWord));
+//                   writeln('line #', lline, ' Word #', wwords, ' box.top=', aWord.Box.Top);
+                   FileRead(F, bytes, SizeOf(bytes));
+                   SetLength(strbuf, bytes);
+                   FileRead(F, strbuf[1], bytes);
+                   with aPage.FOCRData.Lines[lline] do
+                       begin
+                         Words[wwords].Start := aWord.Start;
+                         Words[wwords].Length := aWord.Length;
+                         Words[wwords].Box := aWord.Box;
+                         Words[wwords].Confidence := aWord.Confidence;
+                         Words[wwords].Text := strbuf;
+                       end;
+                   writeln('Loaded word: ', aPage.FOCRData.Lines[lline].Words[wwords].Text);
+                 end;
+             end;
          end;
      finally
        FileClose(F);
@@ -342,6 +428,15 @@ begin
      then Result := FOCRData.Text;
 end;
 
+function TOcrivistPage.GetPageImage: PLPix;
+begin
+  writeln('FTempFile: ', FTempFile);
+  if FPix = nil
+     then if FileExists(FTempFile)
+        then FPix := LoadFromFile;
+  Result := FPix;
+end;
+
 function TOcrivistPage.GetSelectionCount: Integer;
 begin
   Result := Length(FSelections);
@@ -408,8 +503,6 @@ begin
   FThumbnail := nil;
   FActive := true;
   FOCRData := nil;
-  {if pix <> nil
-     then SaveToTempfile(pix, GetTempDir);}
   FPix := pix;
   if FPix<>nil then
      begin

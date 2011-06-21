@@ -39,14 +39,16 @@ type
     FLines: array of TLineData;
     FLineCount: Integer;
     function GetLines ( lineIndex: Integer ) : TLineData;
+    procedure SetLinecount ( const AValue: Integer ) ;
+    procedure SetLines ( lineIndex: Integer ; const AValue: TLineData ) ;
   public
     constructor Create( PixIn: PLPix );
     destructor Destroy; override;
     function RecognizeRect( inRect: TRect ): integer;
-    property Text: string read FText;
+    property Text: string read FText write FText;
     property OnOCRLine: TProgressCallback read FOnOCRLine write FOnOCRLine;
-    property Lines[ lineIndex: Integer ]: TLineData read GetLines;
-    property Linecount: Integer read FLineCount;
+    property Lines[ lineIndex: Integer ]: TLineData read GetLines write SetLines;
+    property Linecount: Integer read FLineCount write SetLinecount;
   end;
 
 const
@@ -60,6 +62,19 @@ function TTesseractPage.GetLines ( lineIndex: Integer ) : TLineData;
 begin
   if (lineIndex>=0) and (lineIndex<FLineCount)
      then Result := FLines[lineIndex];
+end;
+
+procedure TTesseractPage.SetLinecount ( const AValue: Integer ) ;
+begin
+  SetLength(FLines, AValue);
+  FLineCount := AValue;
+end;
+
+procedure TTesseractPage.SetLines ( lineIndex: Integer ;
+  const AValue: TLineData ) ;
+begin
+  if lineIndex>=FLineCount then exit;
+  FLines[lineIndex] := AValue;
 end;
 
 constructor TTesseractPage.Create ( PixIn: PLPix ) ;
