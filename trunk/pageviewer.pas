@@ -237,7 +237,7 @@ begin
   if AValue<0.05 then exit;
   if AValue<>FScale then
         begin
-          FScale := Avalue;
+          FScale := AValue;
           if FScale=1
               then FMode := vmFullSize
               else FMode := vmScaled;
@@ -376,8 +376,8 @@ begin
           writeln('w:', FPageWidth, '  h:', FPageHeight, ' scale:', FormatFloat('0.00', FScale));
           SetupScrollbars;
           ResizeSelections;
+          Invalidate;
         end;
- //   Invalidate;
   end;
 end;
 
