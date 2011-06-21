@@ -1,7 +1,7 @@
 object MainForm: TMainForm
-  Left = 204
+  Left = 203
   Height = 637
-  Top = 334
+  Top = 330
   Width = 1072
   ActiveControl = ListboxPanel
   Caption = 'Ocrivist'
@@ -1003,6 +1003,10 @@ object MainForm: TMainForm
       object SaveAsMenuItem: TMenuItem
         Caption = 'Save As ...'
         OnClick = SaveAsMenuItemClick
+      end
+      object ImportMenuItem: TMenuItem
+        Caption = 'Import ...'
+        OnClick = ImportMenuItemClick
       end
       object MenuItem3: TMenuItem
         Caption = '-'
