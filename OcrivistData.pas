@@ -327,33 +327,36 @@ begin
               end;
 
            FileRead(F, bytes, SizeOf(bytes));                 //9 - Integer - FOCRData exists: TRUE= >0
-           aPage.FOCRData.Linecount := bytes;
-           for lline := 0 to aPage.FOCRData.Linecount-1 do
-             begin
-               aLine.Index := lline;
-               FileRead(F, aLine.Box, SizeOf(aLine.Box));
-               FileRead(F, aLine.WordCount, SizeOf(aLine.WordCount));
- //              writeln('wordcount=', aLine.WordCount);
-               SetLength(aLine.Words, aLine.WordCount);
-               aPage.FOCRData.Lines[lline] := aLine;
-               for wwords := 0 to aLine.WordCount-1 do
-                 begin
-                   FileRead(F, aWord, SizeOf(aWord));
-//                   writeln('line #', lline, ' Word #', wwords, ' box.top=', aWord.Box.Top);
-                   FileRead(F, bytes, SizeOf(bytes));
-                   SetLength(strbuf, bytes);
-                   FileRead(F, strbuf[1], bytes);
-                   with aPage.FOCRData.Lines[lline] do
-                       begin
-                         Words[wwords].Start := aWord.Start;
-                         Words[wwords].Length := aWord.Length;
-                         Words[wwords].Box := aWord.Box;
-                         Words[wwords].Confidence := aWord.Confidence;
-                         Words[wwords].Text := strbuf;
-                       end;
-                   writeln('Loaded word: ', aPage.FOCRData.Lines[lline].Words[wwords].Text);
-                 end;
-             end;
+           if bytes>0 then
+           begin
+             aPage.FOCRData.Linecount := bytes;
+             for lline := 0 to aPage.FOCRData.Linecount-1 do
+               begin
+                 aLine.Index := lline;
+                 FileRead(F, aLine.Box, SizeOf(aLine.Box));
+                 FileRead(F, aLine.WordCount, SizeOf(aLine.WordCount));
+   //              writeln('wordcount=', aLine.WordCount);
+                 SetLength(aLine.Words, aLine.WordCount);
+                 aPage.FOCRData.Lines[lline] := aLine;
+                 for wwords := 0 to aLine.WordCount-1 do
+                   begin
+                     FileRead(F, aWord, SizeOf(aWord));
+  //                   writeln('line #', lline, ' Word #', wwords, ' box.top=', aWord.Box.Top);
+                     FileRead(F, bytes, SizeOf(bytes));
+                     SetLength(strbuf, bytes);
+                     FileRead(F, strbuf[1], bytes);
+                     with aPage.FOCRData.Lines[lline] do
+                         begin
+                           Words[wwords].Start := aWord.Start;
+                           Words[wwords].Length := aWord.Length;
+                           Words[wwords].Box := aWord.Box;
+                           Words[wwords].Confidence := aWord.Confidence;
+                           Words[wwords].Text := strbuf;
+                         end;
+                     writeln('Loaded word: ', aPage.FOCRData.Lines[lline].Words[wwords].Text);
+                   end;
+               end;
+           end;
          end;
      finally
        FileClose(F);
