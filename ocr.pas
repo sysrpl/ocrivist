@@ -127,6 +127,7 @@ var
   WordData: TWordData;
   wordpos: Integer;
   wordend: Integer;
+  deletedtokens: Integer;
 
   procedure AdjustToArea( abox: PLBox; lineref: integer );
   var
@@ -151,11 +152,13 @@ var
 
 begin
     if FPageImage=nil then Exit;
+    pa := nil;
+    na := nil;
     TextRegion := CropPix(FPageImage, inRect);
     writeln('Created TextRegion');
     pixWrite('/tmp/textregion.bmp', TextRegion, IFF_BMP);
     writeln(Format('inRect: %d %d %d %d', [inrect.Left, inRect.Top, inRect.Right, inRect.Bottom]));
-    writeln( pixGetWordsInTextlines(TextRegion, 1, 20, 20, 200, 500, @ba, @pa, @na) );
+    writeln( pixGetWordsInTextlines(TextRegion, 1, 5, 20, inRect.Right-inRect.Left, 200, @ba, @pa, @na) );
     writeln('Boxarray.Getcount: ', boxaGetCount(ba));
     lncount := 0;
 
@@ -163,27 +166,30 @@ begin
     n := 0;
     boxCount := boxaGetCount(ba);
     lineindex := 0;
-    while numaGetIValue(na, n, @linenum)=0 do
-       begin
-         Inc(lncount);
-         R.Left := 0;
-         R.Top := inRect.Bottom-inRect.Top;
-         R.Right := 0;
-         R.Bottom := 0;
-         while (numaGetIValue(na, n, @lineNum)=0) and (lineNum=lineindex) do
-               begin
-                 wb := boxaGetBox(ba, n, L_CLONE);
-                 boxGetGeometry(wb, @wbx, @wby, @wbw, @wbh);
-                 if wby < R.Top then R.Top := wby;
-                 if wbh + wby > R.Bottom then R.Bottom := wbh + wby;
-                 if wbx + wbw > R.Right then R.Right := wbx + wbw;
-                 boxDestroy(@wb);
-                 Inc(n);
-               end;
-         ra[lineindex] := R;
-         lineindex := lineNum;
-         writeln( 'Lineindex: ', FormatFloat('0.00', lineindex));
-       end;
+    lncount := 0;
+    if boxCount>0 then
+        while numaGetIValue(na, n, @linenum)=0 do
+           begin
+             Inc(lncount);
+             R.Left := 0;
+             R.Top := inRect.Bottom-inRect.Top;
+             R.Right := 0;
+             R.Bottom := 0;
+             wb := nil;
+             while (numaGetIValue(na, n, @lineNum)=0) and (lineNum=lineindex) do
+                   begin
+                     wb := boxaGetBox(ba, n, L_CLONE);
+                     boxGetGeometry(wb, @wbx, @wby, @wbw, @wbh);
+                     if wby < R.Top then R.Top := wby;
+                     if wbh + wby > R.Bottom then R.Bottom := wbh + wby;
+                     if wbx + wbw > R.Right then R.Right := wbx + wbw;
+                     boxDestroy(@wb);
+                     Inc(n);
+                   end;
+             ra[lineindex] := R;
+             lineindex := lineNum;
+             writeln( 'Lineindex: ', FormatFloat('0.00', lineindex));
+           end;
 
      SetLength(FLines, FLineCount + lncount);
      writeln('Lncount: ', lncount);
@@ -224,6 +230,7 @@ begin
               if wa<>nil then
                   begin
                      writeln('Tesseract wordcount: ', boxaGetCount(wa));
+                     deletedtokens := 0;
                      conf := tesseract_AllWordConfidences(FTesseract);
                     //writeln( boxaWrite(Pchar('/tmp/tessboxes' + IntToStr(x) + '.txt'), wa));
                      for n := 0 to boxaGetCount(wa)-1 do
@@ -235,15 +242,20 @@ begin
                               AdjustToArea(b, x);
                               boxaReplaceBox(wa, n, b);
                             end;
-                            FLines[FLineCount + x].Words[n].Confidence := conf[n];
-                            FLines[FLineCount + x].Words[n].Box := BoxToRect(b);
+                            FLines[FLineCount + x].Words[n-deletedtokens].Confidence := conf[n];
+                            FLines[FLineCount + x].Words[n-deletedtokens].Box := BoxToRect(b);
                             while UTF8Text[wordend]>#32 do Inc(wordend);
                             Inc(wordend);
-                            FLines[FLineCount + x].Words[n].Start := wordpos;
-                            FLines[FLineCount + x].Words[n].Length := wordend-wordpos;
-                            FLines[FLineCount + x].Words[n].Text := Copy(UTF8Text, wordpos, wordend-wordpos);
+                            FLines[FLineCount + x].Words[n-deletedtokens].Start := wordpos;
+                            FLines[FLineCount + x].Words[n-deletedtokens].Length := wordend-wordpos;
+                            FLines[FLineCount + x].Words[n-deletedtokens].Text := Copy(UTF8Text, wordpos, wordend-wordpos);
                             while UTF8Text[wordend]<=#32 do Inc(wordend);
                             wordpos := wordend+1;
+                            if Length(Trim(UTF8Text))=0 then
+                               begin
+                                 Inc (deletedtokens);
+                                 FLines[FLineCount + x].WordCount := FLines[FLineCount + x].WordCount-1;
+                               end;
                           end;
                      //writeln( boxaWrite(Pchar('/tmp/adjusted-tessboxes' + IntToStr(x) + '.txt'), wa));
 
@@ -255,14 +267,16 @@ begin
                  then FOnOCRLine(1);
             end
           else writeln('empty box: ', x);
+          for n := 0 to FLines[FLineCount + x].WordCount-1 do write(FLines[FLineCount + x].Words[n].Text+#32);
+          WriteLn('');
          end;
     FLineCount := FLineCount + lncount;
-    boxDestroy(@ba);
-    ptaDestroy(@pa);
-    numaDestroy(@na);
-    pixDestroy(@TextRegion);
+    if ba<>nil then boxDestroy(@ba);
+    if pa<>nil then ptaDestroy(@pa);
+    if na<>nil then numaDestroy(@na);
+    if TextRegion<>nil then pixDestroy(@TextRegion);
 
-    writeln('FConfidenceRating sample: ', FLines[2].Words[0].Confidence);
+//    writeln('FConfidenceRating sample: ', FLines[2].Words[0].Confidence);
 end;
 
 end.
