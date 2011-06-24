@@ -7,8 +7,9 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls,
   ExtCtrls, Menus, leptonica, LibLeptUtils, pageviewer, types, LCLType,
-  ActnList, Buttons, ComCtrls, SynMemo, SynEdit, SynHighlighterAny,
-  OcrivistData, selector, Sane;
+  ActnList, Buttons, ComCtrls,
+  OcrivistData, selector, Sane, ocreditor;
+
 
 type
 
@@ -25,9 +26,12 @@ type
     ExportTextButton: TMenuItem;
     ExportPDFButton: TMenuItem;
     ImportMenuItem: TMenuItem;
+    SaveTextMenuItem: TMenuItem;
+    DeleteLineMenuItem: TMenuItem;
     Panel1: TPanel;
     Panel2: TPanel;
     Panel3: TPanel;
+    TextPopupMenu: TPopupMenu;
     SelModeSelectButton: TMenuItem;
     SelModeDeleteButton: TMenuItem;
     SelModeCropButton: TMenuItem;
@@ -39,8 +43,6 @@ type
     SetScannerMenuItem: TMenuItem;
     MenuItem2: TMenuItem;
     StatusBar: TStatusBar;
-    SynAnySyn1: TSynAnySyn;
-    SynMemo1: TSynMemo;
     ThumbnailListBox: TListBox;
     MainMenu: TMainMenu;
     FileMenu: TMenuItem;
@@ -122,6 +124,7 @@ type
     procedure ViewMenuItemClick ( Sender: TObject ) ;
   private
     { private declarations }
+    Editor: TOcrivistEdit;
     Project: TOcrivistProject;
     AddingThumbnail: Boolean;
     ThumbnailStartPoint: TPoint;
@@ -230,6 +233,10 @@ begin
   Project.Title := 'Default Project';
   AddingThumbnail := false;
   DraggingThumbnail := false;
+  Editor := TOcrivistEdit.Create(Self);
+  editor.Parent := Panel3;
+  editor.Align := alClient;
+  Editor.PopupMenu := TextPopupMenu;
 end;
 
 procedure TMainForm.FormDestroy ( Sender: TObject ) ;
@@ -271,6 +278,7 @@ begin
       pages := djvuGetDocInfo(OpenDialog.FileName).PageCount;
       for x := 1 to pages do
          begin
+           newpage := nil;
            StatusBar.Panels[1].Text := 'Importing page ' + IntToStr(x);
            Application.ProcessMessages;
            tempfile := '/tmp/temppage.tif';
@@ -282,6 +290,7 @@ begin
                pagename :=  ExtractFileNameOnly(OpenDialog.FileName)+IntToStr(x);
                pixSetText(newpage, PChar(pagename));
                LoadPage(newpage);
+           //    if x>2 then Project.Pages[x-2].Active := false;
              end;
            if FileExistsUTF8(tempfile) then DeleteFileUTF8(tempfile);
          end;
@@ -456,7 +465,8 @@ begin
        for count := 0 to boxaGetCount(B)-1 do
             begin
               boxaGetBoxGeometry(B, count, @x, @y, @w, @h);
-              ICanvas.AddSelection(Rect(x-10, y-5, x+w+5, y+h{+20}));
+              Project.CurrentPage.AddSelection( Rect(x-10, y-5, x+w+5, y+h) );
+              ICanvas.AddSelection(Rect(x-10, y-5, x+w+5, y+h));
             end;
        finally
          if B<>nil then
@@ -533,7 +543,8 @@ begin
   for x := 0 to Project.CurrentPage.SelectionCount-1 do
       ICanvas.AddSelection(Project.CurrentPage.Selection[x]);
   if Project.CurrentPage.OCRData<>nil
-     then SynMemo1.Text := Project.CurrentPage.Text;
+     then editor.OCRData := Project.CurrentPage.OCRData;
+
 end;
 
 procedure TMainForm.ThumbnailListBoxDrawItem ( Control: TWinControl; Index: Integer;
@@ -634,7 +645,7 @@ begin
   for x := 0 to Project.CurrentPage.SelectionCount-1 do
       OCRJob.RecognizeRect( Project.CurrentPage.Selection[x] );
   Project.CurrentPage.OCRData := OCRJob;
-  SynMemo1.Text := Project.CurrentPage.Text;
+  Editor.OCRData := Project.CurrentPage.OCRData;
   StatusBar.Panels[1].Text := '';
 end;
 
@@ -709,7 +720,7 @@ begin
  If Project.ItemIndex>=0
   then for X := Project.CurrentPage.SelectionCount-1 downto 0 do
        ICanvas.DeleteSelector(X);
- SynMemo1.Clear;
+ Editor.OCRData := nil;
  Project.AddPage(ICanvas.Picture);
  thumbBMP := Project.CurrentPage.Thumbnail;
  if thumbBMP<>nil then
