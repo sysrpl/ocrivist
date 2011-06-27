@@ -8,7 +8,7 @@ uses
   {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset
   Forms, sane, scanutils, MainUI, LibLeptUtils, leptonica, pageviewer,
-  OcrivistData, selector, tessintf, DjvuUtils, scanner, ocr, ocreditor
+  OcrivistData, selector, tessintf, DjvuUtils, scanner, ocr, ocreditor, frmSpell
   { you can add units after this };
 
 {$R *.res}
@@ -20,6 +20,7 @@ begin
   Application.CreateForm ( TScannerForm, ScannerForm ) ;
   ScannerForm.OnChangeScanner := @MainForm.UpdateScannerStatus;
   MainForm.UpdateScannerStatus(nil);
+  Application.CreateForm ( TSpellcheckForm, SpellcheckForm ) ;
   Application.Run;
 end.
 
