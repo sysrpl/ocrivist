@@ -1,0 +1,78 @@
+object SpellcheckForm: TSpellcheckForm
+  Left = 133
+  Height = 351
+  Top = 171
+  Width = 354
+  ClientHeight = 351
+  ClientWidth = 354
+  LCLVersion = '0.9.29'
+  object Label1: TLabel
+    Left = 24
+    Height = 18
+    Top = 16
+    Width = 181
+    Caption = 'Word not found in dictionary:'
+    ParentColor = False
+  end
+  object WordEdit: TEdit
+    Left = 28
+    Height = 25
+    Top = 43
+    Width = 308
+    TabOrder = 0
+    Text = 'WordEdit'
+  end
+  object SuggestionList: TListBox
+    Left = 28
+    Height = 141
+    Top = 83
+    Width = 308
+    ItemHeight = 0
+    OnSelectionChange = SuggestionListSelectionChange
+    TabOrder = 1
+    TopIndex = -1
+  end
+  object ChangeButton: TButton
+    Left = 33
+    Height = 25
+    Top = 235
+    Width = 75
+    Caption = 'Change'
+    Default = True
+    OnClick = ChangeButtonClick
+    TabOrder = 2
+  end
+  object IgnoreButton: TButton
+    Left = 33
+    Height = 25
+    Top = 304
+    Width = 75
+    Caption = 'Ignore'
+    OnClick = IgnoreButtonClick
+    TabOrder = 3
+  end
+  object AddButton: TButton
+    Left = 33
+    Height = 25
+    Top = 272
+    Width = 75
+    Caption = 'Add'
+    OnClick = AddButtonClick
+    TabOrder = 4
+  end
+  object CancelButton: TBitBtn
+    AnchorSideRight.Control = SuggestionList
+    AnchorSideRight.Side = asrBottom
+    Left = 258
+    Height = 32
+    Top = 295
+    Width = 78
+    Anchors = [akTop, akRight]
+    AutoSize = True
+    Cancel = True
+    Caption = 'Cancel'
+    Kind = bkCancel
+    ModalResult = 2
+    TabOrder = 5
+  end
+end
