@@ -6,7 +6,8 @@ interface
 
 uses
   Classes, ExtCtrls, Controls, StdCtrls, Forms, SysUtils, Graphics, ocr, SynMemo, SynEdit, SynHighlighterPosition,
-  SynEditHighlighter, SpellCheck, frmSpell;
+  SynEditHighlighter, Ocrivist_Spell, frmSpell;
+
 
 type
   TSpellcheckCallback = function( var aword: string; suggestions: TSuggestionArray ): TSpellResponse of object;
@@ -355,16 +356,25 @@ begin
                       TSynPositionHighlighter(Highlighter).ClearTokens(lline);
                       if spellcheckresponse=srCancel then Exit else
                       case spellcheckresponse of
-                           srChange,
+                           srChange: begin
+                                    Words[wword].Text := w;
+                                    LineRefresh(lline);
+                                  end;
                            srAdd: begin
                                     Words[wword].Text := w;
                                     LineRefresh(lline);
+                                    Speller.AddToPersonalDict(w);
+                                  end;
+                           srIgnore: begin
+                                    LineRefresh(lline);
+                                    Speller.AddToSession(w);
                                   end;
                            end;
                       Refresh;
                     end;
                end;
   finally
+    Speller.SaveWordlists;
     Speller.Free;
   end;
 end;
