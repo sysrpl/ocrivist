@@ -1155,9 +1155,40 @@ function numaGetIValue( na: PNumArray; index: Longint; pival: PLongint ): Longin
  *}
 function pixaGetCount( pixa: PPixArray): Longint; cdecl; external LIBLEPT;
 
+{*!
+ *  pixRenderBox()
+ *
+ *      Input:  pix
+ *              box
+ *              width  (thickness of box lines)
+ *              op  (one of L_SET_PIXELS, L_CLEAR_PIXELS, L_FLIP_PIXELS)
+ *      Return: 0 if OK, 1 on error
+ *}
+function pixRenderBox( pix: PLPix; box: PLBox; width, op: Longint): Longint; cdecl; external LIBLEPT;
 
+{*!
+ *  pixRenderBoxArb()
+ *
+ *      Input:  pix
+ *              box
+ *              width  (thickness of box lines)
+ *              rval, gval, bval
+ *      Return: 0 if OK, 1 on error
+ *}
+function pixRenderBoxArb(pix: PLPix; box: PLBox; width: Longint; rval, gval, bval: word): Longint; cdecl; external LIBLEPT;
 
-
+{*!
+ *  pixRenderBoxBlend()
+ *
+ *      Input:  pix
+ *              box
+ *              width  (thickness of box lines)
+ *              rval, gval, bval
+ *              fract (in [0.0 - 1.0]; complete transparency (no effect)
+ *                     if 0.0; no transparency if 1.0)
+ *      Return: 0 if OK, 1 on error
+ *}
+function pixRenderBoxBlend( pix: PLPix; box: PLBox; width: Longint; rval, gval, bval: word; fract: Single): Longint; cdecl; external LIBLEPT;
 
 implementation
 
