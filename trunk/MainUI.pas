@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls,
   ExtCtrls, Menus, leptonica, LibLeptUtils, pageviewer, types, LCLType,
-  ActnList, Buttons, ComCtrls,
+  ActnList, Buttons, ComCtrls, SpellCheck,
   OcrivistData, selector, Sane, ocreditor;
 
 
@@ -17,6 +17,7 @@ type
 
   TMainForm = class ( TForm )
     DeskewMenuItem: TMenuItem;
+    CorrectionviewImage: TImage;
     ImageList1: TImageList;
     LoadModeMenu: TPopupMenu;
     LoadModeFileButton: TMenuItem;
@@ -28,9 +29,10 @@ type
     ImportMenuItem: TMenuItem;
     SaveTextMenuItem: TMenuItem;
     DeleteLineMenuItem: TMenuItem;
-    Panel1: TPanel;
+    CorrectionPanel: TPanel;
     Panel2: TPanel;
     Panel3: TPanel;
+    CorrectionviewScrollBox: TScrollBox;
     TextPopupMenu: TPopupMenu;
     SelModeSelectButton: TMenuItem;
     SelModeDeleteButton: TMenuItem;
@@ -72,6 +74,7 @@ type
     ToolButton3: TToolButton;
     DelPageButton: TToolButton;
     ToolButton4: TToolButton;
+    SpellcheckButton: TToolButton;
     ToolButton6: TToolButton;
     ExportButton: TToolButton;
     DeskewButton: TToolButton;
@@ -103,6 +106,7 @@ type
     procedure DeskewButtonClick ( Sender: TObject ) ;
     procedure SelTextButtonClick ( Sender: TObject ) ;
     procedure AnalyseButtonClick ( Sender: TObject ) ;
+    procedure SpellcheckButtonClick ( Sender: TObject ) ;
     procedure ThumbnailListBoxDragDrop ( Sender, Source: TObject; X, Y: Integer
       ) ;
     procedure ThumbnailListBoxDragOver ( Sender, Source: TObject; X,
@@ -136,6 +140,8 @@ type
     procedure ShowOCRProgress ( progress: Single );
     procedure LoadPage( newpage: PLPix );
     procedure DoCrop;
+    procedure DoSpellcheck;
+    procedure EditorSelectToken( aline, aword: integer );
   public
     { public declarations }
   end;
@@ -148,7 +154,7 @@ const
 var
   MainForm: TMainForm;
   ICanvas : TPageViewer;
-  Image1:TImage;
+  CorrectionviewImage:TImage;
   OCRProgressCount: integer;
 
  implementation
@@ -237,6 +243,8 @@ begin
   editor.Parent := Panel3;
   editor.Align := alClient;
   Editor.PopupMenu := TextPopupMenu;
+  Editor.OnSelectToken := @EditorSelectToken;
+//  Editor.OnSpellCheck := @SpellCallback;
 end;
 
 procedure TMainForm.FormDestroy ( Sender: TObject ) ;
@@ -477,6 +485,11 @@ begin
      end;
   if BinaryPix<>nil then
        pixDestroy(@BinaryPix);
+end;
+
+procedure TMainForm.SpellcheckButtonClick ( Sender: TObject ) ;
+begin
+  DoSpellcheck;
 end;
 
 procedure TMainForm.ThumbnailListBoxDragDrop ( Sender, Source: TObject; X,
@@ -753,6 +766,51 @@ begin
         then pixDestroy(@oldpix);
    end;
 end;
+
+procedure TMainForm.DoSpellcheck;
+begin
+  Editor.Spellcheck;
+end;
+
+procedure TMainForm.EditorSelectToken ( aline, aword: integer ) ;
+var
+  topline: Integer;
+  selTop: LongInt;
+  selBottom: Integer;
+  selBox: PLBox;
+  tmpPix: PLPix;
+  pixd: PLPix;
+  wtop: Integer;
+  wleft: Integer;
+  wwidth: Integer;
+  wheight: Integer;
+  pixwidth : Integer;
+begin
+  if aline>0
+     then topline := aline-1
+     else topline := aline-2;
+  selTop := Editor.OCRData.Lines[topline].Box.Top;
+  selBottom := Editor.OCRData.Lines[topline+2].Box.Bottom-selTop;
+  selBox := boxCreate(Editor.OCRData.Lines[aline].Box.Left,
+            selTop,
+            Editor.OCRData.Lines[aline].Box.Right - Editor.OCRData.Lines[aline].Box.Left,
+            selBottom);
+  tmpPix := pixClipRectangle(Project.CurrentPage.PageImage, selBox, nil);
+  pixd := pixConvertTo32(tmpPix);
+  boxDestroy(@selBox);
+  wtop :=  Editor.OCRData.Lines[aline].Words[aword].Box.Top - selTop;
+  wleft := Editor.OCRData.Lines[aline].Words[aword].Box.Left - Editor.OCRData.Lines[aline].Box.Left;
+  wwidth := Editor.OCRData.Lines[aline].Words[aword].Box.Right - Editor.OCRData.Lines[aline].Words[aword].Box.Left;
+  wheight := Editor.OCRData.Lines[aline].Words[aword].Box.Bottom - Editor.OCRData.Lines[aline].Words[aword].Box.Top;
+  selBox := boxCreate(wleft-5, wtop-5, wwidth+10, wheight+10);
+  pixRenderBoxBlend(pixd, selBox, 4, 255, 150, 0, 0.8);
+  pixGetDimensions(pixd, @pixwidth, nil, nil);
+  ScaleToBitmap(pixd, CorrectionviewImage.Picture.Bitmap, CorrectionPanel.Width/pixwidth) ;
+  boxDestroy(@selBox);
+  pixDestroy(@tmpPix);
+  pixDestroy(@pixd);
+end;
+
 
 
 end.
