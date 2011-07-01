@@ -207,6 +207,17 @@ const
 const
     L_NOCOPY = 0;     // copyflag value in sarrayGetString()
 
+    {*-------------------------------------------------------------------------*
+     *                        Graphics pixel setting                           *
+     *-------------------------------------------------------------------------*}
+const
+        L_SET_PIXELS   = 1;            // set all bits in each pixel to 1
+        L_CLEAR_PIXELS = 2;            // set all bits in each pixel to 0
+        L_FLIP_PIXELS  = 3;            // flip all bits in each pixel
+
+
+
+
   function pixRead ( filename: PChar ): PLPix; cdecl; external LIBLEPT;
   function pixCreate( w, h, format: Integer ): TLPix; cdecl; external LIBLEPT;
   function pixClone ( pixs: PLPix ): PLPix; cdecl; external LIBLEPT;
@@ -689,6 +700,35 @@ function pixConvertRGBToGray( pixs: PLPix; rwt, gwt, bwt: Single ): PLPix; cdecl
  *          use pixScaleRGBToGrayFast() instead.
  *}
 function pixConvertRGBToGrayFast( pixs: PLPix ): PLPix; cdecl; external LIBLEPT;
+
+{*---------------------------------------------------------------------------*
+ *                    Top-level conversion to 32 bpp                         *
+ *---------------------------------------------------------------------------*/
+/*!
+ *  pixConvertTo32()
+ *
+ *      Input:  pixs (1, 2, 4, 8, 16 or 32 bpp)
+ *      Return: pixd (32 bpp), or null on error
+ *
+ *  Usage: Top-level function, with simple default values for unpacking.
+ *      1 bpp:  val0 = 255, val1 = 0
+ *              and then replication into R, G and B components
+ *      2 bpp:  if colormapped, use the colormap values; otherwise,
+ *              use val0 = 0, val1 = 0x55, val2 = 0xaa, val3 = 255
+ *              and replicate gray into R, G and B components
+ *      4 bpp:  if colormapped, use the colormap values; otherwise,
+ *              replicate 2 nybs into a byte, and then into R,G,B components
+ *      8 bpp:  if colormapped, use the colormap values; otherwise,
+ *              replicate gray values into R, G and B components
+ *      16 bpp: replicate MSB into R, G and B components
+ *      24 bpp: unpack the pixels, maintaining word alignment on each scanline
+ *      32 bpp: makes a copy
+ *
+ *  Notes:
+ *      (1) Implicit assumption about RGB component ordering.
+ *}
+function pixConvertTo32( pixs: PLPix): PLPix; cdecl; external LIBLEPT;
+
 
 
 {/*------------------------------------------------------------------*
