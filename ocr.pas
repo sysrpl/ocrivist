@@ -173,7 +173,7 @@ begin
              Inc(lncount);
              R.Left := 0;
              R.Top := inRect.Bottom-inRect.Top;
-             R.Right := 0;
+             R.Right := inRect.Right-inRect.Left;
              R.Bottom := 0;
              wb := nil;
              while (numaGetIValue(na, n, @lineNum)=0) and (lineNum=lineindex) do
@@ -182,7 +182,6 @@ begin
                      boxGetGeometry(wb, @wbx, @wby, @wbw, @wbh);
                      if wby < R.Top then R.Top := wby;
                      if wbh + wby > R.Bottom then R.Bottom := wbh + wby;
-                     if wbx + wbw > R.Right then R.Right := wbx + wbw;
                      boxDestroy(@wb);
                      Inc(n);
                    end;

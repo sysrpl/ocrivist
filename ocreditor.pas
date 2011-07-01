@@ -15,22 +15,6 @@ type
 
 type
 
-  { TOCREditor }
-
-  TOCREditor = class( TScrollingWinControl )
-  private
-    FOCRData: TTesseractPage;
-    FCanvasPanel: TPanel;
-    AttrNormal: TtkTokenKind;
-    AttrOCRWord: TtkTokenKind;
-    procedure SetOCRData ( const AValue: TTesseractPage ) ;
-  public
-    procedure Paint; override;
-    constructor Create ( AOwner: TComponent ) ; override;
-    destructor Destroy; override;
-    property OCRData: TTesseractPage read FOCRData write SetOCRData;
-  end;
-
   { TOcrivistEdit }
 
   TOcrivistEdit = class( TSynMemo )
@@ -57,7 +41,7 @@ type
     constructor Create ( AOwner: TComponent ) ; override;
     destructor Destroy; override;
     procedure DeleteLine ( lineindex: Integer ) ;
-    procedure DoSpellcheck;
+    procedure Spellcheck;
     procedure HighlightToken( aline, aword: Integer );
     property OCRData: TTesseractPage read FOCRData write SetOCRData;
     property Text: string read GetText;
@@ -67,62 +51,6 @@ type
 
 implementation
 
-
-{ TOCREditor }
-
-procedure TOCREditor.SetOCRData ( const AValue: TTesseractPage ) ;
-begin
-  if FOCRData = AValue then exit;
-  writeln('TOCREDitor.SetOCRData');
-  FOCRData := AValue;
-end;
-
-procedure TOCREditor.Paint;
-var
-  lline: Integer;
-  w: Integer;
-  offsetX: Integer;
-  offsetY: LongInt;
-  leftmargin: Integer;
-  topmargin: Integer;
-begin
-  Canvas.Brush.Color := clWindow;
-  canvas.Rectangle(ClientRect);
-  offsetY := Trunc(Canvas.TextHeight('Yy')*1.3);
-  topmargin := 5;
-  leftmargin := Canvas.TextWidth(' ');
-  if Assigned(FOCRData) then
-     for lline := 0 to FOCRData.Linecount-1 do
-       begin
-         offsetX := 0;
-         for w := 0 to FOCRData.Lines[lline].WordCount-1 do
-           with FCanvasPanel do
-             begin
-               if FOCRData.Lines[lline].Words[w].Confidence>75
-                   then Canvas.Font.Color := clBlack
-                   else Canvas.Font.Color := clRed;
-               Canvas.TextOut(leftmargin + offsetX, topmargin + (offsetY*lline), FOCRData.Lines[lline].Words[w].Text);
-               offsetX := offsetX + Canvas.TextWidth(FOCRData.Lines[lline].Words[w].Text) + leftmargin;
-               if offsetX>Width then Width := offsetX ;
-             end;
-       end;
-  inherited Paint;
-end;
-
-constructor TOCREditor.Create ( AOwner: TComponent ) ;
-begin
-  inherited Create ( AOwner ) ;
-  FCanvasPanel := TPanel.Create(self);
-  FCanvasPanel.Parent := Self;
-  FCanvasPanel.Height := 200;
-  SetAutoScroll(true);
-  FOCRData := nil;
-end;
-
-destructor TOCREditor.Destroy;
-begin
-  inherited Destroy;
-end;
 
 { TOcrivistEdit }
 
@@ -215,6 +143,7 @@ var
 begin
   chars := 0;
   w := -1;
+  if charpos>Length(Lines[lline]) then Exit;
   with FOCRData.Lines[lline] do
        begin
          while chars<charpos do
@@ -303,7 +232,7 @@ begin
   FOCRData.Linecount := FOCRData.Linecount-1;
 end;
 
-procedure TOcrivistEdit.DoSpellcheck;
+procedure TOcrivistEdit.Spellcheck;
 var
   i, j: Integer;
   s: TSuggestionArray; { in case the word is wrong, this array contains
@@ -352,6 +281,8 @@ begin
                  if Length(s) > 0 then
                     begin
                       HighlightToken(lline, wword);
+                      if Assigned(FOnChangeToken)
+                           then FOnChangeToken( lline, wword );
                       spellcheckresponse := CorrectSpelling(w, s);
                       TSynPositionHighlighter(Highlighter).ClearTokens(lline);
                       if spellcheckresponse=srCancel then Exit else
