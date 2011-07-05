@@ -257,6 +257,7 @@ var
               and (p<length(wordin))
               do Inc(p);
      Delete(wordin, 1, p-1);
+     wordin := #32 + wordin;
      p := Length(wordin);
      if p>0 then
         while (not (wordin[p] in ['a'..'z'] + ['A'..'Z'] + ['0'..'9'] + [#32]))
@@ -264,7 +265,7 @@ var
               do Dec(p);
      if p < Length(wordin)
           then Delete(wordin, p+1, MaxInt);
-     Result := wordin;
+     Result := Trim(wordin);
   end;
 
 begin
@@ -276,8 +277,11 @@ begin
        with FOCRData.Lines[lline]do
             for wword := 0 to WordCount-1 do
                begin
+                 SetLength(s, 0);
+                 writeln(Words[wword].Text, ': l w ', lline, #32, wword);
                  w := TrimPunctuation( Words[wword].Text );
-                 s := Speller.SpellCheck(w); // spellcheck each word
+                 if Length(w)>0 then
+                    s := Speller.SpellCheck(w); // spellcheck each word
                  if Length(s) > 0 then
                     begin
                       HighlightToken(lline, wword);
