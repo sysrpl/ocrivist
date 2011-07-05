@@ -163,6 +163,8 @@ type
      pta:        array of PPta;     // pta ptr array
   end;
 
+  PPixCmap = Pointer;
+
 {*-------------------------------------------------------------------------*
  *                         Access and storage flags                        *
  *-------------------------------------------------------------------------*/
@@ -1229,6 +1231,66 @@ function pixRenderBoxArb(pix: PLPix; box: PLBox; width: Longint; rval, gval, bva
  *      Return: 0 if OK, 1 on error
  *}
 function pixRenderBoxBlend( pix: PLPix; box: PLBox; width: Longint; rval, gval, bval: word; fract: Single): Longint; cdecl; external LIBLEPT;
+
+
+{*!
+ *  pixDisplayWrite()
+ *
+ *      Input:  pix (1, 2, 4, 8, 16, 32 bpp)
+ *              reduction (-1 to reset/erase; 0 to disable;
+ *                         otherwise this is a reduction factor)
+ *      Return: 0 if OK; 1 on error
+ *
+ *  Notes:
+ *      (1) This defaults to jpeg output for pix that are 32 bpp or
+ *          8 bpp without a colormap.  If you want to write all images
+ *          losslessly, use format == IFF_PNG in pixDisplayWriteFormat().
+ *      (2) See pixDisplayWriteFormat() for usage details.
+ *}
+function pixDisplayWrite( pixs: PLPix; reduction: longint): Longint; cdecl; external LIBLEPT;
+
+{*!
+ *  pixaDisplayRandomCmap()
+ *
+ *      Input:  pixa (of 1 bpp components, with boxa)
+ *              w, h (if set to 0, determines the size from the
+ *                    b.b. of the components in pixa)
+ *      Return: pix (8 bpp, cmapped, with random colors on the components),
+ *              or null on error
+ *
+ *  Notes:
+ *      (1) This uses the boxes to place each pix in the rendered composite.
+ *      (2) By default, the background color is: black, cmap index 0.
+ *          This can be changed by pixcmapResetColor()
+ *}
+function pixaDisplayRandomCmap( pixa: PPixArray; w, h: Longint ): PLPix; cdecl; external LIBLEPT;
+
+function pixGetWidth( pix: PLPix ): Longint; cdecl; external LIBLEPT;
+
+function pixSetWidth( pix: PLPix; width: Longint ): Longint; cdecl; external LIBLEPT;
+
+function pixGetHeight( pix: PLPix ): Longint; cdecl; external LIBLEPT;
+
+function pixSetHeight( pix: PLPix; height: Longint ): Longint; cdecl; external LIBLEPT;
+
+
+function pixGetColormap( pix: PLPix ): PPixCmap; cdecl; external LIBLEPT;
+
+{*!
+ *  pixcmapResetColor()
+ *
+ *      Input:  cmap
+ *              index
+ *              rval, gval, bval (colormap entry to be reset; each number
+ *                                is in range [0, ... 255])
+ *      Return: 0 if OK, 1 if not accessable (caller should check)
+ *
+ *  Notes:
+ *      (1) This resets sets the color of an entry that has already
+ *          been set and included in the count of colors.
+ *}
+function pixcmapResetColor( cmap: PPixCmap; index, rval, gval, bval: Longint ): Longint; cdecl; external LIBLEPT;
+
 
 implementation
 
