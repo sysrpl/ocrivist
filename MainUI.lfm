@@ -4738,11 +4738,17 @@ object MainForm: TMainForm
   object TextPopupMenu: TPopupMenu
     left = 888
     top = 392
-    object SaveTextMenuItem: TMenuItem
-      Caption = 'Save text as ..'
-    end
     object DeleteLineMenuItem: TMenuItem
       Caption = 'Delete current line'
+    end
+    object CopyTextMenuItem: TMenuItem
+      Caption = 'Copy page text'
+      ShortCut = 16451
+      OnClick = CopyTextMenuItemClick
+    end
+    object SaveTextMenuItem: TMenuItem
+      Caption = 'Save text as ..'
+      OnClick = SaveTextMenuItemClick
     end
   end
 end

@@ -27,6 +27,7 @@ type
     ExportTextButton: TMenuItem;
     ExportPDFButton: TMenuItem;
     ImportMenuItem: TMenuItem;
+    CopyTextMenuItem: TMenuItem;
     SaveTextMenuItem: TMenuItem;
     DeleteLineMenuItem: TMenuItem;
     CorrectionPanel: TPanel;
@@ -90,6 +91,7 @@ type
     MainPanel: TPanel;
     Splitter1: TSplitter;
     Splitter2: TSplitter;
+    procedure CopyTextMenuItemClick ( Sender: TObject ) ;
     procedure CropButtonClick ( Sender: TObject ) ;
     procedure DelPageMenuItemClick ( Sender: TObject ) ;
     procedure DelSelectButtonClick ( Sender: TObject ) ;
@@ -104,6 +106,7 @@ type
     procedure RotateButtonClick ( Sender: TObject ) ;
     procedure DjvuButtonClick ( Sender: TObject ) ;
     procedure DeskewButtonClick ( Sender: TObject ) ;
+    procedure SaveTextMenuItemClick ( Sender: TObject ) ;
     procedure SelTextButtonClick ( Sender: TObject ) ;
     procedure AnalyseButtonClick ( Sender: TObject ) ;
     procedure SpellcheckButtonClick ( Sender: TObject ) ;
@@ -159,7 +162,7 @@ var
 
  implementation
 
-  uses DjvuUtils, scanner, ocr;
+  uses DjvuUtils, scanner, ocr, Clipbrd;
 
   {$R *.lfm}
 
@@ -171,6 +174,11 @@ begin
   ICanvas.SelectionMode := smCrop;  writeln('crop button');
   StatusBar.Panels[0].Text := 'CROP';
   SelectToolButton.ImageIndex := TMenuItem(Sender).ImageIndex;
+end;
+
+procedure TMainForm.CopyTextMenuItemClick ( Sender: TObject ) ;
+begin
+  Clipboard.AsText := Editor.Text;
 end;
 
 procedure TMainForm.DelPageMenuItemClick ( Sender: TObject ) ;
@@ -441,6 +449,20 @@ begin
        ICanvas.Picture := newpix;
        Project.CurrentPage.PageImage := newpix;
        if oldpix<>nil then pixDestroy(@oldpix);
+     end;
+end;
+
+procedure TMainForm.SaveTextMenuItemClick ( Sender: TObject ) ;
+begin
+ with SaveDialog do
+      begin
+        DefaultExt := '.txt';
+        Filter := 'All Files|*';
+        Title := 'Save page text as ...';
+      end;
+  if SaveDialog.Execute then
+     begin
+       Editor.Lines.SaveToFile(SaveDialog.FileName);
      end;
 end;
 
