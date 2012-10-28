@@ -227,7 +227,8 @@ end;
 
 procedure TWordSpeller.AddToPersonalDict ( Word: string ) ;
 begin
-  aspell_speller_add_to_personal(FSpeller, pChar(Word), Length(Word));
+  if aspell_speller_add_to_personal(FSpeller, pChar(Word), Length(Word))<>0
+  then WriteLn('Add to dict failed: ', aspell_speller_error_message(FSpeller));
 end;
 
 procedure TWordSpeller.AddToSession ( Word: string ) ;
