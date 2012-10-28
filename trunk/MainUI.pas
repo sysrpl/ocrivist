@@ -87,10 +87,9 @@ type
     MenuItem3: TMenuItem;
     OpenDialog: TOpenDialog;
     ListboxPanel: TPanel;
-    RightPanel: TPanel;
+    OCRPanel: TPanel;
     MainPanel: TPanel;
     Splitter1: TSplitter;
-    Splitter2: TSplitter;
     procedure CopyTextMenuItemClick ( Sender: TObject ) ;
     procedure CropButtonClick ( Sender: TObject ) ;
     procedure DelPageMenuItemClick ( Sender: TObject ) ;
@@ -106,6 +105,7 @@ type
     procedure RotateButtonClick ( Sender: TObject ) ;
     procedure DjvuButtonClick ( Sender: TObject ) ;
     procedure DeskewButtonClick ( Sender: TObject ) ;
+    procedure SaveButtonClick ( Sender: TObject ) ;
     procedure SaveTextMenuItemClick ( Sender: TObject ) ;
     procedure SelTextButtonClick ( Sender: TObject ) ;
     procedure AnalyseButtonClick ( Sender: TObject ) ;
@@ -332,7 +332,10 @@ begin
  if Project.CurrentPage=nil then exit;
  direction := 0;
  newpix := nil;
- direction := TComponent(Sender).Tag;
+ if Sender=RotateLeftTButton
+    then direction := -1
+ else if Sender=RotateRightButton
+    then direction := 1;
  if direction<>0 then
    begin
      oldpix := Project.CurrentPage.PageImage;
@@ -450,6 +453,13 @@ begin
        Project.CurrentPage.PageImage := newpix;
        if oldpix<>nil then pixDestroy(@oldpix);
      end;
+end;
+
+procedure TMainForm.SaveButtonClick ( Sender: TObject ) ;
+var
+  x: Integer;
+begin
+  Project.SaveToFile(Project.Filename);
 end;
 
 procedure TMainForm.SaveTextMenuItemClick ( Sender: TObject ) ;
@@ -577,9 +587,8 @@ begin
   Invalidate;
   for x := 0 to Project.CurrentPage.SelectionCount-1 do
       ICanvas.AddSelection(Project.CurrentPage.Selection[x]);
-  if Project.CurrentPage.OCRData<>nil
-     then editor.OCRData := Project.CurrentPage.OCRData;
-
+  editor.OCRData := Project.CurrentPage.OCRData;
+  CorrectionviewImage.Picture.Clear;
 end;
 
 procedure TMainForm.ThumbnailListBoxDrawItem ( Control: TWinControl; Index: Integer;
@@ -599,7 +608,7 @@ procedure TMainForm.LoadPageMenuItemClick ( Sender: TObject ) ;
 var
   newpage: PLPix;
   pagename: String;
-  i: Integer;
+  x, i: Integer;
 begin
   OpenDialog.Options := OpenDialog.Options + [ofAllowMultiSelect];
   OpenDialog.Filter := 'Image files|*.tif;*.tiff;*.bmp;*.png;*.jpg|All files|*';
@@ -612,6 +621,9 @@ begin
                pagename :=  ExtractFileNameOnly(OpenDialog.Files[i]);
                pixSetText(newpage, PChar(pagename));
                LoadPage(newpage);
+               for x := 0 to ToolBar1.ControlCount-1 do
+                  if TControl(ToolBar1.Controls[x]).Tag=1
+                     then TControl(ToolBar1.Controls[x]).Visible := true;
              end
            else ShowMessage('Error when loading page ' + OpenDialog.Files[i]);
         end;
@@ -622,13 +634,15 @@ var
   x: Integer;
 begin
   if OpenDialog.Execute then
-    begin
-      Project.LoadfromFile(OpenDialog.FileName);
-      for x := 0 to Project.PageCount-1 do
-         ThumbnailListBox.Items.AddObject( Project.Pages[x].Title, Project.Pages[x].Thumbnail );
-      ThumbnailListBox.ItemIndex := 0;
-      ThumbnailListBoxClick(ThumbnailListBox);
-    end;
+    if Project.LoadfromFile(OpenDialog.FileName)=0 then
+      begin
+        ThumbnailListBox.Clear;
+        for x := 0 to Project.PageCount-1 do
+           ThumbnailListBox.Items.AddObject( Project.Pages[x].Title, Project.Pages[x].Thumbnail );
+        ThumbnailListBox.ItemIndex := 0;
+        ThumbnailListBoxClick(ThumbnailListBox);
+        Caption := 'Ocrivist : ' + Project.Title;
+      end;
 end;
 
 procedure TMainForm.SaveAsMenuItemClick ( Sender: TObject ) ;
@@ -681,6 +695,8 @@ begin
       OCRJob.RecognizeRect( Project.CurrentPage.Selection[x] );
   Project.CurrentPage.OCRData := OCRJob;
   Editor.OCRData := Project.CurrentPage.OCRData;
+  MainPanel.Visible := false;
+  OCRPanel.Visible := true;
   StatusBar.Panels[1].Text := '';
 end;
 

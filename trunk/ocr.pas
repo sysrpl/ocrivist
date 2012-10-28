@@ -128,6 +128,10 @@ var
   wordpos: Integer;
   wordend: Integer;
   deletedtokens: Integer;
+// debug variables
+  pixa: PPixArray;
+  pixd: PLPix;
+  cmap: Pointer;
 
   procedure AdjustToArea( abox: PLBox; lineref: integer );
   var
@@ -221,7 +225,17 @@ begin
               end;
               n := length(Ftext);
               if FText[n]=#10 then SetLength(FText, n-1);
-              wa := tesseract_GetWords(FTesseract, nil);
+              wa := tesseract_GetWords(FTesseract, @pixa);
+
+              {  For debugging:
+              // Display each component as a random color in cmapped 8 bpp.
+              // Background is color 0; it is set to white. */
+          pixd := pixaDisplayRandomCmap(pixa, pixGetWidth(TextRegion), pixGetHeight(TextRegion));
+          cmap := pixGetColormap(pixd);
+          pixcmapResetColor(cmap, 0, 255, 255, 255);  // reset background to white */
+          pixDisplayWrite(pixd, 1);     }
+
+
               SetLength(FLines[FLineCount + x].Words, boxaGetCount(wa));
               FLines[FLineCount + x].Wordcount := boxaGetCount(wa);
               wordpos := 1;
@@ -266,16 +280,15 @@ begin
                  then FOnOCRLine(1);
             end
           else writeln('empty box: ', x);
-          for n := 0 to FLines[FLineCount + x].WordCount-1 do write(FLines[FLineCount + x].Words[n].Text+#32);
+          for n := 0 to FLines[FLineCount + x].WordCount-1 do write('[',n, #32, FLines[FLineCount + x].Words[n].Text+'] ');
           WriteLn('');
          end;
+
     FLineCount := FLineCount + lncount;
     if ba<>nil then boxDestroy(@ba);
     if pa<>nil then ptaDestroy(@pa);
     if na<>nil then numaDestroy(@na);
     if TextRegion<>nil then pixDestroy(@TextRegion);
-
-//    writeln('FConfidenceRating sample: ', FLines[2].Words[0].Confidence);
 end;
 
 end.
