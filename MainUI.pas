@@ -695,7 +695,7 @@ begin
       OCRJob.RecognizeRect( Project.CurrentPage.Selection[x] );
   Project.CurrentPage.OCRData := OCRJob;
   Editor.OCRData := Project.CurrentPage.OCRData;
-  MainPanel.Visible := false;
+  //MainPanel.Visible := false;
   OCRPanel.Visible := true;
   StatusBar.Panels[1].Text := '';
 end;
@@ -824,11 +824,19 @@ var
   wheight: Integer;
   pixwidth : Integer;
 begin
-  if aline>0
-     then topline := aline-1
-     else topline := aline-2;
-  selTop := Editor.OCRData.Lines[topline].Box.Top;
-  selBottom := Editor.OCRData.Lines[topline+2].Box.Bottom-selTop;
+  if aline>0 then
+    begin
+      topline := aline-1;
+      selTop := Editor.OCRData.Lines[topline].Box.Top;
+    end
+  else
+    begin
+      topline := aline;
+      selTop := Editor.OCRData.Lines[aline].Box.Top;
+    end;
+  if aline<Editor.OCRData.Linecount-1
+   then selBottom := Editor.OCRData.Lines[topline+2].Box.Bottom-selTop
+   else selBottom := Editor.OCRData.Lines[aline].Box.Bottom-selTop;
   selBox := boxCreate(Editor.OCRData.Lines[aline].Box.Left,
             selTop,
             Editor.OCRData.Lines[aline].Box.Right - Editor.OCRData.Lines[aline].Box.Left,
