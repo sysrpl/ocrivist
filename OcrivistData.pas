@@ -57,13 +57,14 @@ type
     FTitle: string;
     FPages: array of TOcrivistPage;
     FFilename: string;
-    FTempFolder: string;
+    FWorkFolder: string;
     FcurrentPage: Integer;
     FPageWidth: Integer;
     FPageHeight: Integer;
     function GetCurrentPage: TOcrivistPage;
     function GetPage ( aIndex: Integer ) : TOcrivistPage;
     function GetPageCount: Integer;
+    // PutPage assigns a TOcrivistPage to FPages[aIndex]
     procedure PutPage ( aIndex: Integer; const AValue: TOcrivistPage ) ;
   public
     constructor Create;
@@ -148,6 +149,7 @@ begin
   FcurrentPage := -1;
   FPageWidth := 0;
   FPageHeight := 0;
+  FWorkFolder := '/tmp/';
 end;
 
 destructor TOcrivistProject.Destroy;
@@ -168,7 +170,7 @@ begin
   SetLength( FPages, 0 );
   FTitle := 'Untitled';
   FFilename := '';
-  FTempFolder := '/tmp/';
+  FWorkFolder := '/tmp/';
   FcurrentPage := 0;
 end;
 
@@ -231,7 +233,7 @@ begin
            FileWrite(F, bytes, SizeOf(bytes));                 //5 - Integer - length of FTempFile
            if bytes>0 then
               FileWrite(F, databuf[1], bytes);                 //6 - array of char - = string FtempFile
-           if filesdirectory<>FTempFolder then
+           if filesdirectory<>FWorkFolder then
               begin
                 CopyFile(aPage.FTempFile, filesdirectory + databuf);
                 DeleteFileUTF8(aPage.FTempFile);
@@ -310,7 +312,7 @@ begin
        SetLength(FTitle, bytes);
        if bytes>0 then
               FileRead(F, FTitle[1], bytes);                  //6 - array of char - string FTitle
-       FTempFolder := ExtractFilePath(FileName) + FTitle + '-files' + DirectorySeparator;
+       FWorkFolder := ExtractFilePath(FileName) + FTitle + '-files' + DirectorySeparator;
        FileRead(F, bytes, SizeOf(bytes));                     //7 - Integer - number of pages in project
        SetLength(FPages, bytes);
        for page := 0 to PageCount-1 do
@@ -337,7 +339,7 @@ begin
            if bytes>0 then
               begin
                 FileRead(F, strbuf[1], bytes);                //6 - array of char - = string FtempFile
-                aPage.FTempFile := FTempFolder + strbuf;
+                aPage.FTempFile := FWorkFolder + strbuf;
                 if page=FcurrentPage
                    then aPage.PageImage := aPage.LoadFromFileBackground;
               end;
@@ -440,7 +442,7 @@ begin
   if P <> nil then
      begin
        SetLength(FPages, Length(FPages)+1);
-       P.SaveToFileBackground(Pix, '/tmp/');
+       P.SaveToFileBackground(Pix, FWorkFolder);
        FPages[PageCount-1] := P;
        FcurrentPage := PageCount-1;
        FTitle := pixGetText(Pix);
