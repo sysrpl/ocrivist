@@ -5,7 +5,7 @@ object SpellcheckForm: TSpellcheckForm
   Width = 354
   ClientHeight = 351
   ClientWidth = 354
-  LCLVersion = '0.9.29'
+  LCLVersion = '1.0.1.3'
   object Label1: TLabel
     Left = 24
     Height = 18
@@ -19,6 +19,7 @@ object SpellcheckForm: TSpellcheckForm
     Height = 25
     Top = 43
     Width = 308
+    AutoSelect = False
     TabOrder = 0
     Text = 'WordEdit'
   end
@@ -29,6 +30,7 @@ object SpellcheckForm: TSpellcheckForm
     Width = 308
     ItemHeight = 0
     OnSelectionChange = SuggestionListSelectionChange
+    ScrollWidth = 304
     TabOrder = 1
     TopIndex = -1
   end
@@ -63,10 +65,10 @@ object SpellcheckForm: TSpellcheckForm
   object CancelButton: TBitBtn
     AnchorSideRight.Control = SuggestionList
     AnchorSideRight.Side = asrBottom
-    Left = 258
-    Height = 32
+    Left = 260
+    Height = 30
     Top = 295
-    Width = 78
+    Width = 76
     Anchors = [akTop, akRight]
     AutoSize = True
     Cancel = True
