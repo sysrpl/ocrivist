@@ -34,6 +34,7 @@ type
     Panel2: TPanel;
     Panel3: TPanel;
     CorrectionviewScrollBox: TScrollBox;
+    Splitter2: TSplitter;
     TextPopupMenu: TPopupMenu;
     SelModeSelectButton: TMenuItem;
     SelModeDeleteButton: TMenuItem;
