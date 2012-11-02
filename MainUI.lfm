@@ -1,11 +1,11 @@
 object MainForm: TMainForm
-  Left = 0
+  Left = -4
   Height = 722
-  Top = 0
+  Top = -4
   Width = 1024
   ActiveControl = ListboxPanel
   Caption = 'Ocrivist'
-  ClientHeight = 695
+  ClientHeight = 699
   ClientWidth = 1024
   KeyPreview = True
   Menu = MainMenu
@@ -16,12 +16,12 @@ object MainForm: TMainForm
   WindowState = wsMaximized
   object ListboxPanel: TPanel
     Left = 0
-    Height = 632
+    Height = 640
     Top = 42
     Width = 130
     Align = alLeft
     Caption = 'ListboxPanel'
-    ClientHeight = 632
+    ClientHeight = 640
     ClientWidth = 130
     TabOrder = 0
     object ThumbnailListBox: TListBox
@@ -31,7 +31,7 @@ object MainForm: TMainForm
       AnchorSideRight.Side = asrBottom
       AnchorSideBottom.Control = pagecountLabel
       Left = 1
-      Height = 609
+      Height = 621
       Top = 1
       Width = 128
       Anchors = [akTop, akLeft, akRight, akBottom]
@@ -52,9 +52,9 @@ object MainForm: TMainForm
     end
     object pagecountLabel: TLabel
       Left = 8
-      Height = 18
-      Top = 610
-      Width = 5
+      Height = 14
+      Top = 622
+      Width = 4
       Anchors = [akLeft, akBottom]
       Caption = ' '
       ParentColor = False
@@ -62,47 +62,46 @@ object MainForm: TMainForm
   end
   object Splitter1: TSplitter
     Left = 130
-    Height = 632
+    Height = 640
     Top = 42
     Width = 5
   end
   object OCRPanel: TPanel
-    Left = 135
-    Height = 632
+    Left = 576
+    Height = 640
     Top = 42
-    Width = 889
-    Align = alClient
+    Width = 448
+    Align = alRight
     Caption = 'OCRPanel'
-    ClientHeight = 632
-    ClientWidth = 889
+    ClientHeight = 640
+    ClientWidth = 448
     TabOrder = 2
-    Visible = False
     object CorrectionPanel: TPanel
       Left = 1
       Height = 149
       Top = 1
-      Width = 887
+      Width = 446
       Align = alTop
       Caption = 'CorrectionPanel'
       ClientHeight = 149
-      ClientWidth = 887
+      ClientWidth = 446
       TabOrder = 0
       object CorrectionviewScrollBox: TScrollBox
         Left = 1
         Height = 147
         Top = 1
-        Width = 885
-        HorzScrollBar.Page = 881
+        Width = 444
+        HorzScrollBar.Page = 440
         VertScrollBar.Page = 143
         Align = alClient
         ClientHeight = 143
-        ClientWidth = 881
+        ClientWidth = 440
         TabOrder = 0
         object CorrectionviewImage: TImage
           Left = 0
           Height = 143
           Top = 0
-          Width = 881
+          Width = 440
           Align = alClient
         end
       end
@@ -110,17 +109,17 @@ object MainForm: TMainForm
     object Panel2: TPanel
       Left = 1
       Height = 65
-      Top = 566
-      Width = 887
+      Top = 574
+      Width = 446
       Align = alBottom
       Caption = 'Panel2'
       TabOrder = 1
     end
     object Panel3: TPanel
       Left = 1
-      Height = 416
+      Height = 424
       Top = 150
-      Width = 887
+      Width = 446
       Align = alClient
       Caption = 'Panel3'
       TabOrder = 2
@@ -128,18 +127,18 @@ object MainForm: TMainForm
   end
   object MainPanel: TPanel
     Left = 135
-    Height = 632
+    Height = 640
     Top = 42
-    Width = 889
+    Width = 436
     Align = alClient
     AutoSize = True
     Caption = 'MainPanel'
-    TabOrder = 3
+    TabOrder = 4
   end
   object StatusBar: TStatusBar
     Left = 0
-    Height = 21
-    Top = 674
+    Height = 17
+    Top = 682
     Width = 1024
     Panels = <    
       item
@@ -162,7 +161,7 @@ object MainForm: TMainForm
     Caption = 'ToolBar1'
     Images = ImageList1
     List = True
-    TabOrder = 5
+    TabOrder = 6
     object RotateLeftTButton: TToolButton
       Tag = 1
       Left = 243
@@ -170,7 +169,6 @@ object MainForm: TMainForm
       Caption = 'RotateLeftTButton'
       ImageIndex = 7
       OnClick = RotateButtonClick
-      Visible = False
     end
     object RotateRightButton: TToolButton
       Tag = 1
@@ -179,7 +177,6 @@ object MainForm: TMainForm
       Caption = 'Rotate Right'
       ImageIndex = 8
       OnClick = RotateButtonClick
-      Visible = False
     end
     object SelectToolButton: TToolButton
       Tag = 1
@@ -189,7 +186,6 @@ object MainForm: TMainForm
       DropdownMenu = SelModeMenu
       ImageIndex = 9
       OnClick = SelTextButtonClick
-      Visible = False
     end
     object FitWidthButton: TToolButton
       Tag = 1
@@ -206,7 +202,6 @@ object MainForm: TMainForm
       Width = 10
       Caption = 'ToolButton6'
       Style = tbsSeparator
-      Visible = False
     end
     object ExportButton: TToolButton
       Tag = 1
@@ -217,7 +212,6 @@ object MainForm: TMainForm
       ImageIndex = 2
       OnClick = DjvuButtonClick
       Style = tbsDropDown
-      Visible = False
     end
     object DeskewButton: TToolButton
       Tag = 1
@@ -226,7 +220,6 @@ object MainForm: TMainForm
       Caption = 'DeskewButton'
       ImageIndex = 6
       OnClick = DeskewButtonClick
-      Visible = False
     end
     object FitHeightButton: TToolButton
       Left = 153
@@ -242,7 +235,6 @@ object MainForm: TMainForm
       Caption = 'TesseractButton'
       ImageIndex = 10
       OnClick = TestTesseractButtonClick
-      Visible = False
     end
     object AddPageButton: TToolButton
       Left = 51
@@ -267,7 +259,6 @@ object MainForm: TMainForm
       Width = 10
       Caption = 'ToolButton3'
       Style = tbsSeparator
-      Visible = False
     end
     object DelPageButton: TToolButton
       Left = 103
@@ -291,7 +282,6 @@ object MainForm: TMainForm
       Caption = 'AutoselectButton'
       ImageIndex = 13
       OnClick = AnalyseButtonClick
-      Visible = False
     end
     object ToolButton4: TToolButton
       Left = 41
@@ -307,7 +297,6 @@ object MainForm: TMainForm
       Width = 10
       Caption = 'ToolButton2'
       Style = tbsSeparator
-      Visible = False
     end
     object SpellcheckButton: TToolButton
       Tag = 1
@@ -316,8 +305,16 @@ object MainForm: TMainForm
       Caption = 'SpellcheckButton'
       ImageIndex = 17
       OnClick = SpellcheckButtonClick
-      Visible = False
     end
+  end
+  object Splitter2: TSplitter
+    AnchorSideRight.Control = OCRPanel
+    Left = 571
+    Height = 640
+    Top = 42
+    Width = 5
+    Align = alRight
+    ResizeAnchor = akRight
   end
   object OpenDialog: TOpenDialog
     Options = [ofFileMustExist, ofEnableSizing, ofViewDetail]
