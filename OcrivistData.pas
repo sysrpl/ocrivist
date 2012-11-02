@@ -190,6 +190,7 @@ var
   wwords: Integer;
   memstream: TMemoryStream;
   filesdirectory: String;
+  aWord: TWordData;
 begin
   if FileExists(FileName)
      then DeleteFile(FileName);
@@ -267,13 +268,15 @@ begin
                 FileWrite(F, aline.WordCount, SizeOf(aline.WordCount));
                 for wwords := 0 to aline.WordCount-1 do
                     begin
-                      Filewrite(F, aline.Words[wwords], SizeOf(aline.Words[wwords]));
                       databuf := aline.Words[wwords].Text;
                       bytes := Length(databuf);
                       FileWrite(F, bytes, SizeOf(bytes));// Integer - length of aline.Words[wwords].Text
                       if bytes>0 then
                          FileWrite(F, databuf[1], bytes);// - array of char - = string Text
-                    end;
+                      aWord := aline.Words[wwords];
+                      aWord.Text := '';
+                      Filewrite(F, aWord, SizeOf(aWord));
+                     end;
               end;
          end;
      finally
@@ -373,11 +376,11 @@ begin
                  aPage.FOCRData.Lines[lline] := aLine;
                  for wwords := 0 to aLine.WordCount-1 do
                    begin
-                     FileRead(F, aWord, SizeOf(aWord));
-  //                   writeln('line #', lline, ' Word #', wwords, ' box.top=', aWord.Box.Top);
                      FileRead(F, bytes, SizeOf(bytes));
                      SetLength(strbuf, bytes);
                      FileRead(F, strbuf[1], bytes);
+                     FileRead(F, aWord, SizeOf(aWord));
+  //                   writeln('line #', lline, ' Word #', wwords, ' box.top=', aWord.Box.Top);
                      with aPage.FOCRData.Lines[lline] do
                          begin
                            Words[wwords].Start := aWord.Start;
