@@ -57,6 +57,7 @@ type
     FTitle: string;
     FPages: array of TOcrivistPage;
     FFilename: string;
+    FViewerScale: Single;
     FWorkFolder: string;
     FcurrentPage: Integer;
     FPageWidth: Integer;
@@ -83,6 +84,7 @@ type
     property ItemIndex: integer read FcurrentPage write FcurrentPage;
     property PageCount: Integer read GetPageCount;
     property Filename: TFilename read FFilename;
+    property ViewerScale: Single read FViewerScale write FViewerScale;
   end;
 
   { TPixFileThread }
@@ -211,6 +213,7 @@ begin
        FileWrite(F, FcurrentPage, SizeOf(FcurrentPage));       //2 - integer - current page
        FileWrite(F, FPageWidth, SizeOf(FPageWidth));           //3 - Integer - page width
        FileWrite(F, FPageHeight, SizeOf(FPageHeight));         //4 - Integer - page height;
+       FileWrite(F, ViewerScale, SizeOf(ViewerScale));         //4a - Single - Viewer setting;
        bytes := Length(tempTitle);
        FileWrite(F, bytes, SizeOf(bytes));                     //5 - Integer - length of string FTitle
        if bytes>0 then
@@ -327,6 +330,7 @@ begin
        FileRead(F, FcurrentPage, SizeOf(FcurrentPage));       //2 - integer - current page
        FileRead(F, FPageWidth, SizeOf(FPageWidth));           //3 - Integer - page width
        FileRead(F, FPageHeight, SizeOf(FPageHeight));         //4 - Integer - page height;
+       FileRead(F, FViewerScale, SizeOf(FViewerScale));       //4a - Single - Viewer setting;
        FileRead(F, bytes, SizeOf(bytes));                     //5 - Integer - length of string FTitle
        SetLength(FTitle, bytes);
        if bytes>0 then
