@@ -634,13 +634,19 @@ procedure TMainForm.OpenProjectMenuItemClick ( Sender: TObject ) ;
 var
   x: Integer;
 begin
+  with OpenDialog do
+       begin
+         DefaultExt := '.ovp';
+         Filter := 'Ocrivist Projects|*.ovp|All Files|*';
+         Title := 'Open Ocrivist project';
+       end;
   if OpenDialog.Execute then
     if Project.LoadfromFile(OpenDialog.FileName)=0 then
       begin
         ThumbnailListBox.Clear;
         for x := 0 to Project.PageCount-1 do
            ThumbnailListBox.Items.AddObject( Project.Pages[x].Title, Project.Pages[x].Thumbnail );
-        ThumbnailListBox.ItemIndex := 0;
+        ThumbnailListBox.ItemIndex := Project.ItemIndex;
         ThumbnailListBoxClick(ThumbnailListBox);
         Caption := 'Ocrivist : ' + Project.Title;
       end;
@@ -654,8 +660,12 @@ begin
         Filter := 'Ocrivist Projects|*.ovp|All Files|*';
         Title := 'Save project as ..';
       end;
-  if SaveDialog.Execute
-    then Project.SaveToFile(SaveDialog.FileName);
+  if SaveDialog.Execute then
+    begin
+      Project.SaveToFile(SaveDialog.FileName);
+      Caption := 'Ocrivist : ' + Project.Title;
+      ThumbnailListBox.ItemIndex := Project.ItemIndex;
+    end;
 end;
 
 procedure TMainForm.ScanPageMenuItemClick ( Sender: TObject ) ;

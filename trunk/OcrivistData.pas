@@ -5,7 +5,7 @@ unit OcrivistData;
 interface
 
 uses
-  Classes, SysUtils, leptonica, selector, Graphics, ocr, FileUtil;
+  Classes, SysUtils, types, leptonica, selector, Graphics, ocr, FileUtil;
 
 type
 
@@ -70,8 +70,8 @@ type
     constructor Create;
     destructor Destroy; override;
     procedure Clear;
-    procedure SaveToFile( FileName: TFilename );
-    function LoadfromFile( FileName: TFilename ): integer;
+    procedure SaveToFile( aFileName: TFilename );
+    function LoadfromFile( aFileName: TFilename ): integer;
     procedure DeletePage( aIndex: Integer );
     procedure MovePage( sourceIndex, destIndex: Integer );
     procedure AddPage( Pix: PLPix );
@@ -174,7 +174,7 @@ begin
   FcurrentPage := 0;
 end;
 
-procedure TOcrivistProject.SaveToFile ( FileName: TFilename ) ;
+procedure TOcrivistProject.SaveToFile ( aFileName: TFilename ) ;
 var
   F: THandle;
   databuf: string;
@@ -191,18 +191,19 @@ var
   memstream: TMemoryStream;
   filesdirectory: String;
   aWord: TWordData;
+  sel: Integer;
+  aRect: TRect;
+  tempTitle: String;
 begin
-  if FileExists(FileName)
-     then DeleteFile(FileName);
-  FTitle := ExtractFileNameOnly(FileName);
-  if Self.FFilename<>FTitle
-     then Self.FFilename := FTitle;
-  filesdirectory := ChangeFileExt(FileName, '') + '-files' + DirectorySeparator;
+  if FileExists(aFileName)
+     then DeleteFile(aFileName);
+  tempTitle := ExtractFileNameOnly(aFileName);
+  filesdirectory := ChangeFileExt(aFileName, '') + '-files' + DirectorySeparator;
 
   if not DirectoryExists(filesdirectory)
          then ForceDirectories(filesdirectory);
 
-  F := FileCreate(FileName);
+  F := FileCreate(aFileName);
   if F > 0 then
      try
        databuf := 'OVT   ';
@@ -210,16 +211,16 @@ begin
        FileWrite(F, FcurrentPage, SizeOf(FcurrentPage));       //2 - integer - current page
        FileWrite(F, FPageWidth, SizeOf(FPageWidth));           //3 - Integer - page width
        FileWrite(F, FPageHeight, SizeOf(FPageHeight));         //4 - Integer - page height;
-       bytes := Length(FTitle);
+       bytes := Length(tempTitle);
        FileWrite(F, bytes, SizeOf(bytes));                     //5 - Integer - length of string FTitle
        if bytes>0 then
-              FileWrite(F, FTitle[1], Length(FTitle));         //6 - array of char - string FTitle
+              FileWrite(F, tempTitle[1], Length(tempTitle));         //6 - array of char - string FTitle
        bytes := Length(FPages);
        FileWrite(F, bytes, SizeOf(bytes));                     //7 - Integer - number of pages in project
        for page := 0 to Length(FPages)-1 do
          begin
            aPage := TOcrivistPage(FPages[page]);
-           databuf := aPage.FTitle;
+           databuf := aPage.Title;
            bytes := Length(databuf);
            FileWrite(F, bytes, SizeOf(bytes));                 //1 - Integer - length of string Title
            if bytes>0 then
@@ -229,15 +230,18 @@ begin
            databuf := aPage.Text;                              //4 - array of char - = string Text
            if bytes>0 then
               FileWrite(F, databuf[1], bytes);
-           databuf := ExtractFileNameOnly( aPage.FTempFile ) + '.tiff';
+           databuf := ExtractFileName( aPage.FTempFile );
+           //databuf := ExtractFileNameOnly( aPage.FTempFile ) + '.tiff';
            bytes := Length(databuf);
-           FileWrite(F, bytes, SizeOf(bytes));                 //5 - Integer - length of FTempFile
+           FileWrite(F, bytes, SizeOf(bytes));                 //5 - Integer - length of string FTempFile
            if bytes>0 then
               FileWrite(F, databuf[1], bytes);                 //6 - array of char - = string FtempFile
-           if filesdirectory<>FWorkFolder then
+           if filesdirectory<>ExtractFilePath(aPage.FTempFile) then
               begin
                 CopyFile(aPage.FTempFile, filesdirectory + databuf);
-                DeleteFileUTF8(aPage.FTempFile);
+                if FWorkFolder='/tmp/'
+                   then DeleteFileUTF8(aPage.FTempFile);
+                aPage.FTempFile := filesdirectory + databuf;
               end;
 
            memstream := TMemoryStream.Create;
@@ -274,10 +278,20 @@ begin
                       if bytes>0 then
                          FileWrite(F, databuf[1], bytes);// - array of char - = string Text
                       aWord := aline.Words[wwords];
-                      aWord.Text := '';
+                      aWord.Text := '';                  // set pointer to nil
                       Filewrite(F, aWord, SizeOf(aWord));
                      end;
               end;
+           bytes := aPage.SelectionCount;
+           FileWrite(F, bytes, SizeOf(bytes));           // Integer - number of selections
+           for sel := 0 to aPage.SelectionCount-1 do
+             begin
+               aRect := aPage.Selection[sel];
+               FileWrite(F, aRect, SizeOf(aRect));
+             end;
+           FFilename := aFileName;
+           FWorkFolder := filesdirectory;
+           FTitle := tempTitle;
          end;
      finally
        FileClose(F);
@@ -285,7 +299,7 @@ begin
   else Raise Exception.Create('Unable to save project ' + FileName);
 end;
 
-function TOcrivistProject.LoadfromFile ( FileName: TFilename ) : integer;
+function TOcrivistProject.LoadfromFile ( aFileName: TFilename ) : integer;
 var
   F: THandle;
   databuf: array of char;
@@ -300,10 +314,12 @@ var
   aWord: TWordData;
   aLine: TLineData;
   memstream: TMemoryStream;
+  sel: Integer;
+  aRect: TRect;
 begin
   Result := -1;
   Clear;
-  F := FileOpen(FileName, fmOpenRead);
+  F := FileOpen(aFileName, fmOpenRead);
   if F > 0 then
      try
        SetLength(databuf, 6);
@@ -315,7 +331,7 @@ begin
        SetLength(FTitle, bytes);
        if bytes>0 then
               FileRead(F, FTitle[1], bytes);                  //6 - array of char - string FTitle
-       FWorkFolder := ExtractFilePath(FileName) + FTitle + '-files' + DirectorySeparator;
+       FWorkFolder := ExtractFilePath(aFileName) + FTitle + '-files' + DirectorySeparator;
        FileRead(F, bytes, SizeOf(bytes));                     //7 - Integer - number of pages in project
        SetLength(FPages, bytes);
        for page := 0 to PageCount-1 do
@@ -393,7 +409,16 @@ begin
                    end;
                end;
            end;
+
+           FileRead(F, bytes, SizeOf(bytes));         // Integer - number of selections
+           for sel := 0 to bytes-1 do
+             begin
+               FileRead(F, aRect, SizeOf(aRect));
+               aPage.AddSelection(aRect);
+             end;
+
          end;
+       FFilename := aFileName;
      finally
        FileClose(F);
        Result := 0;
