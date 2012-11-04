@@ -643,6 +643,7 @@ begin
   if OpenDialog.Execute then
     if Project.LoadfromFile(OpenDialog.FileName)=0 then
       begin
+        ICanvas.Scale :=  Project.ViewerScale;
         ThumbnailListBox.Clear;
         for x := 0 to Project.PageCount-1 do
            ThumbnailListBox.Items.AddObject( Project.Pages[x].Title, Project.Pages[x].Thumbnail );
@@ -719,6 +720,7 @@ begin
        else
          ICanvas.Scale := TMenuItem(Sender).Tag/100;
        end;
+  Project.ViewerScale := ICanvas.Scale;
 end;
 
 procedure TMainForm.MakeSelection ( Sender: TObject ) ;
