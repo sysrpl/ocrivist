@@ -398,7 +398,8 @@ begin
                    begin
                      FileRead(F, bytes, SizeOf(bytes));
                      SetLength(strbuf, bytes);
-                     FileRead(F, strbuf[1], bytes);
+                     if bytes>0
+                        then FileRead(F, strbuf[1], bytes);
                      FileRead(F, aWord, SizeOf(aWord));
   //                   writeln('line #', lline, ' Word #', wwords, ' box.top=', aWord.Box.Top);
                      with aPage.FOCRData.Lines[lline] do
