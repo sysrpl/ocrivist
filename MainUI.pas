@@ -28,6 +28,11 @@ type
     ExportPDFButton: TMenuItem;
     ImportMenuItem: TMenuItem;
     CopyTextMenuItem: TMenuItem;
+    miAutoProcessPage: TMenuItem;
+    miReadPage: TMenuItem;
+    miAnalysePage: TMenuItem;
+    miAutoAll: TMenuItem;
+    OCRMenu: TMenuItem;
     SaveTextMenuItem: TMenuItem;
     DeleteLineMenuItem: TMenuItem;
     CorrectionPanel: TPanel;
@@ -103,6 +108,8 @@ type
       ) ;
     procedure ImportMenuItemClick ( Sender: TObject ) ;
     procedure LoadModeOptionClick(Sender: TObject);
+    procedure miAutoAllClick ( Sender: TObject ) ;
+    procedure miAutoProcessPageClick ( Sender: TObject ) ;
     procedure RotateButtonClick ( Sender: TObject ) ;
     procedure DjvuButtonClick ( Sender: TObject ) ;
     procedure DeskewButtonClick ( Sender: TObject ) ;
@@ -144,6 +151,8 @@ type
     procedure ShowOCRProgress ( progress: Single );
     procedure LoadPage( newpage: PLPix );
     procedure DoCrop;
+    function AnalysePage(pageindex: integer): integer;
+    procedure OCRPage(pageindex: integer);
     procedure DoSpellcheck;
     procedure EditorSelectToken( aline, aword: integer );
   public
@@ -324,6 +333,28 @@ begin
   AddPageButton.ImageIndex := TMenuItem(Sender).ImageIndex;
 end;
 
+procedure TMainForm.miAutoAllClick ( Sender: TObject ) ;
+var
+  x: Integer;
+begin
+  for x := 0 to Project.PageCount-1 do
+     begin
+       AnalysePage(x);
+       OCRPage(x);
+     end;
+  Editor.OCRData := Project.CurrentPage.OCRData;
+end;
+
+procedure TMainForm.miAutoProcessPageClick ( Sender: TObject ) ;
+begin
+  if AnalysePage(ThumbnailListBox.ItemIndex)>0 then
+    begin
+      ThumbnailListBoxClick(ThumbnailListBox);
+      OCRPage(ThumbnailListBox.ItemIndex);
+      Editor.OCRData := Project.CurrentPage.OCRData;
+    end;
+end;
+
 procedure TMainForm.RotateButtonClick ( Sender: TObject ) ;
 var
   newpix: PLPix;
@@ -384,6 +415,7 @@ begin
         DefaultExt := '.djvu';
         Filter := 'Djvu Files|*.djvu|All Files|*';
         Title := 'Export project to djvu...';
+        FileName := Project.Title;
       end;
  if SaveDialog.Execute then
      begin
@@ -401,8 +433,8 @@ begin
             p := Project.Pages[x].PageImage;
             pixGetDimensions(p, @w, @h, @d);
             if d=1
-               then fn := '/tmp/test.pnm'
-               else fn := '/tmp/test.pbm';
+               then fn := '/tmp/ocr-temp.pnm'
+               else fn := '/tmp/ocr-temp.pbm';
             StatusBar.Panels[1].Text := 'Processing page ' + IntToStr(x+1);
             Application.ProcessMessages;
             if Project.Pages[x].OCRData <> nil then
@@ -425,16 +457,19 @@ begin
                        data.Strings[data.Count-1] := data.Strings[data.Count-1] + ')';
                      end;
                   data.Strings[data.Count-1] := data.Strings[data.Count-1] + ')';
-                  HiddenText := '/tmp/test.txt';
+                  HiddenText := '/tmp/ocr-temp.txt';
                   data.SaveToFile(HiddenText);
                end;
             pixWrite(PChar(fn), p, IFF_PNM);
-            if djvumakepage(fn, '/tmp/test.djvu', HiddenText)=0
-               then djvuaddpage(SaveDialog.FileName, '/tmp/test.djvu')
+            if djvumakepage(fn, '/tmp/ocr-temp.djvu', HiddenText)=0
+               then djvuaddpage(SaveDialog.FileName, '/tmp/ocr-temp.djvu')
                else ShowMessage('Error when encoding page ' + IntToStr(x+1));
           finally
             StatusBar.Panels[1].Text := '';
             data.Free;
+            DeleteFileUTF8(fn);
+            DeleteFileUTF8(HiddenText);
+            DeleteFileUTF8('/tmp/ocr-temp.djvu');
           end;
      end;
 end;
@@ -485,39 +520,9 @@ begin
 end;
 
 procedure TMainForm.AnalyseButtonClick ( Sender: TObject ) ;
-var
-  BinaryPix: PLPix;
-  TextMask: PLPix;
-  B: PBoxArray;
-  x, y, w, h: Integer;
-  count: Integer;
-  p: PLPix;
 begin
-  Textmask := nil;
-  BinaryPix := nil;
-  if pixGetDepth(ICanvas.Picture) > 1
-     then BinaryPix := pixThresholdToBinary(ICanvas.Picture, 50)
-     else BinaryPix := pixClone(ICanvas.Picture);
-  if pixGetRegionsBinary(BinaryPix, nil, nil, @TextMask, 0) = 0 then
-     begin
-       B := pixConnComp(TextMask, nil, 8);
-       try
-       boxaWrite('/tmp/boxes.txt', B);
-       for count := 0 to boxaGetCount(B)-1 do
-            begin
-              boxaGetBoxGeometry(B, count, @x, @y, @w, @h);
-              Project.CurrentPage.AddSelection( Rect(x-10, y-5, x+w+5, y+h) );
-              ICanvas.AddSelection(Rect(x-10, y-5, x+w+5, y+h));
-            end;
-       finally
-         if B<>nil then
-            boxaDestroy(@B);
-         if Textmask <> nil then
-            pixDestroy(@TextMask);
-       end;
-     end;
-  if BinaryPix<>nil then
-       pixDestroy(@BinaryPix);
+ if AnalysePage(ThumbnailListBox.ItemIndex)>0
+  then ThumbnailListBoxClick(ThumbnailListBox);
 end;
 
 procedure TMainForm.SpellcheckButtonClick ( Sender: TObject ) ;
@@ -696,20 +701,9 @@ begin
 end;
 
 procedure TMainForm.TestTesseractButtonClick ( Sender: TObject ) ;
-var
-  OCRJob: TTesseractPage;
-  x: Integer;
 begin
-  OCRJob := TTesseractPage.Create(Project.CurrentPage.PageImage);
-  OCRProgressCount := 0;
-  OCRJob.OnOCRLine := @ShowOCRProgress;
-  for x := 0 to Project.CurrentPage.SelectionCount-1 do
-      OCRJob.RecognizeRect( Project.CurrentPage.Selection[x] );
-  Project.CurrentPage.OCRData := OCRJob;
+  OCRPage(ThumbnailListBox.ItemIndex);
   Editor.OCRData := Project.CurrentPage.OCRData;
-  //MainPanel.Visible := false;
-  OCRPanel.Visible := true;
-  StatusBar.Panels[1].Text := '';
 end;
 
 procedure TMainForm.ViewMenuItemClick ( Sender: TObject ) ;
@@ -816,6 +810,63 @@ begin
      if oldpix <> nil
         then pixDestroy(@oldpix);
    end;
+end;
+
+function TMainForm.AnalysePage ( pageindex: integer ) : integer;
+var
+  Pix: PLPix;
+  BinaryPix: PLPix;
+  TextMask: PLPix;
+  B: PBoxArray;
+  x, y, w, h: Integer;
+  count: Integer;
+  p: PLPix;
+begin
+  Result := 0;
+  Textmask := nil;
+  BinaryPix := nil;
+  Pix := Project.Pages[pageindex].PageImage;
+  if pixGetDepth(Pix) > 1
+     then BinaryPix := pixThresholdToBinary(Pix, 60)
+     else BinaryPix := pixClone(Pix);
+  if pixGetRegionsBinary(BinaryPix, nil, nil, @TextMask, 0) = 0 then
+     begin
+       B := pixConnComp(TextMask, nil, 8);
+       try
+       boxaWrite('/tmp/boxes.txt', B);
+       for count := 0 to boxaGetCount(B)-1 do
+            begin
+              boxaGetBoxGeometry(B, count, @x, @y, @w, @h);
+              Project.Pages[pageindex].AddSelection( Rect(x-10, y-5, x+w+10, y+h+5) );
+//              ICanvas.AddSelection(Rect(x-10, y-5, x+w+10, y+h+5));
+            end;
+       Result := boxaGetCount(B);
+       finally
+         if B<>nil then
+            boxaDestroy(@B);
+         if Textmask <> nil then
+            pixDestroy(@TextMask);
+       end;
+     end;
+  if BinaryPix<>nil then
+       pixDestroy(@BinaryPix);
+end;
+
+procedure TMainForm.OCRPage ( pageindex: integer ) ;
+var
+  OCRJob: TTesseractPage;
+  x: Integer;
+begin
+  OCRJob := TTesseractPage.Create(Project.Pages[pageindex].PageImage);
+  OCRProgressCount := 0;
+  OCRJob.OnOCRLine := @ShowOCRProgress;
+  for x := 0 to Project.Pages[pageindex].SelectionCount-1 do
+      OCRJob.RecognizeRect( Project.Pages[pageindex].Selection[x] );
+  Project.Pages[pageindex].OCRData := OCRJob;
+ // Editor.OCRData := Project.CurrentPage.OCRData;
+  //MainPanel.Visible := false;
+  OCRPanel.Visible := true;
+  StatusBar.Panels[1].Text := '';
 end;
 
 procedure TMainForm.DoSpellcheck;
