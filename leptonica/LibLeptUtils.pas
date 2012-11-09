@@ -38,8 +38,9 @@ const
 function ScaleToBitmap( pix: PLPix;  bmp: TBitmap; scalexy: Single ): integer;
 function CropPix( pix: PLPix; cropRect: TRect ): PLPix;
 function CropPix( pix: PLPix; x, y, w, h: longint ): PLPix;
-function ScanToPix( h: SANE_Handle; resolution: integer; scanmode: string; progresscb: TProgressCallback ): PLPix;
+function ScanToPix( h: SANE_Handle; progresscb: TProgressCallback ): PLPix;
 function BoxToRect( aBox: PLBox ): TRect;
+function StreamToPix( S: TMemoryStream ): PLPix;
 
 implementation
 
@@ -92,7 +93,7 @@ begin
   boxDestroy(@BoxRect);
 end;
 
-function ScanToPix ( h: SANE_Handle; resolution: integer; scanmode: string; progresscb: TProgressCallback ) : PLPix;
+function ScanToPix ( h: SANE_Handle; progresscb: TProgressCallback ) : PLPix;
 var
   fileheader: String;
   status: SANE_Status;
@@ -108,13 +109,6 @@ begin
   data := nil;
      if h<>nil then
         try
-          // Set selected resolution
-         writeln('open');
-          SaneSetOption(h, SANE_NAME_SCAN_RESOLUTION, IntToStr(resolution) );
-         writeln('resolution set');
-          // set selected scan mode
-          SaneSetOption(h, SANE_NAME_SCAN_MODE, scanmode) ;
-          writeln('mode set');
           writeln('start scan');
           status := sane_start(h);  // start scanning
           if status = SANE_STATUS_GOOD then
@@ -140,7 +134,7 @@ begin
           else writeln('Scan failed: ' + sane_strstatus(status));
           writeln('scan done');
           pixImage := pixReadMem(data, byteswritten);
-          pixSetResolution(pixImage, resolution, resolution);
+//          pixSetResolution(pixImage, resolution, resolution);
           Result := pixImage;
           writeln('file loaded');
         finally
@@ -155,6 +149,27 @@ begin
   Result := Bounds( 0, 0, 0, 0);
   if boxGetGeometry(aBox, @x, @y, @w, @h)=0 then
      Result := Bounds(x, y, w, h);
+end;
+
+function StreamToPix ( S: TMemoryStream ) : PLPix;
+var
+  tempPix: PLPix;
+  buf: PByte;
+  bytecount: Integer;
+begin
+  Result := nil;
+  if S = nil then Exit;
+  tempPix := nil;
+  bytecount := S.Size;
+  Getmem(buf, bytecount);
+  try
+    s.Position := 0;
+    writeln(S.Read(buf[0], bytecount));
+    tempPix := pixReadMem(buf, bytecount);
+  finally
+    Freemem(buf);
+    Result := tempPix;
+  end;
 end;
 
 end.
