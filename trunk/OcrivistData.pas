@@ -686,6 +686,7 @@ begin
        Fpix := Pix;
        FFilename := Dest;
        Execute;
+       Free;
      end;
 end;
 
@@ -697,6 +698,7 @@ begin
           FFilename := Src;
           FPixAddr := Pix;
           Execute;
+          Free;
         end;
 end;
 
