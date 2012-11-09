@@ -29,6 +29,7 @@ object SpellcheckForm: TSpellcheckForm
     Top = 83
     Width = 308
     ItemHeight = 0
+    OnDblClick = SuggestionListDblClick
     OnSelectionChange = SuggestionListSelectionChange
     ScrollWidth = 304
     TabOrder = 1
