@@ -16,6 +16,7 @@ TSelectionMode = (smSelect, smCrop, smDelete);
 
 TPageViewer = class (TCustomControl)
 private
+  FOnDeleteSelection: TNotifyEvent;
   { private declarations }
   FSelectRect: TRect;
   FSelecting: Boolean;
@@ -76,6 +77,7 @@ public
   property Selections[SelIndex: Integer]: TRect read GetSelections;
   property SelectionMode: TSelectionMode read FSelectionMode write FSelectionMode;
   property SelectionCount: integer read GetSelectionCount;
+  property OnDeleteSelection: TNotifyEvent read FOnDeleteSelection write FOnDeleteSelection;
   function SelectionIndex( Sel: TSelector ): integer;
   function GetSelector( SelIndex: integer ): TSelector;
   procedure SetSelection( SelIndex: integer; aRect: TRect );
@@ -432,7 +434,8 @@ end;
 
 procedure TPageViewer.SelectionChange(Sender: TObject);
 begin
-  FRealSelections[ SelectionIndex( TSelector(Sender) ) ] := UnScaleRect(TSelector(Sender).Selection, Scale);
+  if FSelectionMode=smSelect
+     then FRealSelections[ SelectionIndex( TSelector(Sender) ) ] := UnScaleRect(TSelector(Sender).Selection, Scale);
   writeln('TPageViewer received SelectionChange from Selector index ', SelectionIndex( TSelector(Sender) ));
 end;
 
@@ -445,8 +448,12 @@ begin
       for x := 0 to Length(FSelections)-1 do
         if FSelections[x]<>Sender then begin FSelections[x].Focussed := false; FSelections[x].Invalidate; end;
     end
-  else if FSelectionMode=smDelete
-     then DeleteSelector(SelectionIndex(TSelector(Sender)));
+  else if FSelectionMode=smDelete then
+     begin
+       if Assigned(FOnDeleteSelection)
+         then FOnDeleteSelection(Sender);
+       DeleteSelector(SelectionIndex(TSelector(Sender)));
+     end;
 end;
 
 procedure TPageViewer.ResizeSelections;
@@ -511,7 +518,7 @@ begin
   if (SelIndex>=0) and (SelIndex<Length(Fselections)) then
         begin
           Fselections[SelIndex].Free;
-          for x := Length(Fselections)-2 downto SelIndex do
+          for x := SelIndex to Length(Fselections)-2 do
             begin
               Fselections[x] := Fselections[x+1];
               FRealSelections[x] := FRealSelections[x+1];

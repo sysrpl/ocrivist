@@ -250,6 +250,7 @@ begin
   ICanvas.Parent := MainPanel;
   ICanvas.Align := alClient;
   Icanvas.OnSelect := @MakeSelection;
+  Icanvas.OnDeleteSelection := @DeleteSelection;
   ICanvas.OnChangeBitmap := @UpdateThumbnail;
   ThumbnailListBox.Clear;
   ThumbnailListBox.ItemIndex := -1;
@@ -496,7 +497,15 @@ procedure TMainForm.SaveButtonClick ( Sender: TObject ) ;
 var
   x: Integer;
 begin
-  Project.SaveToFile(Project.Filename);
+ ProgressForm.Label1.Caption := 'Saving project...';
+ ProgressForm.Label2.Caption := '';
+ ProgressForm.Show;
+ Application.ProcessMessages;
+ try
+   Project.SaveToFile(Project.Filename);
+ finally
+   ProgressForm.Hide;
+ end;
 end;
 
 procedure TMainForm.SaveTextMenuItemClick ( Sender: TObject ) ;
@@ -595,7 +604,6 @@ begin
   for x := 0 to Project.CurrentPage.SelectionCount-1 do
     begin
       ICanvas.AddSelection(Project.CurrentPage.Selection[x]);
-      //ICanvas.GetSelector(ICanvas.SelectionCount-1).OnDelete := @DeleteSelection;
       ICanvas.GetSelector(ICanvas.SelectionCount-1).OnSelect := @SelectionChange;
     end;
   editor.OCRData := Project.CurrentPage.OCRData;
@@ -742,7 +750,6 @@ begin
   if ICanvas.SelectionMode=smSelect then
     begin
       ICanvas.AddSelection(ICanvas.CurrentSelection);
-      //ICanvas.GetSelector(ICanvas.SelectionCount-1).OnDelete := @DeleteSelection;
       ICanvas.GetSelector(ICanvas.SelectionCount-1).OnSelect := @SelectionChange;
       Project.CurrentPage.AddSelection(ICanvas.CurrentSelection);
     end;
@@ -752,16 +759,20 @@ procedure TMainForm.DeleteSelection(Sender: TObject);
 begin
   writeln('delete selection');
   if Project<>nil then
-  Project.CurrentPage.DeleteSelection(ICanvas.SelectionIndex(TSelector(Sender)));
+     Project.CurrentPage.DeleteSelection(ICanvas.SelectionIndex(TSelector(Sender)));
 end;
 
 procedure TMainForm.SelectionChange ( Sender: TObject ) ;
 var
   SelectionId: LongInt;
 begin
-  SelectionId := ICanvas.SelectionIndex(TSelector(Sender));
-  ICanvas.SetSelection(SelectionId, TSelector(Sender).Selection);
-  Project.CurrentPage.Selection[SelectionId] := UnScaleRect(TSelector(Sender).Selection, ICanvas.Scale);
+  if ICanvas.SelectionMode=smSelect then
+    begin
+      SelectionId := ICanvas.SelectionIndex(TSelector(Sender));
+      ICanvas.SetSelection(SelectionId, TSelector(Sender).Selection);
+      Project.CurrentPage.Selection[SelectionId] := UnScaleRect(TSelector(Sender).Selection, ICanvas.Scale);
+
+    end;
 end;
 
 // called by ICanvas when page image is changed
