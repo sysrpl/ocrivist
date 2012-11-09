@@ -13,7 +13,9 @@ type
   { TScannerForm }
 
   TScannerForm = class ( TForm )
+    SourceComboBox: TComboBox;
     Label7: TLabel;
+    Label8: TLabel;
     PaperFormatBox: TComboBox;
     DeviceComboBox: TComboBox;
     Label1: TLabel;
@@ -42,10 +44,13 @@ type
   public
     { public declarations }
     OnChangeScanner: TNotifyEvent;
+    procedure InitSource( saneoption: SANE_Option_Descriptor );
     procedure InitResolution( saneoption: SANE_Option_Descriptor );
     procedure InitMode( mode: SANE_Option_Descriptor );
+    function SetScannerOptions: integer;
     function CheckDevices: Integer;
     function GetColorMode: string;
+    function GetSource: string;
     function GetResolution: Integer;
     function GetNextCounterValue: Integer;
   end;
@@ -60,7 +65,7 @@ var
 
 implementation
 
-uses ScanUtils;
+uses ScanUtils, progress;
 
 {$R *.lfm}
 
@@ -68,12 +73,36 @@ uses ScanUtils;
 
 procedure TScannerForm.FormCreate ( Sender: TObject ) ;
 begin
-  CheckDevices;
+  //CheckDevices;
 end;
 
 procedure TScannerForm.PaperSideEditChange ( Sender: TObject ) ;
 begin
   PaperFormatBox.ItemIndex := 0;
+end;
+
+procedure TScannerForm.InitSource(saneoption: SANE_Option_Descriptor);
+type
+ strlist = array[0..255] of PChar;
+ pstrlist = ^strlist;
+var
+  str: pstrlist;
+  RangeIndex: Integer;
+begin
+  SourceComboBox.Items.Clear;
+  if saneoption.name=SANE_NAME_SCAN_SOURCE then
+  if saneoption.constraint_type = SANE_CONSTRAINT_STRING_LIST then
+    begin
+       str := pstrlist(saneoption.pstringlist);
+       RangeIndex := 0;
+       while str^[RangeIndex] <> nil do
+             begin
+               SourceComboBox.Items.Add(str^[RangeIndex]);
+               Inc(RangeIndex);
+             end;
+       SourceComboBox.Enabled := SourceComboBox.Items.Count>0;
+    end;
+  if SourceComboBox.Enabled then SourceComboBox.ItemIndex := 0 else SourceComboBox.ItemIndex := -1;
 end;
 
 procedure TScannerForm.InitResolution ( saneoption: SANE_Option_Descriptor ) ;
@@ -150,10 +179,35 @@ begin
   if ModeComboBox.Enabled then ModeComboBox.ItemIndex := 0 else ModeComboBox.ItemIndex := -1;
 end;
 
+function TScannerForm.SetScannerOptions: integer;
+begin
+  Result := -1;
+  if ScannerHandle=nil then exit;
+  try
+    writeln('open');
+     SaneSetOption(ScannerHandle, SANE_NAME_SCAN_RESOLUTION, IntToStr(GetResolution) );
+    writeln('resolution set');
+     // set selected scan mode
+     SaneSetOption(ScannerHandle, SANE_NAME_SCAN_MODE, GetColorMode) ;
+     writeln('mode set');
+     // set selected source
+     SaneSetOption(ScannerHandle, SANE_NAME_SCAN_SOURCE, GetSource) ;
+     writeln('source set');
+     Result := 0;
+  except
+    ScannerHandle := nil;
+  end;
+end;
+
 function TScannerForm.CheckDevices: Integer;
 var
   res: SANE_Status;
 begin
+ ProgressForm.Label1.Caption := 'Checking for scanners';
+ ProgressForm.Label2.Caption := '';
+ ProgressForm.Show;
+ Application.ProcessMessages;
+try
  Result := 0;
  PDevices := nil;
   ScannerHandle := nil;
@@ -181,6 +235,10 @@ begin
      end;
  PaperFormatBoxChange(nil);
  Result := devicecount;
+
+finally
+  ProgressForm.Hide;
+end;
 end;
 
 function TScannerForm.GetColorMode: string;
@@ -188,6 +246,13 @@ begin
   Result := '';
   if ModeComboBox.ItemIndex>-1
      then Result := ModeComboBox.Items[ModeComboBox.ItemIndex];
+end;
+
+function TScannerForm.GetSource: string;
+begin
+ Result := '';
+ if SourceComboBox.ItemIndex>-1
+    then Result := SourceComboBox.Items[SourceComboBox.ItemIndex];
 end;
 
 function TScannerForm.GetResolution: Integer;
@@ -240,6 +305,7 @@ begin
        DevName := PDevices^[DeviceComboBox.ItemIndex]^.name;
        if sane_open(PChar(DevName), @ScannerHandle) = SANE_STATUS_GOOD then
           begin
+            InitSource(SaneGetOption(ScannerHandle, SANE_NAME_SCAN_SOURCE));
             InitResolution(SaneGetOption(ScannerHandle, SANE_NAME_SCAN_RESOLUTION));
             InitMode(SaneGetOption(ScannerHandle, SANE_NAME_SCAN_MODE));
             option := SaneGetOption(ScannerHandle, SANE_NAME_SCAN_BR_X);
