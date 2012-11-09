@@ -202,7 +202,8 @@ begin
         rhTopRight: writeln('rhTopRight');
         rhBottomRight: writeln('rhBottomRight');
    end;
-   fResizing := true;
+   if fResizehandle<>rhNone
+      then fResizing := true;
    fStartX := X;
    fStartY := Y;
    fStartTop := Top;
@@ -252,6 +253,7 @@ begin
    MouseCoords.Y := Y;
    Self.BringToFront;
    if fResizing then
+     begin
       case fResizehandle of
            rhTopLeft: begin
                         Top := Top + (Y-fStartY);
@@ -297,6 +299,8 @@ begin
    else Cursor := crDefault;
    if (Width < (HANDLESIZE * 2)) or (Height < ((HANDLESIZE * 2) + CAPTIONPADDING + fCaptionHeight))
       then fResizing := false;
+     end;
+
 
 end;
 
@@ -304,9 +308,12 @@ procedure TSelector.SelectorMouseUp ( Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer ) ;
 begin
   fResizing := false;
-  if Assigned(FOnSelect)
-     then FOnSelect(Self);
-  Paint;
+  if fResizehandle<>rhNone then
+    begin
+      if Assigned(FOnSelect)
+         then FOnSelect(Self);
+      Paint;
+    end;
 end;
 
 procedure TSelector.SetCaption ( const AValue: string ) ;
