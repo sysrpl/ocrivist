@@ -17,6 +17,7 @@ TResizeHandle = (rhNone, rhTopLeft, rhTopRight, rhBottomLeft, rhBottomRight);
 
 TSelector = class (TGraphicControl)
   private
+    FOnDelete: TNotifyEvent;
     FOnSelect: TNotifyEvent;
     fFocussed: Boolean;
     FOnFocus: TNotifyEvent;
@@ -39,6 +40,7 @@ TSelector = class (TGraphicControl)
     fResizeColor: TColor;
     fPenSize: Integer;
     fDrawHandles: Boolean;
+    FUserData: Pointer;
     function GetSelection: TRect;
     procedure SetCaption ( const AValue: string ) ;
     procedure SetColor ( const AValue: TColor ) ;
@@ -55,6 +57,7 @@ TSelector = class (TGraphicControl)
     procedure Paint; override;
   public
     constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
     procedure SetFocus;
     property Selection: TRect read GetSelection write SetSelection;
     property Caption: string read fCaption write SetCaption;
@@ -65,6 +68,8 @@ TSelector = class (TGraphicControl)
     property OnSelect: TNotifyEvent read FOnSelect write FOnSelect;
     property OnFocus: TNotifyEvent read FOnFocus write FOnFocus;
     property Focussed: Boolean read fFocussed write fFocussed;
+    property UserData: Pointer read FUserData write FUserData;
+    property OnDelete: TNotifyEvent read FOnDelete write FOnDelete;
   end;
 
 PSelector = ^TSelector;
@@ -155,6 +160,14 @@ begin
   fColor := clBlack;
   fResizeColor := clBlack;
   fPenSize := 1;
+end;
+
+destructor TSelector.Destroy;
+begin
+  if Assigned(FOnDelete)
+     then FOnDelete(Self);
+  WriteLn('TSelector destroyed');
+  inherited Destroy;
 end;
 
 procedure TSelector.SetFocus;

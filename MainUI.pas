@@ -145,6 +145,7 @@ type
     ThumbnailStartPoint: TPoint;
     DraggingThumbnail: Boolean;
     procedure MakeSelection ( Sender: TObject );
+    procedure DeleteSelection ( Sender: TObject );
     procedure SelectionChange ( Sender: TObject );
     procedure UpdateThumbnail ( Sender: TObject );
     procedure ShowScanProgress( progress: Single );
@@ -272,7 +273,7 @@ begin
   {for x := 0 to ThumbnailListBox.Items.Count-1 do
     TBitmap(ThumbnailListBox.Items.Objects[x]).Free;}  //NB: these are now freed by TOcrivistPage;
   if Assigned(Project)
-    then Project.Free;
+    then FreeAndNil( Project );
   if Assigned(ScannerHandle) then
       begin
         sane_close(ScannerHandle);
@@ -592,7 +593,11 @@ begin
   ICanvas.Picture := Project.CurrentPage.PageImage;
   Invalidate;
   for x := 0 to Project.CurrentPage.SelectionCount-1 do
+    begin
       ICanvas.AddSelection(Project.CurrentPage.Selection[x]);
+      //ICanvas.GetSelector(ICanvas.SelectionCount-1).OnDelete := @DeleteSelection;
+      //ICanvas.GetSelector(ICanvas.SelectionCount-1).OnSelect := @SelectionChange;
+    end;
   editor.OCRData := Project.CurrentPage.OCRData;
   CorrectionviewImage.Picture.Clear;
 end;
@@ -737,15 +742,25 @@ begin
   if ICanvas.SelectionMode=smSelect then
     begin
       ICanvas.AddSelection(ICanvas.CurrentSelection);
+      //ICanvas.GetSelector(ICanvas.SelectionCount-1).OnDelete := @DeleteSelection;
+      //ICanvas.GetSelector(ICanvas.SelectionCount-1).OnSelect := @SelectionChange;
       Project.CurrentPage.AddSelection(ICanvas.CurrentSelection);
     end;
+end;
+
+procedure TMainForm.DeleteSelection(Sender: TObject);
+begin
+  writeln('delete selection');
+  if Project<>nil then
+  Project.CurrentPage.DeleteSelection(ICanvas.SelectionIndex(TSelector(Sender)));
 end;
 
 procedure TMainForm.SelectionChange ( Sender: TObject ) ;
 var
   SelectionId: LongInt;
 begin
-  SelectionId := StrToInt( TSelector(Sender).Caption )-1;
+  SelectionId := ICanvas.SelectionIndex(TSelector(Sender));
+  ICanvas.SetSelection(SelectionId, TSelector(Sender).Selection);
   Project.CurrentPage.Selection[SelectionId] := UnScaleRect(TSelector(Sender).Selection, ICanvas.Scale);
 end;
 
