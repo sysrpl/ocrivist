@@ -149,7 +149,7 @@ type
     procedure UpdateThumbnail ( Sender: TObject );
     procedure ShowScanProgress( progress: Single );
     procedure ShowOCRProgress ( progress: Single );
-    procedure LoadPage( newpage: PLPix );
+    procedure LoadPage( newpage: PLPix; pageindex: integer );
     procedure DoCrop;
     function AnalysePage(pageindex: integer): integer;
     procedure OCRPage(pageindex: integer);
@@ -315,7 +315,7 @@ begin
              begin
                pagename :=  ExtractFileNameOnly(OpenDialog.FileName)+IntToStr(x);
                pixSetText(newpage, PChar(pagename));
-               LoadPage(newpage);
+               LoadPage(newpage, ThumbnailListBox.ItemIndex+1);
            //    if x>2 then Project.Pages[x-2].Active := false;
              end;
            if FileExistsUTF8(tempfile) then DeleteFileUTF8(tempfile);
@@ -626,7 +626,7 @@ begin
              begin
                pagename :=  ExtractFileNameOnly(OpenDialog.Files[i]);
                pixSetText(newpage, PChar(pagename));
-               LoadPage(newpage);
+               LoadPage(newpage, ThumbnailListBox.ItemIndex+1);
                for x := 0 to ToolBar1.ControlCount-1 do
                   if TControl(ToolBar1.Controls[x]).Tag=1
                      then TControl(ToolBar1.Controls[x]).Visible := true;
@@ -695,7 +695,7 @@ begin
        nametext := Format('scan_%.3d', [ScannerForm.GetNextCounterValue]);
        pixSetText(newpage, PChar( nametext ));
        if newpage<>nil
-          then LoadPage(newpage)
+          then LoadPage(newpage, ThumbnailListBox.ItemIndex+1)
        else ShowMessage('Scan page failed');
        StatusBar.Panels[1].Text := '';
      end;
@@ -780,7 +780,7 @@ begin
   Application.ProcessMessages;
 end;
 
-procedure TMainForm.LoadPage ( newpage: PLPix ) ;
+procedure TMainForm.LoadPage ( newpage: PLPix; pageindex: integer ) ;
 var
   X: Integer;
   thumbBMP: TBitmap;
@@ -792,13 +792,13 @@ begin
   then for X := Project.CurrentPage.SelectionCount-1 downto 0 do
        ICanvas.DeleteSelector(X);
  Editor.OCRData := nil;
- Project.AddPage(ICanvas.Picture);
+ Project.AddPage(ICanvas.Picture, pageindex);
  thumbBMP := Project.CurrentPage.Thumbnail;
  if thumbBMP<>nil then
    begin
-     ThumbnailListBox.Items.AddObject(newpage^.text, thumbBMP);
+     ThumbnailListBox.Items.InsertObject(pageindex, newpage^.text, thumbBMP);
    end;
- ThumbnailListBox.ItemIndex := ThumbnailListBox.Count-1;
+ ThumbnailListBox.ItemIndex := pageindex;
  if ThumbnailListBox.Count>1
   then pagecountLabel.Caption := Format('%d pages', [ThumbnailListBox.Count])
   else pagecountLabel.Caption := #32;  // if label is empty it changes its height

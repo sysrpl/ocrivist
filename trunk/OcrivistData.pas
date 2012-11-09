@@ -75,7 +75,7 @@ type
     function LoadfromFile( aFileName: TFilename ): integer;
     procedure DeletePage( aIndex: Integer );
     procedure MovePage( sourceIndex, destIndex: Integer );
-    procedure AddPage( Pix: PLPix );
+    procedure AddPage( Pix: PLPix; pageindex: integer );
     property Pages[aIndex: Integer]: TOcrivistPage read GetPage write PutPage;
     property Title: string read FTitle write FTitle;
     property Width: Integer read FPageWidth write FPageWidth;
@@ -467,17 +467,20 @@ begin
      end;
 end;
 
-procedure TOcrivistProject.AddPage ( Pix: PLPix ) ;
+procedure TOcrivistProject.AddPage ( Pix: PLPix; pageindex: integer  ) ;
 var
   P: TOcrivistPage;
+  pg: Integer;
 begin
   P := TOcrivistPage.Create(Pix);
   if P <> nil then
      begin
        SetLength(FPages, Length(FPages)+1);
        P.SaveToFileBackground(Pix, FWorkFolder);
-       FPages[PageCount-1] := P;
-       FcurrentPage := PageCount-1;
+       for pg := PageCount-2 downto pageindex do
+         FPages[pg+1] := FPages[pg];
+       FPages[pageindex] := P;
+       FcurrentPage := pageindex;
        FTitle := pixGetText(Pix);
      end;
 end;
