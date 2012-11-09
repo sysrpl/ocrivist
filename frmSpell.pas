@@ -25,6 +25,7 @@ type
     procedure ChangeButtonClick ( Sender: TObject ) ;
     procedure IgnoreButtonClick ( Sender: TObject ) ;
     procedure SuggestionListClick(Sender: TObject);
+    procedure SuggestionListDblClick ( Sender: TObject ) ;
     procedure SuggestionListSelectionChange ( Sender: TObject; User: boolean ) ;
   private
     { private declarations }
@@ -63,6 +64,12 @@ end;
 procedure TSpellcheckForm.SuggestionListClick(Sender: TObject);
 begin
   SuggestionListSelectionChange(Sender, false);
+end;
+
+procedure TSpellcheckForm.SuggestionListDblClick ( Sender: TObject ) ;
+begin
+  SuggestionListSelectionChange(Sender, true);
+  ChangeButtonClick(Sender);
 end;
 
 procedure TSpellcheckForm.SuggestionListSelectionChange ( Sender: TObject;
