@@ -35,6 +35,7 @@ private
   FHorzScrollBar: TScrollBar;
   //function GetScale: Integer;
   function GetSelection: TRect;
+  function GetSelectionCount: integer;
   procedure SetBitmap ( const AValue: TBitmap ) ;
   procedure SetMode ( const AValue: TViewermode ) ;
   procedure SetPicture ( const AValue: PLPix ) ;
@@ -74,6 +75,10 @@ public
   property CurrentSelection: TRect read GetSelection;
   property Selections[SelIndex: Integer]: TRect read GetSelections;
   property SelectionMode: TSelectionMode read FSelectionMode write FSelectionMode;
+  property SelectionCount: integer read GetSelectionCount;
+  function SelectionIndex( Sel: TSelector ): integer;
+  function GetSelector( SelIndex: integer ): TSelector;
+  procedure SetSelection( SelIndex: integer; aRect: TRect );
 end;
 
 
@@ -199,6 +204,11 @@ begin
   Result.Left := FHorzScrollBar.Position + Trunc(FSelectRect.Left/FScale);
   Result.Bottom := FVertScrollBar.Position + Trunc(FSelectRect.Bottom/FScale);
   Result.Right := FHorzScrollBar.Position + Trunc(FSelectRect.Right/FScale);
+end;
+
+function TPageViewer.GetSelectionCount: integer;
+begin
+  Result := Length(FSelections);
 end;
 
 procedure TPageViewer.SetMode ( const AValue: TViewermode ) ;
@@ -422,8 +432,8 @@ end;
 
 procedure TPageViewer.SelectionChange(Sender: TObject);
 begin
-  FRealSelections[ TSelector(Sender).Tag ] := UnScaleRect(TSelector(Sender).Selection, Scale);
-  //TODO: check that use of Tag is reliable
+  FRealSelections[ SelectionIndex( TSelector(Sender) ) ] := UnScaleRect(TSelector(Sender).Selection, Scale);
+  writeln('TPageViewer received SelectionChange from Selector index ', SelectionIndex( TSelector(Sender) ));
 end;
 
 procedure TPageViewer.SelectionGrabFocus ( Sender: TObject ) ;
@@ -435,12 +445,8 @@ begin
       for x := 0 to Length(FSelections)-1 do
         if FSelections[x]<>Sender then begin FSelections[x].Focussed := false; FSelections[x].Invalidate; end;
     end
-  else if FSelectionMode=smDelete then
-    begin
-      x := 0;
-      while FSelections[x]<>Sender do Inc(x);
-      DeleteSelector(x);
-    end;
+  else if FSelectionMode=smDelete
+     then DeleteSelector(SelectionIndex(TSelector(Sender)));
 end;
 
 procedure TPageViewer.ResizeSelections;
@@ -505,15 +511,14 @@ begin
   if (SelIndex>=0) and (SelIndex<Length(Fselections)) then
         begin
           Fselections[SelIndex].Free;
-          for x := SelIndex to Length(Fselections)-2 do
+          for x := Length(Fselections)-2 downto SelIndex do
             begin
               Fselections[x] := Fselections[x+1];
-              TSelector(FSelections[x]).Tag := x;
-              TSelector(FSelections[x]).Name := 'Selector' + IntToStr(x+1);
               FRealSelections[x] := FRealSelections[x+1];
             end;
           SetLength(Fselections, Length(Fselections)-1);
           SetLength(FRealSelections, Length(Fselections));
+          writeln('reconfigured selections');
         end
   else WriteLn(Format('Error in DeleteSelector: Index out of range (%d)', [SelIndex]));
   //Raise Exception.CreateFmt('Error in DeleteSelector: Index out of range (%d)', [SelIndex]);
@@ -552,14 +557,38 @@ begin
   S.Selection := ScaleRect(Selection, FScale);
   S.OnSelect := @SelectionChange;
   S.OnFocus := @SelectionGrabFocus;
-  S.Tag := Length(FSelections);
-  S.Name := 'Selector' + IntToStr(Length(FSelections)+1);
   SetLength(FRealSelections, Length(FRealSelections)+1);
   FRealSelections[Length(FRealSelections)-1] := Selection;
   SetLength(FSelections, Length(FSelections)+1);
   FSelections[ Length( FSelections )-1 ] := S;
   S.Caption := IntToStr(Length(FSelections));
   S.SetFocus;
+end;
+
+function TPageViewer.SelectionIndex(Sel: TSelector): integer;
+var
+  x: Integer;
+begin
+  Result := -1;
+  x := 0;
+  while (x<Length(FSelections)) and (Result<0) do
+        begin
+        if FSelections[x]=Sel then Result := x;
+        inc(x);
+        end;
+end;
+
+function TPageViewer.GetSelector(SelIndex: integer): TSelector;
+begin
+  Result := nil;
+  if (SelIndex<0) or (SelIndex>Length(FSelections)-1) then exit;
+  Result := FSelections[SelIndex];
+end;
+
+procedure TPageViewer.SetSelection(SelIndex: integer; aRect: TRect);
+begin
+  if (SelIndex<0) or (SelIndex>Length(FSelections)-1) then exit;
+   FRealSelections[ SelIndex ] := UnScaleRect(aRect, Scale);
 end;
 
 
