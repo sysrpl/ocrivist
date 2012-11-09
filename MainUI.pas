@@ -596,7 +596,7 @@ begin
     begin
       ICanvas.AddSelection(Project.CurrentPage.Selection[x]);
       //ICanvas.GetSelector(ICanvas.SelectionCount-1).OnDelete := @DeleteSelection;
-      //ICanvas.GetSelector(ICanvas.SelectionCount-1).OnSelect := @SelectionChange;
+      ICanvas.GetSelector(ICanvas.SelectionCount-1).OnSelect := @SelectionChange;
     end;
   editor.OCRData := Project.CurrentPage.OCRData;
   CorrectionviewImage.Picture.Clear;
@@ -743,7 +743,7 @@ begin
     begin
       ICanvas.AddSelection(ICanvas.CurrentSelection);
       //ICanvas.GetSelector(ICanvas.SelectionCount-1).OnDelete := @DeleteSelection;
-      //ICanvas.GetSelector(ICanvas.SelectionCount-1).OnSelect := @SelectionChange;
+      ICanvas.GetSelector(ICanvas.SelectionCount-1).OnSelect := @SelectionChange;
       Project.CurrentPage.AddSelection(ICanvas.CurrentSelection);
     end;
 end;
@@ -887,16 +887,20 @@ var
   x: Integer;
 begin
   if (pageindex<0) or (pageindex>Project.PageCount-1) then Exit;
-  OCRJob := TTesseractPage.Create(Project.Pages[pageindex].PageImage);
-  OCRProgressCount := 0;
-  OCRJob.OnOCRLine := @ShowOCRProgress;
-  for x := 0 to Project.Pages[pageindex].SelectionCount-1 do
-      OCRJob.RecognizeRect( Project.Pages[pageindex].Selection[x] );
-  Project.Pages[pageindex].OCRData := OCRJob;
- // Editor.OCRData := Project.CurrentPage.OCRData;
-  //MainPanel.Visible := false;
-  OCRPanel.Visible := true;
-  StatusBar.Panels[1].Text := '';
+  try
+    OCRJob := TTesseractPage.Create(Project.Pages[pageindex].PageImage);
+    OCRProgressCount := 0;
+    OCRJob.OnOCRLine := @ShowOCRProgress;
+    for x := 0 to Project.Pages[pageindex].SelectionCount-1 do
+        OCRJob.RecognizeRect( Project.Pages[pageindex].Selection[x] );
+    Project.Pages[pageindex].OCRData := OCRJob;
+   // Editor.OCRData := Project.CurrentPage.OCRData;
+    //MainPanel.Visible := false;
+    OCRPanel.Visible := true;
+    StatusBar.Panels[1].Text := '';
+  except
+    writeln('Error in OCRPage');
+  end;
 end;
 
 procedure TMainForm.DoSpellcheck;
