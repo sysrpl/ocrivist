@@ -1,14 +1,15 @@
-program project1;
+program ocrivist;
 
 {$mode objfpc}{$H+}
 
 uses
-  {$IFDEF UNIX}{$IFDEF UseCThreads}
+  {$IFDEF UNIX}
   cthreads,
-  {$ENDIF}{$ENDIF}
+  {$ENDIF}
   Interfaces, // this includes the LCL widgetset
   Forms, sane, scanutils, MainUI, LibLeptUtils, leptonica, pageviewer,
-  OcrivistData, selector, tessintf, DjvuUtils, scanner, ocr, ocreditor, frmSpell
+  OcrivistData, selector, tessintf, DjvuUtils, scanner, ocr, ocreditor,
+  frmSpell, progress
   { you can add units after this };
 
 {$R *.res}
@@ -21,6 +22,7 @@ begin
   ScannerForm.OnChangeScanner := @MainForm.UpdateScannerStatus;
   MainForm.UpdateScannerStatus(nil);
   Application.CreateForm ( TSpellcheckForm, SpellcheckForm ) ;
+  Application.CreateForm(TProgressForm, ProgressForm);
   Application.Run;
 end.
 

@@ -24,6 +24,7 @@ type
     procedure AddButtonClick ( Sender: TObject ) ;
     procedure ChangeButtonClick ( Sender: TObject ) ;
     procedure IgnoreButtonClick ( Sender: TObject ) ;
+    procedure SuggestionListClick(Sender: TObject);
     procedure SuggestionListSelectionChange ( Sender: TObject; User: boolean ) ;
   private
     { private declarations }
@@ -57,6 +58,11 @@ procedure TSpellcheckForm.IgnoreButtonClick ( Sender: TObject ) ;
 begin
   SpellAction := srIgnore;
   ModalResult := mrOK;
+end;
+
+procedure TSpellcheckForm.SuggestionListClick(Sender: TObject);
+begin
+  SuggestionListSelectionChange(Sender, false);
 end;
 
 procedure TSpellcheckForm.SuggestionListSelectionChange ( Sender: TObject;

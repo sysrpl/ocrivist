@@ -172,7 +172,7 @@ var
 
  implementation
 
-  uses DjvuUtils, scanner, ocr, Clipbrd;
+  uses DjvuUtils, scanner, ocr, Clipbrd, progress;
 
   {$R *.lfm}
 
@@ -254,7 +254,7 @@ begin
   ThumbnailListBox.ItemIndex := -1;
   ThumbnailListBox.ItemHeight := THUMBNAIL_HEIGHT + ThumbnailListBox.Canvas.TextHeight('Yy')+2;
   Project := TOcrivistProject.Create;
-  Project.Title := 'Default Project';
+  Project.Title := 'Untitled';
   AddingThumbnail := false;
   DraggingThumbnail := false;
   Editor := TOcrivistEdit.Create(Self);
@@ -678,13 +678,20 @@ procedure TMainForm.ScanPageMenuItemClick ( Sender: TObject ) ;
 var
   newpage: PLPix;
   nametext: String;
+  resolution: Integer;
 begin
-  if ScannerHandle=nil then ScannerForm.ShowModal;
-
+  if ScannerHandle=nil then
+    begin
+      ScannerForm.CheckDevices;
+      ScannerForm.ShowModal;
+    end;
   if ScannerHandle<>nil then
+    if ScannerForm.SetScannerOptions=0 then
      begin
        writeln('ScannerHandle OK');
-       newpage := ScanToPix(ScannerHandle, ScannerForm.GetResolution, ScannerForm.GetColorMode, @ShowScanProgress);
+       resolution := ScannerForm.GetResolution;
+       newpage := ScanToPix(ScannerHandle, @ShowScanProgress);
+       pixSetResolution(newpage, resolution, resolution);
        nametext := Format('scan_%.3d', [ScannerForm.GetNextCounterValue]);
        pixSetText(newpage, PChar( nametext ));
        if newpage<>nil
@@ -697,6 +704,12 @@ end;
 procedure TMainForm.SetScannerMenuItemClick ( Sender: TObject ) ;
 begin
  if ScannerHandle=nil then ScannerForm.FormCreate(nil);
+ Enabled := false;
+ try
+   ScannerForm.CheckDevices;
+ finally
+   Enabled := true;
+ end;
  ScannerForm.ShowModal;
 end;
 
@@ -823,6 +836,7 @@ var
   p: PLPix;
 begin
   Result := 0;
+  if (pageindex<0) or (pageindex>Project.PageCount-1) then Exit;
   Textmask := nil;
   BinaryPix := nil;
   Pix := Project.Pages[pageindex].PageImage;
@@ -857,6 +871,7 @@ var
   OCRJob: TTesseractPage;
   x: Integer;
 begin
+  if (pageindex<0) or (pageindex>Project.PageCount-1) then Exit;
   OCRJob := TTesseractPage.Create(Project.Pages[pageindex].PageImage);
   OCRProgressCount := 0;
   OCRJob.OnOCRLine := @ShowOCRProgress;
