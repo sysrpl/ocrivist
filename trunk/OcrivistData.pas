@@ -48,6 +48,7 @@ type
     property Thumbnail: TBitmap read FThumbnail;
     property Active: Boolean read FActive write SetActive;
     property OCRData: TTesseractPage read FOCRData write SetOCRData;
+    property Filename: TFilename read FTempFile;
   end;
 
   { TOcrivistProject }
