@@ -198,16 +198,23 @@ function SaneSetOption ( const ScannerHandle: SANE_Handle; OptionName, Value: st
   ) : SANE_Status;
 var
   vp: Pointer;
-  x: LongInt;
+  x: SANE_Word;
+  f : SANE_Fixed;
   optionindex: LongInt;
   l: SANE_Int;
+  option: SANE_Option_Descriptor;
 begin
   optionindex := SaneGetOptionIndex(ScannerHandle, OptionName);
+  option := SaneGetOption(ScannerHandle, OptionName);
+  x := 0;
   if optionindex > -1 then
      begin
-        if TryStrToInt(Value, x)
-           then vp := @x
-           else vp := Pchar(Value);
+       case option.option_type of
+            SANE_TYPE_BOOL: if TryStrToInt(Value, x) then vp := @x;
+            SANE_TYPE_INT:  if TryStrToInt(Value, x) then vp := @x;
+            SANE_TYPE_FIXED:  if TryStrToInt(Value, x) then begin f := SANE_FIX(x); vp := @f; end;
+            SANE_TYPE_STRING: vp := Pchar(Value);
+       end;
         Result := sane_control_option(ScannerHandle, optionindex, SANE_ACTION_SET_VALUE, vp, @l);
      end;
 end;
