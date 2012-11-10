@@ -22,6 +22,7 @@ type
   public
     { public declarations }
     function ShowModal: Integer; override;
+    procedure Show( showbutton: Boolean );
   end;
 
 var
@@ -36,6 +37,12 @@ implementation
 function TProgressForm.ShowModal: Integer;
 begin
   Result := inherited ShowModal;
+end;
+
+procedure TProgressForm.Show ( showbutton: Boolean ) ;
+begin
+  ButtonPanel.Visible := showbutton;
+  inherited Show;
 end;
 
 end.

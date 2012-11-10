@@ -696,7 +696,7 @@ begin
     begin
       ProgressForm.Label1.Caption := 'Saving project...';
       ProgressForm.Label2.Caption := '';
-      ProgressForm.Show;
+      ProgressForm.Show(true);
       Application.ProcessMessages;
       try
       Project.SaveToFile(SaveDialog.FileName);
