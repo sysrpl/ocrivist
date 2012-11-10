@@ -223,7 +223,7 @@ var
 begin
  ProgressForm.Label1.Caption := 'Checking for scanners';
  ProgressForm.Label2.Caption := '';
- ProgressForm.Show;
+ ProgressForm.Show(false);
  Application.ProcessMessages;
 try
  Result := 0;
