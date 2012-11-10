@@ -33,10 +33,11 @@ type
     CounterSpinEdit: TSpinEdit;
     WidthSpinEdit: TSpinEdit;
     HeightSpinEdit: TSpinEdit;
+    procedure HeightSpinEditChange ( Sender: TObject ) ;
     procedure PaperFormatBoxChange ( Sender: TObject ) ;
     procedure DeviceComboBoxChange ( Sender: TObject ) ;
     procedure FormCreate ( Sender: TObject ) ;
-    procedure PaperSideEditChange ( Sender: TObject ) ;
+    procedure WidthSpinEditChange ( Sender: TObject ) ;
   private
     { private declarations }
     MaxPageHeight: Integer;
@@ -76,9 +77,19 @@ begin
   //CheckDevices;
 end;
 
-procedure TScannerForm.PaperSideEditChange ( Sender: TObject ) ;
+procedure TScannerForm.WidthSpinEditChange ( Sender: TObject ) ;
 begin
-  PaperFormatBox.ItemIndex := 0;
+  case WidthSpinEdit.Value of
+       125: if HeightSpinEdit.Value=176 then PaperFormatBox.ItemIndex := Integer( pfB6 );
+       148: if HeightSpinEdit.Value=210 then PaperFormatBox.ItemIndex := Integer( pfA5 );
+       176: if HeightSpinEdit.Value=250 then PaperFormatBox.ItemIndex := Integer( pfB5 );
+       190: if HeightSpinEdit.Value=254 then PaperFormatBox.ItemIndex := Integer( pfExecutive );
+       216: if HeightSpinEdit.Value=279 then PaperFormatBox.ItemIndex := Integer( pfLetter );
+       210: if HeightSpinEdit.Value=297 then PaperFormatBox.ItemIndex := Integer( pfA4 );
+       250: if HeightSpinEdit.Value=353 then PaperFormatBox.ItemIndex := Integer( pfB4 );
+       297: if HeightSpinEdit.Value=420 then PaperFormatBox.ItemIndex := Integer( pfA3 );
+       else  PaperFormatBox.ItemIndex := 0;
+  end;
 end;
 
 procedure TScannerForm.InitSource(saneoption: SANE_Option_Descriptor);
@@ -299,7 +310,7 @@ var
                                                   end;
                                             SANE_TYPE_FIXED :
                                                   begin
-                                                     result := Trunc( SANE_UNFIX( range^.max));
+                                                     result := round( SANE_UNFIX( range^.max));
                                                   end;
                                             end;
                                     end;
@@ -340,6 +351,22 @@ begin
        pfLetter:   begin WidthSpinEdit.Value := 216; HeightSpinEdit.Value := 279; end;
        pfExecutive:   begin WidthSpinEdit.Value := 190; HeightSpinEdit.Value := 254; end;
   end;
+end;
+
+procedure TScannerForm.HeightSpinEditChange ( Sender: TObject ) ;
+begin
+case HeightSpinEdit.Value of
+     176: if WidthSpinEdit.Value=125 then PaperFormatBox.ItemIndex := Integer( pfB6 );
+     210: if WidthSpinEdit.Value=148 then PaperFormatBox.ItemIndex := Integer( pfA5 );
+     250: if WidthSpinEdit.Value=176 then PaperFormatBox.ItemIndex := Integer( pfB5 );
+     254: if WidthSpinEdit.Value=190 then PaperFormatBox.ItemIndex := Integer( pfExecutive );
+     279: if WidthSpinEdit.Value=216 then PaperFormatBox.ItemIndex := Integer( pfLetter );
+     297: if WidthSpinEdit.Value=210 then PaperFormatBox.ItemIndex := Integer( pfA4 );
+     353: if WidthSpinEdit.Value=250 then PaperFormatBox.ItemIndex := Integer( pfB4 );
+     420: if WidthSpinEdit.Value=297 then PaperFormatBox.ItemIndex := Integer( pfA3 );
+     else  PaperFormatBox.ItemIndex := 0;
+end;
+
 end;
 
 end.
