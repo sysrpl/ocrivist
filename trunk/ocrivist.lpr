@@ -18,11 +18,12 @@ begin
   Application.Title := 'Ocrivist';
   Application.Initialize;
   Application.CreateForm ( TMainForm, MainForm ) ;
-  Application.CreateForm ( TScannerForm, ScannerForm ) ;
-  ScannerForm.OnChangeScanner := @MainForm.UpdateScannerStatus;
-  MainForm.UpdateScannerStatus(nil);
+  //Application.CreateForm ( TScannerForm, ScannerForm ) ;
+  //ScannerForm.OnChangeScanner := @MainForm.UpdateScannerStatus;
+  //MainForm.UpdateScannerStatus(nil);
   Application.CreateForm ( TSpellcheckForm, SpellcheckForm ) ;
   Application.CreateForm(TProgressForm, ProgressForm);
+  ScannerForm := nil;
   Application.Run;
 end.
 

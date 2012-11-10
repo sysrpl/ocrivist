@@ -1,7 +1,7 @@
 object ScannerForm: TScannerForm
-  Left = 213
+  Left = 256
   Height = 339
-  Top = 179
+  Top = 248
   Width = 344
   ActiveControl = PageControl1
   Caption = 'Scanner settings'
@@ -46,6 +46,7 @@ object ScannerForm: TScannerForm
         Anchors = [akTop, akLeft, akRight]
         Enabled = False
         ItemHeight = 0
+        Style = csDropDownList
         TabOrder = 0
       end
       object DeviceComboBox: TComboBox
