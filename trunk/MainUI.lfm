@@ -339,6 +339,7 @@ object MainForm: TMainForm
       end
       object ImportMenuItem: TMenuItem
         Caption = 'Import ...'
+        Visible = False
         OnClick = ImportMenuItemClick
       end
       object MenuItem3: TMenuItem
@@ -386,6 +387,10 @@ object MainForm: TMainForm
         Tag = -1
         Caption = 'Rotate Left'
         ShortCut = 16460
+        OnClick = RotateButtonClick
+      end
+      object Rotate180MenuItem: TMenuItem
+        Caption = 'Rotate 180 deg'
         OnClick = RotateButtonClick
       end
       object DeskewMenuItem: TMenuItem

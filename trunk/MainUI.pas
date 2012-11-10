@@ -28,6 +28,7 @@ type
     ExportPDFButton: TMenuItem;
     ImportMenuItem: TMenuItem;
     CopyTextMenuItem: TMenuItem;
+    Rotate180MenuItem: TMenuItem;
     miAutoProcessPage: TMenuItem;
     miReadPage: TMenuItem;
     miAnalysePage: TMenuItem;
@@ -173,7 +174,7 @@ var
 
  implementation
 
-  uses DjvuUtils, scanner, ocr, Clipbrd, progress;
+  uses DjvuUtils, scanner, ocr, Clipbrd, progress, zipper, zstream;
 
   {$R *.lfm}
 
@@ -366,21 +367,21 @@ begin
  if Project.CurrentPage=nil then exit;
  direction := 0;
  newpix := nil;
- if Sender=RotateLeftTButton
+ oldpix := Project.CurrentPage.PageImage;
+
+ if (Sender=RotateLeftTButton) or (Sender=RotateLMenuItem)
     then direction := -1
- else if Sender=RotateRightButton
+ else if (Sender=RotateRightButton) or (Sender=RotateRMenuItem)
     then direction := 1;
- if direction<>0 then
-   begin
-     oldpix := Project.CurrentPage.PageImage;
-     newpix := pixRotate90(oldpix, direction);
-     if newpix<>nil then
-        begin
-          if oldpix <> nil then pixDestroy(@oldpix);
-          Project.CurrentPage.PageImage := newpix;
-          ICanvas.Picture := newpix;
-        end;
-   end;
+ if direction<>0
+    then newpix := pixRotate90(oldpix, direction)
+ else newpix := pixRotate180(nil, oldpix);   //Sender=Rotate180MenuItem;
+ if newpix<>nil then
+    begin
+      if oldpix <> nil then pixDestroy(@oldpix);
+      Project.CurrentPage.PageImage := newpix;
+      ICanvas.Picture := newpix;
+    end;
 end;
 
 procedure TMainForm.DjvuButtonClick ( Sender: TObject ) ;
@@ -496,16 +497,28 @@ end;
 procedure TMainForm.SaveButtonClick ( Sender: TObject ) ;
 var
   x: Integer;
+  OurZipper: TZipper;
+  I: Integer;
 begin
- ProgressForm.Label1.Caption := 'Saving project...';
- ProgressForm.Label2.Caption := '';
- ProgressForm.Show;
- Application.ProcessMessages;
- try
-   Project.SaveToFile(Project.Filename);
- finally
-   ProgressForm.Hide;
- end;
+  if Project.Filename=''
+     then SaveAsMenuItemClick(Sender)
+  else
+    begin
+      Project.SaveToFile(Project.Filename);
+      OurZipper := TZipper.Create;
+      try
+        OurZipper.FileName := '/tmp/' + Project.Title;
+        for I := 0 to Project.PageCount-1 do
+           begin
+             OurZipper.Entries.AddFileEntry(Project.Pages[I].Filename, 'pages/' + ExtractFileName(Project.Pages[I].Filename));
+             OurZipper.Entries[I].CompressionLevel := clNone;
+           end;
+        OurZipper.Entries.AddFileEntry(Project.Filename, ExtractFileName(Project.Filename));
+        OurZipper.ZipAllFiles;
+      finally
+        OurZipper.Free;
+      end;
+    end;
 end;
 
 procedure TMainForm.SaveTextMenuItemClick ( Sender: TObject ) ;
@@ -681,9 +694,17 @@ begin
       end;
   if SaveDialog.Execute then
     begin
+      ProgressForm.Label1.Caption := 'Saving project...';
+      ProgressForm.Label2.Caption := '';
+      ProgressForm.Show;
+      Application.ProcessMessages;
+      try
       Project.SaveToFile(SaveDialog.FileName);
       Caption := 'Ocrivist : ' + Project.Title;
       ThumbnailListBox.ItemIndex := Project.ItemIndex;
+      finally
+        ProgressForm.Hide;
+      end;
     end;
 end;
 
