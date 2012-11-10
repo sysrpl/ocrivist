@@ -1,7 +1,7 @@
 object ScannerForm: TScannerForm
-  Left = 256
+  Left = 60
   Height = 339
-  Top = 248
+  Top = 222
   Width = 344
   ActiveControl = PageControl1
   Caption = 'Scanner settings'
@@ -36,33 +36,33 @@ object ScannerForm: TScannerForm
     TabOrder = 1
     object ScanSheet1: TTabSheet
       Caption = 'Scanner'
-      ClientHeight = 252
+      ClientHeight = 250
       ClientWidth = 340
       object ModeComboBox: TComboBox
         Left = 156
-        Height = 25
+        Height = 29
         Top = 125
         Width = 170
         Anchors = [akTop, akLeft, akRight]
         Enabled = False
         ItemHeight = 0
         Style = csDropDownList
-        TabOrder = 0
+        TabOrder = 2
       end
       object DeviceComboBox: TComboBox
         Left = 20
-        Height = 27
+        Height = 29
         Top = 32
         Width = 306
         Anchors = [akTop, akLeft, akRight]
         ItemHeight = 0
         OnChange = DeviceComboBoxChange
         Style = csDropDownList
-        TabOrder = 1
+        TabOrder = 0
       end
       object ResolutionComboBox: TComboBox
         Left = 155
-        Height = 23
+        Height = 25
         Top = 170
         Width = 171
         Anchors = [akTop, akLeft, akRight]
@@ -75,7 +75,7 @@ object ScannerForm: TScannerForm
           '1200 dpi'
         )
         Style = csDropDownList
-        TabOrder = 2
+        TabOrder = 3
         Text = '300 dpi'
       end
       object Label1: TLabel
@@ -83,8 +83,8 @@ object ScannerForm: TScannerForm
         AnchorSideTop.Side = asrCenter
         AnchorSideRight.Control = ModeComboBox
         Left = 107
-        Height = 16
-        Top = 129
+        Height = 18
+        Top = 130
         Width = 34
         Anchors = [akTop, akRight]
         BorderSpacing.Right = 15
@@ -95,10 +95,10 @@ object ScannerForm: TScannerForm
         AnchorSideTop.Control = ResolutionComboBox
         AnchorSideTop.Side = asrCenter
         AnchorSideRight.Control = ResolutionComboBox
-        Left = 73
-        Height = 16
+        Left = 74
+        Height = 18
         Top = 173
-        Width = 67
+        Width = 66
         Anchors = [akTop, akRight]
         BorderSpacing.Right = 15
         Caption = 'Resolution'
@@ -109,7 +109,7 @@ object ScannerForm: TScannerForm
         AnchorSideTop.Side = asrCenter
         AnchorSideRight.Control = CounterSpinEdit
         Left = 88
-        Height = 16
+        Height = 18
         Top = 216
         Width = 52
         Anchors = [akTop, akRight]
@@ -119,26 +119,26 @@ object ScannerForm: TScannerForm
       end
       object CounterSpinEdit: TSpinEdit
         Left = 155
-        Height = 23
+        Height = 25
         Top = 213
         Width = 148
         MaxValue = 30000
-        TabOrder = 3
+        TabOrder = 4
       end
       object SourceComboBox: TComboBox
         Left = 155
-        Height = 27
+        Height = 29
         Top = 77
         Width = 171
         Anchors = [akTop, akLeft, akRight]
         ItemHeight = 0
         Style = csDropDownList
-        TabOrder = 4
+        TabOrder = 1
       end
       object Label8: TLabel
         AnchorSideRight.Control = SourceComboBox
         Left = 94
-        Height = 16
+        Height = 18
         Top = 84
         Width = 46
         Anchors = [akTop, akRight]
@@ -149,14 +149,14 @@ object ScannerForm: TScannerForm
     end
     object ScanSheet2: TTabSheet
       Caption = 'Page size'
-      ClientHeight = 252
+      ClientHeight = 250
       ClientWidth = 340
       object Label3: TLabel
         AnchorSideTop.Control = WidthSpinEdit
         AnchorSideTop.Side = asrCenter
         AnchorSideRight.Control = WidthSpinEdit
         Left = 72
-        Height = 16
+        Height = 18
         Top = 31
         Width = 40
         Anchors = [akTop, akRight]
@@ -169,7 +169,7 @@ object ScannerForm: TScannerForm
         AnchorSideTop.Side = asrCenter
         AnchorSideRight.Control = HeightSpinEdit
         Left = 67
-        Height = 16
+        Height = 18
         Top = 69
         Width = 47
         Anchors = [akTop, akRight]
@@ -179,23 +179,24 @@ object ScannerForm: TScannerForm
       end
       object WidthSpinEdit: TSpinEdit
         Left = 127
-        Height = 23
+        Height = 25
         Top = 28
         Width = 80
         MaxValue = 1000
         MinValue = 50
-        OnChange = PaperSideEditChange
+        OnChange = WidthSpinEditChange
         TabOrder = 0
         Value = 50
       end
       object HeightSpinEdit: TSpinEdit
         Left = 129
-        Height = 23
+        Height = 25
         Top = 66
         Width = 78
+        AutoSelect = False
         MaxValue = 1000
         MinValue = 50
-        OnChange = PaperSideEditChange
+        OnChange = HeightSpinEditChange
         TabOrder = 1
         Value = 50
       end
@@ -203,7 +204,7 @@ object ScannerForm: TScannerForm
         AnchorSideLeft.Control = WidthSpinEdit
         AnchorSideLeft.Side = asrBottom
         Left = 217
-        Height = 16
+        Height = 18
         Top = 31
         Width = 27
         BorderSpacing.Left = 10
@@ -216,7 +217,7 @@ object ScannerForm: TScannerForm
         AnchorSideTop.Control = HeightSpinEdit
         AnchorSideTop.Side = asrCenter
         Left = 217
-        Height = 16
+        Height = 18
         Top = 69
         Width = 27
         BorderSpacing.Left = 10
@@ -242,6 +243,7 @@ object ScannerForm: TScannerForm
           'Executive'
         )
         OnChange = PaperFormatBoxChange
+        Style = csDropDownList
         TabOrder = 2
         Text = 'A4'
       end
