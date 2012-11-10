@@ -716,9 +716,10 @@ end;
 
 procedure TMainForm.SetScannerMenuItemClick ( Sender: TObject ) ;
 begin
- if ScannerHandle=nil then ScannerForm.FormCreate(nil);
- Enabled := false;
+ if ScannerForm=nil then
  try
+   ScannerForm := TScannerForm.Create(Application);
+   Enabled := false;
    ScannerForm.CheckDevices;
  finally
    Enabled := true;

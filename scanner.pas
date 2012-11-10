@@ -133,9 +133,12 @@ begin
                                                      rangemax := Trunc( SANE_UNFIX( range^.max));
                                                   end;
                                             end;
+                                       if (rangemin<=75) and (rangemax>=75) then ResolutionComboBox.Items.Add('75');
                                        if (rangemin<=150) and (rangemax>=150) then ResolutionComboBox.Items.Add('150');
                                        if (rangemin<=300) and (rangemax>=300) then ResolutionComboBox.Items.Add('300');
+                                       if (rangemin<=400) and (rangemax>=400) then ResolutionComboBox.Items.Add('400');
                                        if (rangemin<=600) and (rangemax>=600) then ResolutionComboBox.Items.Add('600');
+                                       if (rangemin<=800) and (rangemax>=800) then ResolutionComboBox.Items.Add('800');
                                        if (rangemin<=1200) and (rangemax>=1200) then ResolutionComboBox.Items.Add('1200');
                                     end;
         SANE_CONSTRAINT_WORD_LIST:  begin
@@ -193,6 +196,10 @@ begin
      // set selected source
      SaneSetOption(ScannerHandle, SANE_NAME_SCAN_SOURCE, GetSource) ;
      writeln('source set');
+     // set page bottomright
+     SaneSetOption(ScannerHandle, SANE_NAME_SCAN_BR_X, IntToStr(WidthSpinEdit.Value)) ;
+     SaneSetOption(ScannerHandle, SANE_NAME_SCAN_BR_Y, IntToStr(HeightSpinEdit.Value)) ;
+     writeln('page size set');
      Result := 0;
   except
     ScannerHandle := nil;
@@ -313,6 +320,7 @@ begin
             option := SaneGetOption(ScannerHandle, SANE_NAME_SCAN_BR_Y);
             HeightSpinEdit.MaxValue := GetMaxValue(option);
           end;
+       ResolutionComboBox.ItemIndex := ResolutionComboBox.Items.IndexOf('300');
      end;
  if Assigned(OnChangeScanner) then OnChangeScanner(Self);
 end;
