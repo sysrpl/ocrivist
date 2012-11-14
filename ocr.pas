@@ -182,7 +182,7 @@ end;
 constructor TTesseractPage.Create ( PixIn: PLPix; data, lang: Pchar ) ;
 var
   d: LongInt;
-begin
+ begin
   d := pixGetDepth(PixIn);
   FDatapath := data;
   FLanguage := lang;
@@ -194,7 +194,7 @@ begin
 //  pixWrite('/tmp/testOCRimage.bmp', FPageImage, IFF_BMP);
   if FileExists(FDatapath + FLanguage + '.traineddata') then
   try
-    FTesseract := tesseract_new(PChar(FDatapath), PChar(FLanguage));
+    FTesseract := tesseract_new(data, lang);
     tesseract_SetImage(FTesseract, FPageImage);
     FLineCount := 0;
     SetLength(FLines, FLineCount);
