@@ -121,6 +121,7 @@ end;
 procedure TOcrivistEdit.KeyUp ( var Key: Word; Shift: TShiftState ) ;
 begin
   inherited KeyUp ( Key, Shift ) ;
+  if FOCRData=nil then Exit;
   with FOCRData.Lines[FCurrentToken.Y] do
      Words[FCurrentToken.X].Text := GetUpdatedToken(FCurrentToken.Y, FCurrentToken.X);
   writeln(FOCRData.Lines[FCurrentToken.Y].Words[FCurrentToken.X].Text);

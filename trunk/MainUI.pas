@@ -29,6 +29,11 @@ type
     ExportPDFButton: TMenuItem;
     ImportMenuItem: TMenuItem;
     CopyTextMenuItem: TMenuItem;
+    MenuItem4: TMenuItem;
+    NewProjectMenuItem: TMenuItem;
+    OCRScreenMenuItem: TMenuItem;
+    ModeMenuItem: TMenuItem;
+    ProcessPageMenuItem: TMenuItem;
     LanguagePanel: TPanel;
     Rotate180MenuItem: TMenuItem;
     miAutoProcessPage: TMenuItem;
@@ -114,6 +119,8 @@ type
     procedure LoadModeOptionClick(Sender: TObject);
     procedure miAutoAllClick ( Sender: TObject ) ;
     procedure miAutoProcessPageClick ( Sender: TObject ) ;
+    procedure ModeChange ( Sender: TObject ) ;
+    procedure NewProjectMenuItemClick ( Sender: TObject ) ;
     procedure RotateButtonClick ( Sender: TObject ) ;
     procedure DjvuButtonClick ( Sender: TObject ) ;
     procedure DeskewButtonClick ( Sender: TObject ) ;
@@ -177,6 +184,7 @@ var
   OCRProgressCount: integer;
   OCRLanguage: string;
   OCRDatapath: string;
+  HasDJVU: Boolean;
 
  implementation
 
@@ -261,6 +269,7 @@ begin
   Icanvas.OnSelect := @MakeSelection;
   Icanvas.OnDeleteSelection := @DeleteSelection;
   ICanvas.OnChangeBitmap := @UpdateThumbnail;
+  OCRPanel.Align := alClient;
   ThumbnailListBox.Clear;
   ThumbnailListBox.ItemIndex := -1;
   ThumbnailListBox.ItemHeight := THUMBNAIL_HEIGHT + ThumbnailListBox.Canvas.TextHeight('Yy')+2;
@@ -281,6 +290,9 @@ begin
   editor.Align := alClient;
   Editor.PopupMenu := TextPopupMenu;
   Editor.OnSelectToken := @EditorSelectToken;
+  HasDJVU := (SearchFileInPath('djvumake','',
+                   SysUtils.GetEnvironmentVariable('PATH'),PathSeparator,[])<>'');
+  ExportButton.Enabled := HasDJVU;
 //  Editor.OnSpellCheck := @SpellCallback;
 end;
 
@@ -308,6 +320,14 @@ begin
        if Key=27 then begin SelTextButtonClick(SelModeSelectButton); ICanvas.ClearSelection; end
        else if Key=13 then begin DoCrop; SelTextButtonClick(SelModeSelectButton); end;
      end;
+  if ssCtrl in Shift then if Key=77 then
+     begin
+       writeln('Key detected: ', Key);
+       if OCRScreenMenuItem.Checked
+        then ProcessPageMenuItem.Click
+        else OCRScreenMenuItem.Click;
+       Key := 0;
+     end;
 end;
 
 procedure TMainForm.ImportMenuItemClick ( Sender: TObject ) ;
@@ -318,13 +338,28 @@ var
   pagename: String;
   tempfile: String;
 begin
+  with OpenDialog do
+       begin
+         DefaultExt := '.djvu';
+         Filter := 'DJVU files|*.djvu|All Files|*';
+         Title := 'Import pages from DJVU file';
+       end;
   if OpenDialog.Execute then
     begin
       pages := djvuGetDocInfo(OpenDialog.FileName).PageCount;
+      if pages>0 then
+        begin
+          Project.Clear;
+          ThumbnailListBox.Clear;
+          ProgressForm.Label1.Caption := 'Importing DJVU file: ' + ExtractFileName( OpenDialog.FileName ) +#10
+           + '(' + IntToStr(pages) + ' pages)';
+          ProgressForm.Show(false);
+          Enabled := false;
+        end;
       for x := 1 to pages do
          begin
            newpage := nil;
-           StatusBar.Panels[1].Text := 'Importing page ' + IntToStr(x);
+           ProgressForm.Label2.Caption := 'Importing page ' + IntToStr(x);
            Application.ProcessMessages;
            tempfile := '/tmp/temppage.tif';
            if FileExistsUTF8(tempfile) then DeleteFileUTF8(tempfile);
@@ -339,6 +374,8 @@ begin
              end;
            if FileExistsUTF8(tempfile) then DeleteFileUTF8(tempfile);
          end;
+      ProgressForm.Hide;
+      Enabled := true;
     end;
     StatusBar.Panels[1].Text := '';
 end;
@@ -377,6 +414,27 @@ begin
       OCRPage(ThumbnailListBox.ItemIndex);
       Editor.OCRData := Project.CurrentPage.OCRData;
     end;
+end;
+
+procedure TMainForm.ModeChange ( Sender: TObject ) ;
+begin
+  TMenuItem(Sender).Checked := true;
+  if Sender=ProcessPageMenuItem then
+     begin
+       MainPanel.Visible := true;
+       OCRPanel.Visible := false;
+     end;
+  Application.ProcessMessages;
+  OCRPanel.Visible := OCRScreenMenuItem.Checked;
+  MainPanel.Visible := ProcessPageMenuItem.Checked;
+  if MainPanel.Visible then writeln('MainPanel.Visible')
+  else WriteLn('MainPanel not visible');
+end;
+
+procedure TMainForm.NewProjectMenuItemClick ( Sender: TObject ) ;
+begin
+  Project.Clear;
+  ThumbnailListBox.Clear;
 end;
 
 procedure TMainForm.RotateButtonClick ( Sender: TObject ) ;
@@ -674,6 +732,8 @@ begin
                pagename :=  ExtractFileNameOnly(OpenDialog.Files[i]);
                pixSetText(newpage, PChar(pagename));
                LoadPage(newpage, ThumbnailListBox.ItemIndex+1);
+               if not MainPanel.Visible
+                  then ProcessPageMenuItem.Click;
                for x := 0 to ToolBar1.ControlCount-1 do
                   if TControl(ToolBar1.Controls[x]).Tag=1
                      then TControl(ToolBar1.Controls[x]).Visible := true;
@@ -773,6 +833,8 @@ procedure TMainForm.TestTesseractButtonClick ( Sender: TObject ) ;
 begin
   OCRPage(ThumbnailListBox.ItemIndex);
   Editor.OCRData := Project.CurrentPage.OCRData;
+  if not OCRPanel.Visible
+     then OCRScreenMenuItem.Click;
 end;
 
 procedure TMainForm.ViewMenuItemClick ( Sender: TObject ) ;
