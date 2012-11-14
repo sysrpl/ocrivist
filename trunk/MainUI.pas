@@ -16,6 +16,7 @@ type
   { TMainForm }
 
   TMainForm = class ( TForm )
+    LanguageComboBox: TComboBox;
     DeskewMenuItem: TMenuItem;
     CorrectionviewImage: TImage;
     ImageList1: TImageList;
@@ -28,6 +29,7 @@ type
     ExportPDFButton: TMenuItem;
     ImportMenuItem: TMenuItem;
     CopyTextMenuItem: TMenuItem;
+    LanguagePanel: TPanel;
     Rotate180MenuItem: TMenuItem;
     miAutoProcessPage: TMenuItem;
     miReadPage: TMenuItem;
@@ -108,6 +110,7 @@ type
     procedure FormKeyDown ( Sender: TObject; var Key: Word; Shift: TShiftState
       ) ;
     procedure ImportMenuItemClick ( Sender: TObject ) ;
+    procedure LanguageComboBoxChange(Sender: TObject);
     procedure LoadModeOptionClick(Sender: TObject);
     procedure miAutoAllClick ( Sender: TObject ) ;
     procedure miAutoProcessPageClick ( Sender: TObject ) ;
@@ -157,6 +160,7 @@ type
     procedure OCRPage(pageindex: integer);
     procedure DoSpellcheck;
     procedure EditorSelectToken( aline, aword: integer );
+    procedure PopulateLanguageList;
   public
     { public declarations }
   end;
@@ -171,6 +175,8 @@ var
   ICanvas : TPageViewer;
   CorrectionviewImage:TImage;
   OCRProgressCount: integer;
+  OCRLanguage: string;
+  OCRDatapath: string;
 
  implementation
 
@@ -246,6 +252,8 @@ begin
 end;
 
 procedure TMainForm.FormCreate ( Sender: TObject ) ;
+var
+  x: Integer;
 begin
   ICanvas := TPageViewer.Create(self);
   ICanvas.Parent := MainPanel;
@@ -256,6 +264,14 @@ begin
   ThumbnailListBox.Clear;
   ThumbnailListBox.ItemIndex := -1;
   ThumbnailListBox.ItemHeight := THUMBNAIL_HEIGHT + ThumbnailListBox.Canvas.TextHeight('Yy')+2;
+
+  OCRDatapath := '/usr/local/share/tessdata/';
+  PopulateLanguageList;
+
+  OCRLanguage := 'eng';
+  LanguageComboBox.ItemIndex :=
+             LanguageComboBox.Items.IndexOf(GetLanguageFromToken(OCRLanguage));
+
   Project := TOcrivistProject.Create;
   Project.Title := 'Untitled';
   AddingThumbnail := false;
@@ -325,6 +341,11 @@ begin
          end;
     end;
     StatusBar.Panels[1].Text := '';
+end;
+
+procedure TMainForm.LanguageComboBoxChange(Sender: TObject);
+begin
+  OCRLanguage := GetLanguageToken(LanguageComboBox.Items[LanguageComboBox.ItemIndex]);
 end;
 
 procedure TMainForm.LoadModeOptionClick(Sender: TObject);
@@ -921,7 +942,8 @@ var
 begin
   if (pageindex<0) or (pageindex>Project.PageCount-1) then Exit;
   try
-    OCRJob := TTesseractPage.Create(Project.Pages[pageindex].PageImage);
+    writeln(OCRLanguage);
+    OCRJob := TTesseractPage.Create(Project.Pages[pageindex].PageImage, PChar(OCRDatapath), PChar(OCRLanguage));
     OCRProgressCount := 0;
     OCRJob.OnOCRLine := @ShowOCRProgress;
     for x := 0 to Project.Pages[pageindex].SelectionCount-1 do
@@ -986,6 +1008,29 @@ begin
   boxDestroy(@selBox);
   pixDestroy(@tmpPix);
   pixDestroy(@pixd);
+end;
+
+procedure TMainForm.PopulateLanguageList;
+Var
+   SearchResult : TSearchRec;
+   Filemask: String;
+   token: String;
+begin
+  LanguageComboBox.Items.Clear;
+  Filemask := OCRDatapath + '*.traineddata';
+  writeln (Filemask);
+  If FindFirst (Filemask, (faAnyFile And Not faDirectory) , SearchResult) = 0 Then
+     try
+       token := ExtractFileNameWithoutExt(SearchResult.Name);
+       LanguageComboBox.Items.Add(GetLanguageFromToken(token));
+       While FindNext (SearchResult) = 0 Do
+             Begin
+             token := ExtractFileNameWithoutExt(SearchResult.Name);
+             LanguageComboBox.Items.Add(GetLanguageFromToken(token));
+             End;
+     finally
+       FindClose (SearchResult);
+     end;
 end;
 
 

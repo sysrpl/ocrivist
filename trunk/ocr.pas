@@ -7,8 +7,78 @@ interface
 uses
   Classes, SysUtils, types, leptonica, LibLeptUtils, tessintf;
 
-type
+const
+  BIN_THRESHOLD = 150;
 
+  LanguageTokens: array [0..32] of string = ('chi_tra',
+                                            'chi_sim',
+                                            'ind',
+                                            'swe',
+                                            'ron',
+                                            'slv',
+                                            'srp',
+                                            'tgl',
+                                            'tur',
+                                            'hun',
+                                            'fin',
+                                            'ita',
+                                            'nld',
+                                            'nor',
+                                            'jpn',
+                                            'vie',
+                                            'spa',
+                                            'ukr',
+                                            'fra',
+                                            'slk',
+                                            'kor',
+                                            'ell',
+                                            'rus',
+                                            'por',
+                                            'bul',
+                                            'lav',
+                                            'lit',
+                                            'pol',
+                                            'deu',
+                                            'dan',
+                                            'ces',
+                                            'cat',
+                                            'eng');
+
+  Languages: array [0..32] of string = ('Chinese (Traditional)',
+                                        'Chinese (Simplified)',
+                                        'Indonesian',
+                                        'Swedish',
+                                        'Romanian',
+                                        'Slovene',
+                                        'Serbian (Latin)',
+                                        'Tagalog',
+                                        'Turkish',
+                                        'Hungarian',
+                                        'Finnish',
+                                        'Italian',
+                                        'Dutch',
+                                        'Norwegian',
+                                        'Japanese',
+                                        'Vietnamese',
+                                        'Spanish',
+                                        'Ukrainian',
+                                        'French',
+                                        'Slovak',
+                                        'Korean',
+                                        'Greek',
+                                        'Russian',
+                                        'Portuguese',
+                                        'Bulgarian',
+                                        'Latvian',
+                                        'Lithuanian',
+                                        'Polish',
+                                        'German',
+                                        'Danish',
+                                        'Czech',
+                                        'Catalan',
+                                        'English');
+
+type
    TConfidenceList = array of PInteger;
 
    TWordData = record
@@ -30,6 +100,8 @@ type
 
   TTesseractPage = class(TObject)
   private
+    FDatapath: string;
+    FLanguage: string;
     FOnOCRLine: TProgressCallback;
     FPageImage: PLPix;
     FTesseract: TTesseract;
@@ -42,19 +114,49 @@ type
     procedure SetLinecount ( const AValue: Integer ) ;
     procedure SetLines ( lineIndex: Integer ; const AValue: TLineData ) ;
   public
-    constructor Create( PixIn: PLPix );
+    constructor Create( PixIn: PLPix; data, lang: PChar );
     destructor Destroy; override;
     function RecognizeRect( inRect: TRect ): integer;
     property Text: string read FText write FText;
     property OnOCRLine: TProgressCallback read FOnOCRLine write FOnOCRLine;
     property Lines[ lineIndex: Integer ]: TLineData read GetLines write SetLines;
     property Linecount: Integer read FLineCount write SetLinecount;
+    property Datapath: string read FDatapath;
+    property Language: string read FLanguage;
   end;
 
-const
-  BIN_THRESHOLD = 150;
+  function GetLanguageFromToken(langtoken: string): string;
+  function GetLanguageToken(lang: string): string;
 
 implementation
+
+function GetLanguageFromToken(langtoken: string): string;
+var
+  x: Integer;
+begin
+  x := 0;
+  Result := '';
+  while (x < Length(LanguageTokens)) and (Result ='') do
+        begin
+          if LanguageTokens[x]=langtoken
+             then Result := Languages[x];
+          Inc(x);
+        end;
+end;
+
+function GetLanguageToken(lang: string): string;
+var
+  x: Integer;
+begin
+  x := 0;
+  Result := '';
+  while (x < Length(Languages)) and (Result ='') do
+        begin
+          if Languages[x]=lang
+             then Result := LanguageTokens[x];
+          Inc(x);
+        end;
+end;
 
 { TTesseractPage }
 
@@ -77,22 +179,31 @@ begin
   FLines[lineIndex] := AValue;
 end;
 
-constructor TTesseractPage.Create ( PixIn: PLPix ) ;
+constructor TTesseractPage.Create ( PixIn: PLPix; data, lang: Pchar ) ;
 var
   d: LongInt;
 begin
   d := pixGetDepth(PixIn);
+  FDatapath := data;
+  FLanguage := lang;
   if d = 32
      then FPageImage := pixGenerateMaskByBand32(PixIn, BIN_THRESHOLD, BIN_THRESHOLD, BIN_THRESHOLD)
   else if d >=4
      then FPageImage := pixThresholdToBinary(PixIn, BIN_THRESHOLD)
   else FPageImage := pixClone(PixIn);
 //  pixWrite('/tmp/testOCRimage.bmp', FPageImage, IFF_BMP);
-  FTesseract := tesseract_new(nil, nil);
-  if FTesseract=nil then writeln('tesseract_new failed :(');
-  tesseract_SetImage(FTesseract, FPageImage);
-  FLineCount := 0;
-  SetLength(FLines, FLineCount);
+  if FileExists(FDatapath + FLanguage + '.traineddata') then
+  try
+    FTesseract := tesseract_new(PChar(FDatapath), PChar(FLanguage));
+    tesseract_SetImage(FTesseract, FPageImage);
+    FLineCount := 0;
+    SetLength(FLines, FLineCount);
+  except
+    if FTesseract=nil then
+       writeln('tesseract_new failed :(')
+  end
+  else writeln('Unable to open ' + FDatapath + FLanguage + '.traineddata') ; //TODO: handle this better!
+
 end;
 
 destructor TTesseractPage.Destroy;

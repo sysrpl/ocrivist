@@ -351,7 +351,7 @@ begin
            FileRead(F, bytes, SizeOf(bytes));                 //3 - Integer - length of string Text
            if bytes>0 then
               begin
-                aPage.FOCRData := TTesseractPage.Create(nil);
+                aPage.FOCRData := TTesseractPage.Create(nil, nil, nil); // TODO: initialise language and datapath
                  SetLength(strbuf, bytes);
                  if bytes>0 then
                     FileRead(F, strbuf[1], bytes);                  //4 - array of char - = string Text
