@@ -392,6 +392,7 @@ begin
        1: AddPageButton.OnClick := @ScanPageMenuItemClick;
   end;
   AddPageButton.ImageIndex := TMenuItem(Sender).ImageIndex;
+  AddPageButton.Hint := TMenuItem(Sender).Hint;
 end;
 
 procedure TMainForm.miAutoAllClick ( Sender: TObject ) ;
