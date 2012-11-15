@@ -218,7 +218,7 @@ object MainForm: TMainForm
     object CorrectionPanel: TPanel
       Left = 1
       Height = 149
-      Top = 1
+      Top = 43
       Width = 446
       Align = alTop
       Caption = 'CorrectionPanel'
@@ -255,12 +255,35 @@ object MainForm: TMainForm
     end
     object Panel3: TPanel
       Left = 1
-      Height = 416
-      Top = 150
+      Height = 374
+      Top = 192
       Width = 446
       Align = alClient
       Caption = 'Panel3'
       TabOrder = 2
+    end
+    object TextToolBar: TToolBar
+      Left = 1
+      Height = 42
+      Top = 1
+      Width = 446
+      ButtonHeight = 40
+      ButtonWidth = 40
+      Caption = 'TextToolBar'
+      EdgeBorders = [ebTop, ebBottom]
+      Images = ImageList1
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 3
+      object SpellcheckButton: TToolButton
+        Tag = 1
+        Left = 1
+        Hint = 'Spellcheck'
+        Top = 2
+        Caption = 'SpellcheckButton'
+        ImageIndex = 17
+        OnClick = SpellcheckButtonClick
+      end
     end
   end
   object MainPanel: TPanel
@@ -271,7 +294,111 @@ object MainForm: TMainForm
     Align = alClient
     AutoSize = True
     Caption = 'MainPanel'
+    ClientHeight = 632
+    ClientWidth = 436
     TabOrder = 3
+    object PageToolBar: TToolBar
+      Left = 1
+      Height = 42
+      Top = 1
+      Width = 434
+      ButtonHeight = 40
+      ButtonWidth = 40
+      Caption = 'PageToolBar'
+      EdgeBorders = [ebTop, ebBottom]
+      Images = ImageList1
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 0
+      object TesseractButton: TToolButton
+        Tag = 1
+        Left = 313
+        Hint = 'OCR selections'
+        Top = 2
+        Caption = 'TesseractButton'
+        ImageIndex = 10
+        OnClick = TestTesseractButtonClick
+      end
+      object AutoselectButton: TToolButton
+        Tag = 1
+        Left = 273
+        Hint = 'Autoselect text'
+        Top = 2
+        Caption = 'AutoselectButton'
+        ImageIndex = 13
+        OnClick = AnalyseButtonClick
+      end
+      object SelectToolButton: TToolButton
+        Tag = 1
+        Left = 221
+        Hint = 'Select text'
+        Top = 2
+        Caption = 'Mode'
+        DropdownMenu = SelModeMenu
+        ImageIndex = 9
+        OnClick = SelTextButtonClick
+        Style = tbsDropDown
+      end
+      object DeskewButton: TToolButton
+        Tag = 1
+        Left = 171
+        Hint = 'Deskew image'
+        Top = 2
+        Caption = 'DeskewButton'
+        ImageIndex = 6
+        OnClick = DeskewButtonClick
+      end
+      object RotateRightButton: TToolButton
+        Tag = 1
+        Left = 131
+        Hint = 'Rotate right'
+        Top = 2
+        Caption = 'Rotate Right'
+        ImageIndex = 8
+        OnClick = RotateButtonClick
+      end
+      object RotateLeftTButton: TToolButton
+        Tag = 1
+        Left = 91
+        Hint = 'Rotate left'
+        Top = 2
+        Caption = 'RotateLeftTButton'
+        ImageIndex = 7
+        OnClick = RotateButtonClick
+      end
+      object ToolButton3: TToolButton
+        Tag = 1
+        Left = 81
+        Top = 2
+        Width = 10
+        Caption = 'ToolButton3'
+        Style = tbsSeparator
+      end
+      object FitWidthButton: TToolButton
+        Tag = 1
+        Left = 41
+        Hint = 'Fit image to width'
+        Top = 2
+        Caption = 'FitWidthButton'
+        ImageIndex = 1
+        OnClick = ViewMenuItemClick
+      end
+      object FitHeightButton: TToolButton
+        Left = 1
+        Hint = 'Fit image to height'
+        Top = 2
+        Caption = 'FitHeightButton'
+        ImageIndex = 0
+        OnClick = ViewMenuItemClick
+      end
+      object ToolButton2: TToolButton
+        Left = 211
+        Top = 2
+        Width = 10
+        Caption = 'ToolButton2'
+        Style = tbsSeparator
+      end
+    end
   end
   object StatusBar: TStatusBar
     Left = 0
@@ -287,7 +414,7 @@ object MainForm: TMainForm
       end>
     SimplePanel = False
   end
-  object ToolBar1: TToolBar
+  object MainToolBar: TToolBar
     Tag = 1
     Left = 0
     Height = 42
@@ -296,92 +423,21 @@ object MainForm: TMainForm
     AutoSize = True
     ButtonHeight = 40
     ButtonWidth = 40
-    Caption = 'ToolBar1'
+    Caption = 'MainToolBar'
     Images = ImageList1
     List = True
     ParentShowHint = False
     ShowHint = True
     TabOrder = 0
-    object RotateLeftTButton: TToolButton
-      Tag = 1
-      Left = 243
-      Hint = 'Rotate left'
-      Top = 2
-      Caption = 'RotateLeftTButton'
-      ImageIndex = 7
-      OnClick = RotateButtonClick
-    end
-    object RotateRightButton: TToolButton
-      Tag = 1
-      Left = 283
-      Hint = 'Rotate right'
-      Top = 2
-      Caption = 'Rotate Right'
-      ImageIndex = 8
-      OnClick = RotateButtonClick
-    end
-    object SelectToolButton: TToolButton
-      Tag = 1
-      Left = 363
-      Hint = 'Select text'
-      Top = 2
-      Caption = 'Mode'
-      DropdownMenu = SelModeMenu
-      ImageIndex = 9
-      OnClick = SelTextButtonClick
-    end
-    object FitWidthButton: TToolButton
-      Tag = 1
-      Left = 193
-      Hint = 'Fit image to width'
-      Top = 2
-      Caption = 'FitWidthButton'
-      ImageIndex = 1
-      OnClick = ViewMenuItemClick
-    end
-    object ToolButton6: TToolButton
-      Tag = 1
-      Left = 443
-      Top = 2
-      Width = 10
-      Caption = 'ToolButton6'
-      Style = tbsSeparator
-    end
     object ExportButton: TToolButton
       Tag = 1
-      Left = 503
+      Left = 153
       Hint = 'Export to DJVU'
       Top = 2
       Caption = 'ExportButton'
       ImageIndex = 2
       OnClick = DjvuButtonClick
       Style = tbsDropDown
-    end
-    object DeskewButton: TToolButton
-      Tag = 1
-      Left = 323
-      Hint = 'Deskew image'
-      Top = 2
-      Caption = 'DeskewButton'
-      ImageIndex = 6
-      OnClick = DeskewButtonClick
-    end
-    object FitHeightButton: TToolButton
-      Left = 153
-      Hint = 'Fit image to height'
-      Top = 2
-      Caption = 'FitHeightButton'
-      ImageIndex = 0
-      OnClick = ViewMenuItemClick
-    end
-    object TesseractButton: TToolButton
-      Tag = 1
-      Left = 453
-      Hint = 'OCR selections'
-      Top = 2
-      Caption = 'TesseractButton'
-      ImageIndex = 10
-      OnClick = TestTesseractButtonClick
     end
     object AddPageButton: TToolButton
       Left = 51
@@ -398,14 +454,6 @@ object MainForm: TMainForm
       Top = 2
       Width = 10
       Caption = 'ToolButton1'
-      Style = tbsSeparator
-    end
-    object ToolButton3: TToolButton
-      Tag = 1
-      Left = 233
-      Top = 2
-      Width = 10
-      Caption = 'ToolButton3'
       Style = tbsSeparator
     end
     object DelPageButton: TToolButton
@@ -425,15 +473,6 @@ object MainForm: TMainForm
       ImageIndex = 12
       OnClick = SaveButtonClick
     end
-    object AutoselectButton: TToolButton
-      Tag = 1
-      Left = 403
-      Hint = 'Autoselect text'
-      Top = 2
-      Caption = 'AutoselectButton'
-      ImageIndex = 13
-      OnClick = AnalyseButtonClick
-    end
     object ToolButton4: TToolButton
       Left = 41
       Top = 2
@@ -441,25 +480,8 @@ object MainForm: TMainForm
       Caption = 'ToolButton4'
       Style = tbsSeparator
     end
-    object ToolButton2: TToolButton
-      Tag = 1
-      Left = 493
-      Top = 2
-      Width = 10
-      Caption = 'ToolButton2'
-      Style = tbsSeparator
-    end
-    object SpellcheckButton: TToolButton
-      Tag = 1
-      Left = 555
-      Hint = 'Spellcheck'
-      Top = 2
-      Caption = 'SpellcheckButton'
-      ImageIndex = 17
-      OnClick = SpellcheckButtonClick
-    end
     object LanguagePanel: TPanel
-      Left = 595
+      Left = 205
       Height = 40
       Top = 2
       Width = 170
