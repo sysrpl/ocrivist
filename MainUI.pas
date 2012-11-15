@@ -16,6 +16,10 @@ type
   { TMainForm }
 
   TMainForm = class ( TForm )
+    AutoselectButton: TToolButton;
+    DeskewButton: TToolButton;
+    FitHeightButton: TToolButton;
+    FitWidthButton: TToolButton;
     LanguageComboBox: TComboBox;
     DeskewMenuItem: TMenuItem;
     CorrectionviewImage: TImage;
@@ -41,13 +45,18 @@ type
     miAnalysePage: TMenuItem;
     miAutoAll: TMenuItem;
     OCRMenu: TMenuItem;
+    RotateLeftTButton: TToolButton;
+    RotateRightButton: TToolButton;
     SaveTextMenuItem: TMenuItem;
     DeleteLineMenuItem: TMenuItem;
     CorrectionPanel: TPanel;
     Panel2: TPanel;
     Panel3: TPanel;
     CorrectionviewScrollBox: TScrollBox;
+    SelectToolButton: TToolButton;
+    SpellcheckButton: TToolButton;
     Splitter2: TSplitter;
+    TesseractButton: TToolButton;
     TextPopupMenu: TPopupMenu;
     SelModeSelectButton: TMenuItem;
     SelModeDeleteButton: TMenuItem;
@@ -74,25 +83,17 @@ type
     ExitMenuItem: TMenuItem;
     FitHeightMenuItem: TMenuItem;
     FitWidthMenuItem: TMenuItem;
-    ToolBar1: TToolBar;
-    RotateLeftTButton: TToolButton;
-    FitHeightButton: TToolButton;
+    MainToolBar: TToolBar;
     AddPageButton: TToolButton;
+    PageToolBar: TToolBar;
+    TextToolBar: TToolBar;
     ToolButton1: TToolButton;
-    RotateRightButton: TToolButton;
-    SelectToolButton: TToolButton;
-    TesseractButton: TToolButton;
-    FitWidthButton: TToolButton;
     SaveButton: TToolButton;
-    AutoselectButton: TToolButton;
+    DelPageButton: TToolButton;
     ToolButton2: TToolButton;
     ToolButton3: TToolButton;
-    DelPageButton: TToolButton;
     ToolButton4: TToolButton;
-    SpellcheckButton: TToolButton;
-    ToolButton6: TToolButton;
     ExportButton: TToolButton;
-    DeskewButton: TToolButton;
     View25MenuItem: TMenuItem;
     View100MenuItem: TMenuItem;
     View75MenuItem: TMenuItem;
@@ -735,9 +736,9 @@ begin
                LoadPage(newpage, ThumbnailListBox.ItemIndex+1);
                if not MainPanel.Visible
                   then ProcessPageMenuItem.Click;
-               for x := 0 to ToolBar1.ControlCount-1 do
-                  if TControl(ToolBar1.Controls[x]).Tag=1
-                     then TControl(ToolBar1.Controls[x]).Visible := true;
+               for x := 0 to MainToolBar.ControlCount-1 do
+                  if TControl(MainToolBar.Controls[x]).Tag=1
+                     then TControl(MainToolBar.Controls[x]).Visible := true;
              end
            else ShowMessage('Error when loading page ' + OpenDialog.Files[i]);
         end;
