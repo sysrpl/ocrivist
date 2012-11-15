@@ -3,6 +3,8 @@
 // Description: C interface to the tesseract API .
 // Author:      Malcolm Poole <mgpoole@
 //
+/////   **   This version compiles with tesseract v. 3.00       **
+//
 // The Tesseract API is (C) Copyright 2006, Google Inc.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.

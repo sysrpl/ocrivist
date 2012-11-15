@@ -1,3 +1,5 @@
+/**   This version compiles with tesseract v. 3.00   **/
+
 #include "tessintf.h"
 #include "/usr/local/include/tesseract/baseapi.h"
 #include <stdio.h>

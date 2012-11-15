@@ -4,6 +4,8 @@
 //              Libtessintf is a C wrapper for the Tesseract API
 // Author:      Malcolm Poole
 //
+//    ***  This version for use with Tesseract v. 3.00   ***
+//
 // The Tesseract API is (C) Copyright 2006, Google Inc.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
