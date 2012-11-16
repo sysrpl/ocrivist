@@ -189,7 +189,7 @@ var
 
  implementation
 
-  uses DjvuUtils, scanner, ocr, Clipbrd, progress, zipper, zstream;
+  uses DjvuUtils, scanner, ocr, Clipbrd, progress, zipper, zstream, tessintf;
 
   {$R *.lfm}
 
@@ -274,7 +274,7 @@ begin
   ThumbnailListBox.Clear;
   ThumbnailListBox.ItemIndex := -1;
   ThumbnailListBox.ItemHeight := THUMBNAIL_HEIGHT + ThumbnailListBox.Canvas.TextHeight('Yy')+2;
-
+writeln('Tesseract version is ', tesseract_version);
   OCRDatapath := '/usr/local/share/tessdata/';
   PopulateLanguageList;
 
@@ -400,6 +400,7 @@ procedure TMainForm.miAutoAllClick ( Sender: TObject ) ;
 var
   x: Integer;
 begin
+  if Project.PageCount<1 then Exit;
   for x := 0 to Project.PageCount-1 do
      begin
        AnalysePage(x);
@@ -833,6 +834,7 @@ end;
 
 procedure TMainForm.TestTesseractButtonClick ( Sender: TObject ) ;
 begin
+  if Project.PageCount<1 then Exit;
   OCRPage(ThumbnailListBox.ItemIndex);
   Editor.OCRData := Project.CurrentPage.OCRData;
   if not OCRPanel.Visible
