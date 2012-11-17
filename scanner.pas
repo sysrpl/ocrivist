@@ -13,11 +13,11 @@ type
   { TScannerForm }
 
   TScannerForm = class ( TForm )
+    NameLabel: TLabel;
     SourceComboBox: TComboBox;
     Label7: TLabel;
     Label8: TLabel;
     PaperFormatBox: TComboBox;
-    DeviceComboBox: TComboBox;
     Label1: TLabel;
     Label2: TLabel;
     Label3: TLabel;
@@ -35,7 +35,7 @@ type
     HeightSpinEdit: TSpinEdit;
     procedure HeightSpinEditChange ( Sender: TObject ) ;
     procedure PaperFormatBoxChange ( Sender: TObject ) ;
-    procedure DeviceComboBoxChange ( Sender: TObject ) ;
+    procedure DeviceSelect(DeviceName: string);
     procedure FormCreate ( Sender: TObject ) ;
     procedure WidthSpinEditChange ( Sender: TObject ) ;
   private
@@ -49,7 +49,6 @@ type
     procedure InitResolution( saneoption: SANE_Option_Descriptor );
     procedure InitMode( mode: SANE_Option_Descriptor );
     function SetScannerOptions: integer;
-    function CheckDevices: Integer;
     function GetColorMode: string;
     function GetSource: string;
     function GetResolution: Integer;
@@ -63,6 +62,7 @@ var
   ScannerHandle: SANE_Handle;
   PDevices: PDeviceArray;
   devicecount: Integer;
+  CurrentScanner: string;
 
 implementation
 
@@ -158,11 +158,11 @@ begin
 //                                       ResolutionComboBox.Items.Add(IntToStr(w^[0]) + ' items in list:');
                                        if saneoption.option_type=SANE_TYPE_INT then
                                          for x := 1 to w^[0] do
-                                            ResolutionComboBox.Items.Add('    ' + IntToStr(w^[x]))
+                                            ResolutionComboBox.Items.Add(IntToStr(w^[x]))
                                        else
                                        if saneoption.option_type=SANE_TYPE_FIXED then
                                          for x := 1 to w^[0] do
-                                            ResolutionComboBox.Items.Add('    ' + FloatToStr( SANE_UNFIX(w^[x]) ) );
+                                            ResolutionComboBox.Items.Add(FloatToStr( SANE_UNFIX(w^[x]) ) );
                                     end;
    end;
    ResolutionComboBox.Enabled := ResolutionComboBox.Items.Count>0;
@@ -217,48 +217,6 @@ begin
   end;
 end;
 
-function TScannerForm.CheckDevices: Integer;
-var
-  res: SANE_Status;
-begin
- ProgressForm.Label1.Caption := 'Checking for scanners';
- ProgressForm.Label2.Caption := '';
- ProgressForm.Show(false);
- Application.ProcessMessages;
-try
- Result := 0;
- PDevices := nil;
-  ScannerHandle := nil;
-  res := sane_init(nil, nil);
-  if res = SANE_STATUS_GOOD then
-     begin
-       Getmem(PDevices, sizeof(PDevices));
-       res := sane_get_devices ( PDevices, SANE_TRUE);
-       if res = SANE_STATUS_GOOD then
-       begin
-         //Devices := PDevicelist^;
-         devicecount := 0;
-         while PDevices^[devicecount] <> nil do
-               begin
-                 DeviceComboBox.Items.Add(PDevices^[devicecount]^.model);
-                 Inc(devicecount);
-               end;
-         Application.ProcessMessages;
-         if devicecount>0 then
-           begin
-             DeviceComboBox.ItemIndex := 0;
-             DeviceComboBoxChange(nil);
-           end;
-       end;
-     end;
- PaperFormatBoxChange(nil);
- Result := devicecount;
-
-finally
-  ProgressForm.Hide;
-end;
-end;
-
 function TScannerForm.GetColorMode: string;
 begin
   Result := '';
@@ -288,7 +246,7 @@ begin
  Result := CounterSpinEdit.Value;
 end;
 
-procedure TScannerForm.DeviceComboBoxChange ( Sender: TObject ) ;
+procedure TScannerForm.DeviceSelect(DeviceName: string);
 var
   scanmode: SANE_Option_Descriptor;
   scanres: SANE_Option_Descriptor;
@@ -317,12 +275,14 @@ var
     end;
   end;
 begin
-  if ScannerHandle<>nil then sane_close(ScannerHandle) ;
-  if DeviceComboBox.ItemIndex>-1 then
      begin
-       DevName := PDevices^[DeviceComboBox.ItemIndex]^.name;
+       writeln('getting Devname');
+       //DevName := PDevices^[DeviceComboBox.ItemIndex]^.name;
+       DevName := PChar(DeviceName);
+       writeln(DevName, ' open request');
        if sane_open(PChar(DevName), @ScannerHandle) = SANE_STATUS_GOOD then
           begin
+            writeln(DevName, ' open');
             InitSource(SaneGetOption(ScannerHandle, SANE_NAME_SCAN_SOURCE));
             InitResolution(SaneGetOption(ScannerHandle, SANE_NAME_SCAN_RESOLUTION));
             InitMode(SaneGetOption(ScannerHandle, SANE_NAME_SCAN_MODE));
@@ -332,8 +292,8 @@ begin
             HeightSpinEdit.MaxValue := GetMaxValue(option);
           end;
        ResolutionComboBox.ItemIndex := ResolutionComboBox.Items.IndexOf('300');
+       PaperFormatBoxChange(nil);
      end;
- if Assigned(OnChangeScanner) then OnChangeScanner(Self);
 end;
 
 procedure TScannerForm.PaperFormatBoxChange ( Sender: TObject ) ;

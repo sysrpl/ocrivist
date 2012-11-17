@@ -155,11 +155,11 @@ object MainForm: TMainForm
     Left = 0
     Height = 636
     Top = 42
-    Width = 130
+    Width = 150
     Align = alLeft
     Caption = 'ListboxPanel'
     ClientHeight = 636
-    ClientWidth = 130
+    ClientWidth = 150
     TabOrder = 1
     object ThumbnailListBox: TListBox
       AnchorSideLeft.Control = ListboxPanel
@@ -170,7 +170,7 @@ object MainForm: TMainForm
       Left = 1
       Height = 615
       Top = 1
-      Width = 128
+      Width = 148
       Anchors = [akTop, akLeft, akRight, akBottom]
       DragMode = dmAutomatic
       Items.Strings = (
@@ -183,7 +183,7 @@ object MainForm: TMainForm
       OnDrawItem = ThumbnailListBoxDrawItem
       OnMouseDown = ThumbnailListBoxMouseDown
       OnMouseUp = ThumbnailListBoxMouseUp
-      ScrollWidth = 124
+      ScrollWidth = 144
       Style = lbOwnerDrawVariable
       TabOrder = 0
     end
@@ -198,7 +198,7 @@ object MainForm: TMainForm
     end
   end
   object Splitter1: TSplitter
-    Left = 130
+    Left = 150
     Height = 636
     Top = 42
     Width = 5
@@ -287,21 +287,21 @@ object MainForm: TMainForm
     end
   end
   object MainPanel: TPanel
-    Left = 135
+    Left = 155
     Height = 636
     Top = 42
-    Width = 436
+    Width = 416
     Align = alClient
     AutoSize = True
     Caption = 'MainPanel'
     ClientHeight = 636
-    ClientWidth = 436
+    ClientWidth = 416
     TabOrder = 3
     object PageToolBar: TToolBar
       Left = 1
       Height = 42
       Top = 1
-      Width = 434
+      Width = 414
       ButtonHeight = 40
       ButtonWidth = 40
       Caption = 'PageToolBar'
@@ -491,7 +491,7 @@ object MainForm: TMainForm
       TabOrder = 0
       object LanguageComboBox: TComboBox
         Left = 13
-        Height = 25
+        Height = 27
         Top = 6
         Width = 148
         DropDownCount = 12
