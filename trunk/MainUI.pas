@@ -688,6 +688,7 @@ var
   S: TSelector;
 begin
   if AddingThumbnail then exit;
+  if ThumbnailListBox.ItemIndex<0 then Exit;
   for X := Project.CurrentPage.SelectionCount-1 downto 0 do
     ICanvas.DeleteSelector(X);
   Project.ItemIndex := TListBox(Sender).ItemIndex;
