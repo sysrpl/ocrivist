@@ -34,6 +34,7 @@ type
     ImportMenuItem: TMenuItem;
     CopyTextMenuItem: TMenuItem;
     MenuItem4: TMenuItem;
+    ScanSettingsMenuItem: TMenuItem;
     NewProjectMenuItem: TMenuItem;
     OCRScreenMenuItem: TMenuItem;
     ModeMenuItem: TMenuItem;
@@ -127,6 +128,7 @@ type
     procedure DeskewButtonClick ( Sender: TObject ) ;
     procedure SaveButtonClick ( Sender: TObject ) ;
     procedure SaveTextMenuItemClick ( Sender: TObject ) ;
+    procedure ScanSettingsMenuItemClick ( Sender: TObject ) ;
     procedure SelTextButtonClick ( Sender: TObject ) ;
     procedure AnalyseButtonClick ( Sender: TObject ) ;
     procedure SpellcheckButtonClick ( Sender: TObject ) ;
@@ -616,6 +618,11 @@ begin
      end;
 end;
 
+procedure TMainForm.ScanSettingsMenuItemClick ( Sender: TObject ) ;
+begin
+  ScannerForm.ShowModal;
+end;
+
 procedure TMainForm.SelTextButtonClick ( Sender: TObject ) ;
 begin
   ICanvas.SelectionMode := smSelect;
@@ -823,7 +830,7 @@ begin
  try
 //   ScannerForm := TScannerForm.Create(Application);
    Enabled := false;
-   ScannerSelector.CheckDevices;
+   ScanSettingsMenuItem.Enabled := ScannerSelector.CheckDevices>0;
  finally
    Enabled := true;
  end;
