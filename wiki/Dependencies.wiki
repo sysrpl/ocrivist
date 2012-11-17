@@ -1,0 +1,63 @@
+#summary Libraries and other programs used by Ocrivist
+#labels Phase-Deploy
+
+= Dependencies =
+
+Ocrivist makes use of a number of Linux libraries and other programs. Many of these are installed by default on most Linux distributions, some may be installed using the distribution's package manager and a few will need to be either downloaded from the Ocrivist Project's Downloads section or compiled to suit the distribution you are using and the libraries available on it.
+ 
+== Libraries ==
+  * [Dependencies#libtiff.so.4 libtiff.so.4]
+
+  * [Dependencies#liblept.so.2 liblept.so.2]
+
+  * [Dependencies#libocrivist.so.3 libocrivist.so.3]
+
+  * [Dependencies#libsane.so.1 libsane.so.1]
+
+  * [Dependencies#libaspell.so.15 libaspell.so.15]
+
+== Programs ==
+
+  * [Dependencies#Djvulibre Djvulibre] binaries: djvumake djvused djvm djvudump ddjvu c44 cjb2 
+----
+
+=== libtiff.so.4 ===
+
+*libtiff* can usually be installed using your package manager. If you need to compile liblept or libocrivist for your system, *make sure* that the libtiff *development* package is also installed (libtiff4-dev on Debian-based systems, libtiff-devel on RPM-based systems)
+----
+ 
+===liblept.so.2===
+*liblept.so.2* is required by both the ocrivist program and by libocrivist. It can be compiled and installed after downloading [http://code.google.com/p/leptonica/downloads/detail?name=leptonica-1.68.tar.gz leptonica v.1.68] from the [http://code.google.com/p/leptonica/ Leptonica Project]. See below for guidance on compiling.
+----
+===libocrivist.so.3===
+*libocrivist.so.3* is derived from v.3.00 of [http://code.google.com/p/tesseract-ocr/ Tesseract-ocr]. It can be downloaded from the [http://code.google.com/p/ocrivist/downloads/detail?name=libocrivist-3.00r3.tar.gz Ocrivist] downloads section, compiled and installed. See [Dependencies#Compiling and_installing_libraries below] for guidance on compiling.
+----
+===libsane.so.1===
+*libsane.so.1* is installed by default on most distributions.
+----
+===libaspell.so.15===
+*libaspell.so.15* is often installed by default and should be available in your distribution repository
+----
+===Djvulibre===
+The *djvulibre* suite provides a number of programs used for manipulating and creating _djvu_ format files. It is usually available from your distribution repositories or from [http://djvu.sourceforge.net/ Sourceforge].
+
+The *djvulibre* programs are _not_ essential for Ocrivist to run, but without them it will not be possible to export Ocrivist projects to Djvu format.
+
+==Compiling and installing libraries===
+To compile and install *liblept*, first ensure that the libtiff development files are installed, then  download [http://code.google.com/p/leptonica/downloads/detail?name=leptonica-1.68.tar.gz leptonica v.1.68] and extract all the files to a convenient location. Using a terminal console, *cd* into the *leptonica* folder and enter 
+
+{{{./configure}}}
+
+If no errors occur you should eventually get a message telling you that you can now compile the package by typing 
+
+{{{make}}} 
+
+If all goes well you can then then use root privileges (*su* or *sudo*)  and install the library by typing 
+
+{{{make install}}} 
+
+*libocrivist* is compiled and installed using the same procedure.
+
+Note the that *liblept* and *libtiff* must be installed before you attempt to compile *libocrivist*
+
+ 
