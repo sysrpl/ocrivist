@@ -23,14 +23,14 @@ Ocrivist makes use of a number of Linux libraries and other programs. Many of th
 
 === libtiff.so.4 ===
 
-*libtiff* can usually be installed using your package manager. If you need to compile liblept or libocrivist for your system, *make sure* that the libtiff *development* package is also installed (libtiff4-dev on Debian-based systems, libtiff-devel on RPM-based systems)
+*libtiff* can usually be installed using your package manager. If you need to compile liblept or libocrivist for your system, make sure that the *libtiff development* package is also installed (libtiff4-dev on Debian-based systems, libtiff-devel on RPM-based systems)
 ----
  
 ===liblept.so.2===
-*liblept.so.2* is required by both the ocrivist program and by libocrivist. It can be compiled and installed after downloading [http://code.google.com/p/leptonica/downloads/detail?name=leptonica-1.68.tar.gz leptonica v.1.68] from the [http://code.google.com/p/leptonica/ Leptonica Project]. See below for guidance on compiling.
+*liblept.so.2* is required by both the ocrivist program and by libocrivist. It can be compiled and installed after downloading [http://code.google.com/p/leptonica/downloads/detail?name=leptonica-1.68.tar.gz leptonica v.1.68] from the [http://code.google.com/p/leptonica/ Leptonica Project]. See [Dependencies#Compiling_and_installing_libraries below] for guidance on compiling.
 ----
 ===libocrivist.so.3===
-*libocrivist.so.3* is derived from v.3.00 of [http://code.google.com/p/tesseract-ocr/ Tesseract-ocr]. It can be downloaded from the [http://code.google.com/p/ocrivist/downloads/detail?name=libocrivist-3.00r3.tar.gz Ocrivist] downloads section, compiled and installed. See [Dependencies#Compiling and_installing_libraries below] for guidance on compiling.
+*libocrivist.so.3* is derived from v.3.00 of [http://code.google.com/p/tesseract-ocr/ Tesseract-ocr]. It can be downloaded from the [http://code.google.com/p/ocrivist/downloads/detail?name=libocrivist-3.00r3.tar.gz Ocrivist] downloads section, compiled and installed. See [Dependencies#Compiling_and_installing_libraries below] for guidance on compiling.
 ----
 ===libsane.so.1===
 *libsane.so.1* is installed by default on most distributions.
