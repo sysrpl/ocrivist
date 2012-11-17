@@ -12,4 +12,6 @@ I started to write Ocrivist because I would like to have a way of making digitis
 
 Another python project, [http://sourceforge.net/projects/gimagereader/ gimagereader], has better handling of OCR but lacks the ability to save to DJVU format. If my knowledge of Python was more than elementary, no doubt I could mix the code from the two projects to achieve my aim but, as OCR and image analysis already provide me with a steep learning curve, I opted to stick to the programming environment that I know best: Object Pascal and the Lazarus IDE.
 
+A more recent project, [https://code.google.com/p/lector/ lector] has a very similar interface to my early pre-release versions of Ocrivist.
+
 The project has also given me a reason to produce freepascal bindings for [http://code.google.com/p/tesseract-ocr/ libtesseract] and the [http://www.leptonica.com/ Leptonica] library. These can be found in their own folders in the base folder of the SVN repository.
