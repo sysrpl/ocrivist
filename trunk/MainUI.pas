@@ -189,7 +189,7 @@ var
 
  implementation
 
-  uses DjvuUtils, scanner, ocr, Clipbrd, progress, zipper, zstream, tessintf;
+  uses DjvuUtils, scanner, ocr, Clipbrd, progress, zipper, zstream, scanselect;
 
   {$R *.lfm}
 
@@ -274,7 +274,6 @@ begin
   ThumbnailListBox.Clear;
   ThumbnailListBox.ItemIndex := -1;
   ThumbnailListBox.ItemHeight := THUMBNAIL_HEIGHT + ThumbnailListBox.Canvas.TextHeight('Yy')+2;
-writeln('Tesseract version is ', tesseract_version);
   OCRDatapath := '/usr/local/share/tessdata/';
   PopulateLanguageList;
 
@@ -681,8 +680,6 @@ end;
 procedure TMainForm.UpdateScannerStatus ( Sender: TObject ) ;
 begin
   ScanPageMenuItem.Enabled := ScannerHandle<>nil;
-  if ScannerHandle=nil then writeln('ScannerHandle is nil')
-  else writeln('ScannerHandle ok');
 end;
 
 procedure TMainForm.ThumbnailListBoxClick ( Sender: TObject ) ;
@@ -800,8 +797,8 @@ var
 begin
   if ScannerHandle=nil then
     begin
-      ScannerForm.CheckDevices;
-      ScannerForm.ShowModal;
+      if ScannerSelector.CheckDevices>0
+       then ScannerForm.ShowModal;
     end;
   if ScannerHandle<>nil then
     if ScannerForm.SetScannerOptions=0 then
@@ -821,14 +818,15 @@ end;
 
 procedure TMainForm.SetScannerMenuItemClick ( Sender: TObject ) ;
 begin
- if ScannerForm=nil then
+// if ScannerForm=nil then
  try
-   ScannerForm := TScannerForm.Create(Application);
+//   ScannerForm := TScannerForm.Create(Application);
    Enabled := false;
-   ScannerForm.CheckDevices;
+   ScannerSelector.CheckDevices;
  finally
    Enabled := true;
  end;
+ ScannerSelector.ShowModal;
  ScannerForm.ShowModal;
 end;
 
