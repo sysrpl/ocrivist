@@ -40,8 +40,8 @@ procedure TScannerSelector.OKButtonClick(Sender: TObject);
 var
   DevName: SANE_String_Const;
 begin
-  DevName := PDevices^[DevicesRadioGroup.ItemIndex]^.model;
-  ScannerForm.NameLabel.Caption := DevName;
+  DevName := PDevices^[DevicesRadioGroup.ItemIndex]^.name;
+  ScannerForm.NameLabel.Caption := PDevices^[DevicesRadioGroup.ItemIndex]^.model;
   ScannerForm.DeviceSelect(DevName);
   ModalResult := mrOK;
 end;

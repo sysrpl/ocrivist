@@ -13,6 +13,7 @@ type
   { TScannerForm }
 
   TScannerForm = class ( TForm )
+    Label9: TLabel;
     NameLabel: TLabel;
     SourceComboBox: TComboBox;
     Label7: TLabel;
