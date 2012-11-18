@@ -1,5 +1,5 @@
 #summary Introduction to Ocrivist
-#labels freepascal,bindings,Tesseract,Leptonica,OCR
+#labels Featured
 
 = Introduction =
 Why is Ocrivist being developed?
