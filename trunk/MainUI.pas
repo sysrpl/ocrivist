@@ -295,6 +295,7 @@ begin
   HasDJVU := (SearchFileInPath('djvumake','',
                    SysUtils.GetEnvironmentVariable('PATH'),PathSeparator,[])<>'');
   ExportButton.Enabled := HasDJVU;
+  SelTextButtonClick(SelModeSelectButton);
 //  Editor.OnSpellCheck := @SpellCallback;
 end;
 

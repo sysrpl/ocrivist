@@ -336,7 +336,6 @@ object MainForm: TMainForm
         Caption = 'Mode'
         DropdownMenu = SelModeMenu
         ImageIndex = 9
-        OnClick = SelTextButtonClick
         Style = tbsDropDown
       end
       object DeskewButton: TToolButton
