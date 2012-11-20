@@ -13,16 +13,21 @@ type
   { TProgressForm }
 
   TProgressForm = class(TForm)
-    BitBtn1: TBitBtn;
+    CancelButton: TBitBtn;
     ButtonPanel: TPanel;
-    Label1: TLabel;
-    Label2: TLabel;
+    MainTextLabel: TLabel;
+    UpdateTextLabel: TLabel;
+    procedure CancelButtonClick ( Sender: TObject ) ;
+    procedure FormCloseQuery ( Sender: TObject; var CanClose: boolean ) ;
   private
     { private declarations }
+    FOnCancel: TNotifyEvent;
   public
     { public declarations }
     function ShowModal: Integer; override;
-    procedure Show( showbutton: Boolean );
+    procedure Show( cancelcb: TNotifyEvent );
+    procedure SetMainText( txt: String );
+    procedure SetUpdateText( txt: String );
   end;
 
 var
@@ -34,15 +39,42 @@ implementation
 
 { TProgressForm }
 
+procedure TProgressForm.FormCloseQuery ( Sender: TObject; var CanClose: boolean
+  ) ;
+begin
+  CanClose := false;
+end;
+
+procedure TProgressForm.CancelButtonClick ( Sender: TObject ) ;
+begin
+  if Assigned(FOnCancel)
+     then FOnCancel(nil);
+  ModalResult := mrCancel;
+end;
+
 function TProgressForm.ShowModal: Integer;
 begin
   Result := inherited ShowModal;
 end;
 
-procedure TProgressForm.Show ( showbutton: Boolean ) ;
+procedure TProgressForm.Show ( cancelcb: TNotifyEvent ) ;
 begin
-  ButtonPanel.Visible := showbutton;
+  FOnCancel := cancelcb;
+  Height := UpdateTextLabel.Top + UpdateTextLabel.Height + MainTextLabel.Top;
+  ButtonPanel.Visible := cancelcb<>nil;
+  if cancelcb<>nil then Height := Height + ButtonPanel.Height;
   inherited Show;
+end;
+
+procedure TProgressForm.SetMainText ( txt: String ) ;
+begin
+  MainTextLabel.Caption := txt;
+  UpdateTextLabel.Caption := '';
+end;
+
+procedure TProgressForm.SetUpdateText ( txt: String ) ;
+begin
+  UpdateTextLabel.Caption := txt;
 end;
 
 end.
