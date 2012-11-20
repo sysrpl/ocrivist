@@ -113,9 +113,13 @@ type
       property Filename: TFilename read FFilename write FFilename;
   end;
 
+const
+
+  FILEVERSION = #1;
+
 implementation
 
-uses LibLeptUtils;
+uses LibLeptUtils, zipper, zstream;
 
 { TOcrivistProject }
 
@@ -205,11 +209,24 @@ begin
 
   if not DirectoryExists(filesdirectory)
          then ForceDirectories(filesdirectory);
-
+  {      OurZipper := TZipper.Create;
+      try
+        OurZipper.FileName := '/tmp/' + Project.Title;
+        for I := 0 to Project.PageCount-1 do
+           begin
+             OurZipper.Entries.AddFileEntry(Project.Pages[I].Filename, 'pages/' + ExtractFileName(Project.Pages[I].Filename));
+             OurZipper.Entries[I].CompressionLevel := clNone;
+           end;
+        OurZipper.Entries.AddFileEntry(Project.Filename, ExtractFileName(Project.Filename));
+        OurZipper.ZipAllFiles;
+      finally
+        OurZipper.Free;
+      end;
+}
   F := FileCreate(aFileName);
   if F > 0 then
      try
-       databuf := 'OVT   ';
+       databuf := 'OVT'+ FILEVERSION + #0#0;
        FileWrite(F, databuf[1], Length(databuf));              //1 - 6 bytes - file identifier - spare bytes are for version info
        FileWrite(F, FcurrentPage, SizeOf(FcurrentPage));       //2 - integer - current page
        FileWrite(F, FPageWidth, SizeOf(FPageWidth));           //3 - Integer - page width
