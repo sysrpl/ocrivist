@@ -29,10 +29,6 @@ type
     LoadModeMenu: TPopupMenu;
     LoadModeFileButton: TMenuItem;
     LoadModeScanButton: TMenuItem;
-    ExportModeMenu: TPopupMenu;
-    ExportDjvuButton: TMenuItem;
-    ExportTextButton: TMenuItem;
-    ExportPDFButton: TMenuItem;
     ImportMenuItem: TMenuItem;
     CopyTextMenuItem: TMenuItem;
     MenuItem4: TMenuItem;
@@ -91,11 +87,13 @@ type
     ToolButton2: TToolButton;
     ToolButton3: TToolButton;
     ToolButton4: TToolButton;
-    ExportButton: TToolButton;
+    DjvuButton: TToolButton;
     SelTextButton: TToolButton;
     DelSelectButton: TToolButton;
     CropButton: TToolButton;
     ToolButton5: TToolButton;
+    PDFToolButton: TToolButton;
+    TextButton: TToolButton;
     UnsharpMenuItem: TMenuItem;
     View25MenuItem: TMenuItem;
     View100MenuItem: TMenuItem;
@@ -125,6 +123,7 @@ type
     procedure miAutoProcessPageClick ( Sender: TObject ) ;
     procedure ModeChange ( Sender: TObject ) ;
     procedure NewProjectMenuItemClick ( Sender: TObject ) ;
+    procedure PDFToolButtonClick(Sender: TObject);
     procedure RotateButtonClick ( Sender: TObject ) ;
     procedure DjvuButtonClick ( Sender: TObject ) ;
     procedure DeskewButtonClick ( Sender: TObject ) ;
@@ -134,6 +133,7 @@ type
     procedure SelTextButtonClick ( Sender: TObject ) ;
     procedure AnalyseButtonClick ( Sender: TObject ) ;
     procedure SpellcheckButtonClick ( Sender: TObject ) ;
+    procedure TextButtonClick(Sender: TObject);
     procedure ThumbnailListBoxDragDrop ( Sender, Source: TObject; X, Y: Integer
       ) ;
     procedure ThumbnailListBoxDragOver ( Sender, Source: TObject; X,
@@ -259,9 +259,9 @@ end;
 procedure TMainForm.ExportModeMenuClick ( Sender: TObject ) ;
 begin
   case TComponent(Sender).Tag of
-       0: ExportButton.OnClick := @DjvuButtonClick;
+       0: DjvuButton.OnClick := @DjvuButtonClick;
   end;
-  ExportButton.ImageIndex := TMenuItem(Sender).ImageIndex;
+  DjvuButton.ImageIndex := TMenuItem(Sender).ImageIndex;
 end;
 
 procedure TMainForm.FormCreate ( Sender: TObject ) ;
@@ -296,7 +296,7 @@ begin
   Editor.OnSelectToken := @EditorSelectToken;
   HasDJVU := (SearchFileInPath('djvumake','',
                    SysUtils.GetEnvironmentVariable('PATH'),PathSeparator,[])<>'');
-  ExportButton.Enabled := HasDJVU;
+  DjvuButton.Enabled := HasDJVU;
   //SelTextButtonClick(SelModeSelectButton);
 //  Editor.OnSpellCheck := @SpellCallback;
 end;
@@ -442,6 +442,32 @@ procedure TMainForm.NewProjectMenuItemClick ( Sender: TObject ) ;
 begin
   Project.Clear;
   ThumbnailListBox.Clear;
+end;
+
+procedure TMainForm.PDFToolButtonClick(Sender: TObject);
+var
+  sourcefiles: TSArray;
+  p: Integer;
+begin
+  with SaveDialog do
+       begin
+         DefaultExt := '.pdf';
+         Filter := 'PDF Files|*.pdf|All Files|*';
+         Title := 'Export project as PDF file';
+         FileName := Project.Title;
+       end;
+  if SaveDialog.Execute then
+      begin
+        sourcefiles.refcount := 1;
+        SetLength(sourcefiles.strarray, Project.PageCount+1);
+        sourcefiles.n := Project.PageCount+1;
+        sourcefiles.nalloc := Project.PageCount;
+        for p := 0 to Project.PageCount-1 do
+           sourcefiles.strarray[p] := PChar(Project.Pages[p].Filename);
+        saConvertFilesToPdf(@sourcefiles, 300, 1, 90,
+                             PChar(Project.Title),
+                             PChar(SaveDialog.FileName));
+      end;
 end;
 
 procedure TMainForm.RotateButtonClick ( Sender: TObject ) ;
@@ -629,6 +655,31 @@ end;
 procedure TMainForm.SpellcheckButtonClick ( Sender: TObject ) ;
 begin
   DoSpellcheck;
+end;
+
+procedure TMainForm.TextButtonClick(Sender: TObject);
+var
+   OutFile: Text;
+   p: Integer;
+begin
+ with SaveDialog do
+      begin
+        DefaultExt := '.txt';
+        Filter := 'Text Files|*.txt|All Files|*';
+        Title := 'Save recognised text to file';
+        FileName := Project.Title;
+      end;
+ if SaveDialog.Execute then
+     begin
+       AssignFile(OutFile, SaveDialog.FileName);
+       try
+         Rewrite(OutFile);
+         for p := 0 to Project.PageCount-1 do
+            WriteLn(OutFile, Project.Pages[p].Text);
+       finally
+         CloseFile(OutFile);
+       end;
+     end;
 end;
 
 procedure TMainForm.ThumbnailListBoxDragDrop ( Sender, Source: TObject; X,
