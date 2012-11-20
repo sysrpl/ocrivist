@@ -17,9 +17,12 @@ type
     OKButton: TBitBtn;
     DevicesRadioGroup: TRadioGroup;
     ButtonPanel: TPanel;
+    procedure CancelButtonClick ( Sender: TObject ) ;
+    procedure DevicesRadioGroupSelectionChanged ( Sender: TObject ) ;
     procedure OKButtonClick(Sender: TObject);
   private
     { private declarations }
+    procedure GetSelectedScannerSettings;
   public
     { public declarations }
     function CheckDevices: integer;
@@ -37,22 +40,40 @@ uses scanner, progress, Sane;
 { TScannerSelector }
 
 procedure TScannerSelector.OKButtonClick(Sender: TObject);
+begin
+//  GetSelectedScannerSettings;
+  ModalResult := mrOK;
+end;
+
+procedure TScannerSelector.CancelButtonClick ( Sender: TObject ) ;
+begin
+{  if DevicesRadioGroup.Items.Count>0
+     then GetSelectedScannerSettings;}
+  ModalResult := mrCancel;
+end;
+
+procedure TScannerSelector.DevicesRadioGroupSelectionChanged ( Sender: TObject
+  ) ;
+begin
+  GetSelectedScannerSettings;
+end;
+
+procedure TScannerSelector.GetSelectedScannerSettings;
 var
   DevName: SANE_String_Const;
 begin
   DevName := PDevices^[DevicesRadioGroup.ItemIndex]^.name;
   ScannerForm.NameLabel.Caption := PDevices^[DevicesRadioGroup.ItemIndex]^.model;
   ScannerForm.DeviceSelect(DevName);
-  ModalResult := mrOK;
 end;
 
 function TScannerSelector.CheckDevices: integer;
 var
   res: SANE_Status;
 begin
- ProgressForm.Label1.Caption := 'Checking for scanners';
- ProgressForm.Label2.Caption := '';
- ProgressForm.Show(false);
+ ProgressForm.MainTextLabel.Caption := 'Checking for scanners';
+ ProgressForm.UpdateTextLabel.Caption := '';
+ ProgressForm.Show(nil);
  Application.ProcessMessages;
 try
  Result := 0;
@@ -85,6 +106,7 @@ try
  Result := devicecount;
 finally
   ProgressForm.Hide;
+  Height := DevicesRadioGroup.Top + DevicesRadioGroup.Height + 10 + ButtonPanel.Height;
 end;
 
 end;
