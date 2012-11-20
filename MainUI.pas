@@ -160,6 +160,7 @@ type
     AddingThumbnail: Boolean;
     ThumbnailStartPoint: TPoint;
     DraggingThumbnail: Boolean;
+    procedure CancelScan ( Sender: TObject );
     procedure MakeSelection ( Sender: TObject );
     procedure DeleteSelection ( Sender: TObject );
     procedure SelectionChange ( Sender: TObject );
@@ -845,24 +846,29 @@ var
   nametext: String;
   resolution: Integer;
 begin
-  if ScannerHandle=nil then
-    begin
-      if ScannerSelector.CheckDevices>0
-       then ScannerForm.ShowModal;
-    end;
-  if ScannerHandle<>nil then
-    if ScannerForm.SetScannerOptions=0 then
+  if not ScanSettingsMenuItem.Enabled
+       then SetScannerMenuItemClick(nil);
+
+  if ScanSettingsMenuItem.Enabled then
      begin
-       writeln('ScannerHandle OK');
-       resolution := ScannerForm.GetResolution;
-       newpage := ScanToPix(ScannerHandle, @ShowScanProgress);
-       pixSetResolution(newpage, resolution, resolution);
-       nametext := Format('scan_%.3d', [ScannerForm.GetNextCounterValue]);
-       pixSetText(newpage, PChar( nametext ));
-       if newpage<>nil
-          then LoadPage(newpage, ThumbnailListBox.ItemIndex+1)
-       else ShowMessage('Scan page failed');
-       StatusBar.Panels[1].Text := '';
+       ProgressForm.SetMainText('Initialising scanner...');
+       ProgressForm.Show(@CancelScan);
+       Application.ProcessMessages;
+       Enabled := false;
+       try
+         resolution := ScannerForm.GetResolution;
+         ScannerForm.SetScannerOptions;
+         newpage := ScanToPix(ScannerHandle, @ShowScanProgress);
+         pixSetResolution(newpage, resolution, resolution);
+         nametext := Format('scan_%.3d', [ScannerForm.GetNextCounterValue]);
+         pixSetText(newpage, PChar( nametext ));
+         if newpage<>nil
+            then LoadPage(newpage, ThumbnailListBox.ItemIndex+1)
+         else ShowMessage('Scan page failed');
+       finally
+         Enabled := true;
+         ProgressForm.Hide;
+       end;
      end;
 end;
 
@@ -876,6 +882,7 @@ begin
  end;
  if ScannerSelector.ShowModal=mrOK then
     begin
+      Application.ProcessMessages;
       ScannerSelector.GetSelectedScannerSettings;
       ScannerForm.ShowModal;
     end;
@@ -908,6 +915,12 @@ begin
          ICanvas.Scale := TMenuItem(Sender).Tag/100;
        end;
   Project.ViewerScale := ICanvas.Scale;
+end;
+
+procedure TMainForm.CancelScan(Sender: TObject);
+begin
+ Application.ProcessMessages;
+ sane_cancel(ScannerHandle);
 end;
 
 procedure TMainForm.MakeSelection ( Sender: TObject ) ;
@@ -962,14 +975,13 @@ var
   percentcomplete: Integer;
 begin
   percentcomplete := Trunc(progress*100);
-  StatusBar.Panels[1].Text := 'Scanning: ' + IntToStr(percentcomplete) + '%';
+  ProgressForm.SetMainText('Scanning: ' + IntToStr(percentcomplete) + '%');
   Application.ProcessMessages;
 end;
 
 procedure TMainForm.ShowOCRProgress ( progress: Single ) ;
 begin
   Inc(OCRProgressCount);
-  //StatusBar.Panels[1].Text := 'Processing line ' + IntToStr(OCRProgressCount);
   ProgressForm.SetUpdateText('Processing line ' + IntToStr(OCRProgressCount));
   Application.ProcessMessages;
 end;

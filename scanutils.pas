@@ -52,6 +52,7 @@ function SaneGetMode ( const ScannerHandle: SANE_Handle ) : string;
 function SaneGetOption ( const ScannerHandle: SANE_Handle; OptionName: string ) : SANE_Option_Descriptor;
 function SaneGetOptionIndex ( const ScannerHandle: SANE_Handle; OptionName: string ): integer;
 function SaneSetOption ( const ScannerHandle: SANE_Handle; OptionName, Value: string ): SANE_Status;
+function SaneGetOptionValueAsString ( const ScannerHandle: SANE_Handle; Option: SANE_Option_Descriptor ): string;
 
 function SetPNMHeader (imagedepth, pixels_per_line, lines: longint; frameformat: SANE_Frame; var PNMHeader: string): byte;
 
@@ -217,6 +218,30 @@ begin
        end;
         Result := sane_control_option(ScannerHandle, optionindex, SANE_ACTION_SET_VALUE, vp, @l);
      end;
+end;
+
+function SaneGetOptionValueAsString(const ScannerHandle: SANE_Handle;
+  Option: SANE_Option_Descriptor): string;
+var
+  Val: Pointer;
+begin
+  Result := '';
+  Getmem(Val, Option.size);
+  try
+  if Val <> nil then
+    // get the value which will be placed in the memory addressed by Val
+    if sane_control_option(ScannerHandle,
+                             SaneGetOptionIndex(ScannerHandle, option.name),
+                             SANE_ACTION_GET_VALUE, val, nil) = SANE_STATUS_GOOD then
+      case Option.option_type of
+           SANE_TYPE_BOOL: Result := BoolToStr(Integer(Val^)<>0);
+           SANE_TYPE_FIXED: Result :=  FloatToStr( SANE_UNFIX( Integer(Val^) ) );
+           SANE_TYPE_INT : Result :=  IntToStr(Integer(Val^));
+           SANE_TYPE_STRING: Result := PChar(Val);
+      end;
+  finally
+    Freemem(Val);
+  end;
 end;
 
 function SetPNMHeader (imagedepth, pixels_per_line, lines: longint; frameformat: SANE_Frame; var PNMHeader: string): byte; //byte is PNM 'magic number' (4,5,6)
