@@ -160,6 +160,7 @@ type
     AddingThumbnail: Boolean;
     ThumbnailStartPoint: TPoint;
     DraggingThumbnail: Boolean;
+    MultiSelecting: Boolean;
     procedure CancelScan ( Sender: TObject );
     procedure MakeSelection ( Sender: TObject );
     procedure DeleteSelection ( Sender: TObject );
@@ -718,12 +719,14 @@ begin
   ThumbnailStartPoint.X := X;
   ThumbnailStartPoint.Y := Y;
   DraggingThumbnail := true;
+  MultiSelecting := ssCtrl in Shift;
 end;
 
 procedure TMainForm.ThumbnailListBoxMouseUp ( Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer ) ;
 begin
     DraggingThumbnail := false;
+    MultiSelecting := false;
 end;
 
 procedure TMainForm.UpdateScannerStatus ( Sender: TObject ) ;
@@ -737,6 +740,7 @@ var
   S: TSelector;
 begin
   if AddingThumbnail then exit;
+  if MultiSelecting then Exit;
   if ThumbnailListBox.ItemIndex<0 then Exit;
   for X := Project.CurrentPage.SelectionCount-1 downto 0 do
     ICanvas.DeleteSelector(X);
