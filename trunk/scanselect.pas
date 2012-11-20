@@ -17,16 +17,16 @@ type
     OKButton: TBitBtn;
     DevicesRadioGroup: TRadioGroup;
     ButtonPanel: TPanel;
-    procedure CancelButtonClick ( Sender: TObject ) ;
-    procedure DevicesRadioGroupSelectionChanged ( Sender: TObject ) ;
-    procedure OKButtonClick(Sender: TObject);
   private
     { private declarations }
-    procedure GetSelectedScannerSettings;
   public
     { public declarations }
     function CheckDevices: integer;
+    procedure GetSelectedScannerSettings;
   end;
+
+
+  function UnderlineToSpace(str: string): string;
 
 var
   ScannerSelector: TScannerSelector;
@@ -37,33 +37,29 @@ uses scanner, progress, Sane;
 
 {$R *.lfm}
 
+function UnderlineToSpace(str: string): string;
+var
+  p: SizeInt;
+begin
+  p := Pos('_', str);
+  while p>0 do
+        begin
+          str[p] := #32;
+          p := Pos('_', str);
+        end;
+  Result := str;
+end;
+
+
 { TScannerSelector }
-
-procedure TScannerSelector.OKButtonClick(Sender: TObject);
-begin
-//  GetSelectedScannerSettings;
-  ModalResult := mrOK;
-end;
-
-procedure TScannerSelector.CancelButtonClick ( Sender: TObject ) ;
-begin
-{  if DevicesRadioGroup.Items.Count>0
-     then GetSelectedScannerSettings;}
-  ModalResult := mrCancel;
-end;
-
-procedure TScannerSelector.DevicesRadioGroupSelectionChanged ( Sender: TObject
-  ) ;
-begin
-  GetSelectedScannerSettings;
-end;
 
 procedure TScannerSelector.GetSelectedScannerSettings;
 var
   DevName: SANE_String_Const;
 begin
   DevName := PDevices^[DevicesRadioGroup.ItemIndex]^.name;
-  ScannerForm.NameLabel.Caption := PDevices^[DevicesRadioGroup.ItemIndex]^.model;
+  ScannerForm.NameLabel.Caption := UnderlineToSpace(PDevices^[DevicesRadioGroup.ItemIndex]^.model) + #32
+                                              + PDevices^[DevicesRadioGroup.ItemIndex]^.dev_type;
   ScannerForm.DeviceSelect(DevName);
 end;
 
@@ -92,7 +88,9 @@ try
          devicecount := 0;
          while PDevices^[devicecount] <> nil do
                begin
-                 DevicesRadioGroup.Items.Add(PDevices^[devicecount]^.model);
+                 DevicesRadioGroup.Items.Add(UnderlineToSpace(PDevices^[devicecount]^.vendor) + #32
+                                              + UnderlineToSpace(PDevices^[devicecount]^.model) + #32
+                                              + PDevices^[devicecount]^.dev_type);
                  Inc(devicecount);
                end;
          Application.ProcessMessages;

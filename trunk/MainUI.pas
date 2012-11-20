@@ -95,6 +95,7 @@ type
     SelTextButton: TToolButton;
     DelSelectButton: TToolButton;
     CropButton: TToolButton;
+    ToolButton5: TToolButton;
     UnsharpMenuItem: TMenuItem;
     View25MenuItem: TMenuItem;
     View100MenuItem: TMenuItem;
@@ -277,7 +278,7 @@ begin
   ThumbnailListBox.Clear;
   ThumbnailListBox.ItemIndex := -1;
   ThumbnailListBox.ItemHeight := THUMBNAIL_HEIGHT + ThumbnailListBox.Canvas.TextHeight('Yy')+2;
-  OCRDatapath := '/usr/local/share/tessdata/';
+  OCRDatapath := '/usr/local/share/ocrivist/';
   PopulateLanguageList;
 
   OCRLanguage := 'eng';
@@ -822,8 +823,11 @@ begin
  finally
    Enabled := true;
  end;
- if ScannerSelector.ShowModal=mrOK
-    then ScannerForm.ShowModal;
+ if ScannerSelector.ShowModal=mrOK then
+    begin
+      ScannerSelector.GetSelectedScannerSettings;
+      ScannerForm.ShowModal;
+    end;
 end;
 
 procedure TMainForm.TestTesseractButtonClick ( Sender: TObject ) ;

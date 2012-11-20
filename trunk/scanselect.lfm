@@ -28,7 +28,6 @@ object ScannerSelector: TScannerSelector
     ChildSizing.Layout = cclLeftToRightThenTopToBottom
     ChildSizing.ControlsPerLine = 1
     Constraints.MinHeight = 100
-    OnSelectionChanged = DevicesRadioGroupSelectionChanged
     TabOrder = 0
   end
   object ButtonPanel: TPanel
@@ -50,7 +49,6 @@ object ScannerSelector: TScannerSelector
       DefaultCaption = True
       Kind = bkCancel
       ModalResult = 2
-      OnClick = CancelButtonClick
       TabOrder = 0
     end
     object OKButton: TBitBtn
@@ -61,7 +59,7 @@ object ScannerSelector: TScannerSelector
       Default = True
       DefaultCaption = True
       Kind = bkOK
-      OnClick = OKButtonClick
+      ModalResult = 1
       TabOrder = 1
     end
   end
