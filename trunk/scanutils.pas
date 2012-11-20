@@ -45,6 +45,8 @@ interface
 uses
   Classes, SysUtils, Graphics, Forms, Sane;
   
+function GetMaxValue(opt: SANE_Option_Descriptor): Integer;
+function GetMinValue(opt: SANE_Option_Descriptor): Integer;
 procedure SaneGetDeviceList( aList: TStrings );
 function GetSaneVersion : string;
 function SaneGetResolution ( const ScannerHandle: SANE_Handle ) : integer;
@@ -66,6 +68,50 @@ function GrayscaleToColor( Value: byte ):TColor;
 function BitToColor( Value, Bit: byte ):TColor;
   
 implementation
+
+function GetMaxValue(opt: SANE_Option_Descriptor): Integer;
+var
+  range: pSANE_Range;
+begin
+  Result := 0;
+  case opt.constraint_type of
+      SANE_CONSTRAINT_RANGE:      begin
+                                     range := opt.prange;
+                                     case opt.option_type of
+                                          SANE_TYPE_INT :
+                                                begin
+                                                   result := range^.max;
+                                                end;
+                                          SANE_TYPE_FIXED :
+                                                begin
+                                                   result := round( SANE_UNFIX( range^.max));
+                                                end;
+                                          end;
+                                  end;
+  end;
+end;
+
+function GetMinValue(opt: SANE_Option_Descriptor): Integer;
+var
+  range: pSANE_Range;
+begin
+  Result := 0;
+  case opt.constraint_type of
+      SANE_CONSTRAINT_RANGE:      begin
+                                     range := opt.prange;
+                                     case opt.option_type of
+                                          SANE_TYPE_INT :
+                                                begin
+                                                   result := range^.min;
+                                                end;
+                                          SANE_TYPE_FIXED :
+                                                begin
+                                                   result := round( SANE_UNFIX( range^.min));
+                                                end;
+                                          end;
+                                  end;
+  end;
+end;
 
 procedure SaneGetDeviceList ( aList: TStrings ) ;
 var
@@ -169,6 +215,7 @@ var
   saneoption: pSANE_Option_Descriptor;
   x: Integer;
 begin
+  Result.name := '';
   x := SaneGetOptionIndex(ScannerHandle, OptionName);
   if x > -1 then
      begin
@@ -205,6 +252,7 @@ var
   l: SANE_Int;
   option: SANE_Option_Descriptor;
 begin
+  Result := SANE_STATUS_UNSUPPORTED;
   optionindex := SaneGetOptionIndex(ScannerHandle, OptionName);
   option := SaneGetOption(ScannerHandle, OptionName);
   x := 0;
@@ -216,6 +264,7 @@ begin
             SANE_TYPE_FIXED:  if TryStrToInt(Value, x) then begin f := SANE_FIX(x); vp := @f; end;
             SANE_TYPE_STRING: vp := Pchar(Value);
        end;
+       if SANE_OPTION_IS_SETTABLE(option.cap) then
         Result := sane_control_option(ScannerHandle, optionindex, SANE_ACTION_SET_VALUE, vp, @l);
      end;
 end;
