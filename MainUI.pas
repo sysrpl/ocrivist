@@ -17,7 +17,9 @@ type
 
   TMainForm = class ( TForm )
     AutoselectButton: TToolButton;
+    ContrastMenuItem: TMenuItem;
     DeskewButton: TToolButton;
+    EnhanceMenuItem: TMenuItem;
     FitHeightButton: TToolButton;
     FitWidthButton: TToolButton;
     LanguageComboBox: TComboBox;
@@ -54,16 +56,11 @@ type
     Panel2: TPanel;
     Panel3: TPanel;
     CorrectionviewScrollBox: TScrollBox;
-    SelectToolButton: TToolButton;
     SpellcheckButton: TToolButton;
     Splitter2: TSplitter;
     TesseractButton: TToolButton;
     TextPopupMenu: TPopupMenu;
-    SelModeSelectButton: TMenuItem;
-    SelModeDeleteButton: TMenuItem;
-    SelModeCropButton: TMenuItem;
     pagecountLabel: TLabel;
-    SelModeMenu: TPopupMenu;
     MenuItem1: TMenuItem;
     RotateRMenuItem: TMenuItem;
     RotateLMenuItem: TMenuItem;
@@ -95,6 +92,10 @@ type
     ToolButton3: TToolButton;
     ToolButton4: TToolButton;
     ExportButton: TToolButton;
+    SelTextButton: TToolButton;
+    DelSelectButton: TToolButton;
+    CropButton: TToolButton;
+    UnsharpMenuItem: TMenuItem;
     View25MenuItem: TMenuItem;
     View100MenuItem: TMenuItem;
     View75MenuItem: TMenuItem;
@@ -191,7 +192,7 @@ var
 
  implementation
 
-  uses DjvuUtils, scanner, ocr, Clipbrd, progress, zipper, zstream, scanselect;
+  uses DjvuUtils, scanner, ocr, Clipbrd, progress, scanselect;
 
   {$R *.lfm}
 
@@ -202,7 +203,7 @@ procedure TMainForm.CropButtonClick ( Sender: TObject ) ;
 begin
   ICanvas.SelectionMode := smCrop;  writeln('crop button');
   StatusBar.Panels[0].Text := 'CROP';
-  SelectToolButton.ImageIndex := TMenuItem(Sender).ImageIndex;
+  //SelectToolButton.ImageIndex := TMenuItem(Sender).ImageIndex;
 end;
 
 procedure TMainForm.CopyTextMenuItemClick ( Sender: TObject ) ;
@@ -246,7 +247,7 @@ procedure TMainForm.DelSelectButtonClick ( Sender: TObject ) ;
 begin
   ICanvas.SelectionMode := smDelete;
   StatusBar.Panels[0].Text := 'DELETE';
-  SelectToolButton.ImageIndex := TMenuItem(Sender).ImageIndex;
+  //SelectToolButton.ImageIndex := TMenuItem(Sender).ImageIndex;
 end;
 
 procedure TMainForm.ExitMenuItemClick ( Sender: TObject ) ;
@@ -295,7 +296,7 @@ begin
   HasDJVU := (SearchFileInPath('djvumake','',
                    SysUtils.GetEnvironmentVariable('PATH'),PathSeparator,[])<>'');
   ExportButton.Enabled := HasDJVU;
-  SelTextButtonClick(SelModeSelectButton);
+  //SelTextButtonClick(SelModeSelectButton);
 //  Editor.OnSpellCheck := @SpellCallback;
 end;
 
@@ -320,8 +321,8 @@ procedure TMainForm.FormKeyDown ( Sender: TObject; var Key: Word;
 begin
   if ICanvas.SelectionMode=smCrop then
      begin
-       if Key=27 then begin SelTextButtonClick(SelModeSelectButton); ICanvas.ClearSelection; end
-       else if Key=13 then begin DoCrop; SelTextButtonClick(SelModeSelectButton); end;
+       if Key=27 then begin SelTextButtonClick(SelTextButton); ICanvas.ClearSelection; end
+      else if Key=13 then begin DoCrop; SelTextButtonClick(SelTextButton); end;
      end;
   if ssCtrl in Shift then if Key=77 then
      begin
@@ -354,15 +355,15 @@ begin
         begin
           Project.Clear;
           ThumbnailListBox.Clear;
-          ProgressForm.Label1.Caption := 'Importing DJVU file: ' + ExtractFileName( OpenDialog.FileName ) +#10
+          ProgressForm.MainTextLabel.Caption := 'Importing DJVU file: ' + ExtractFileName( OpenDialog.FileName ) +#10
            + '(' + IntToStr(pages) + ' pages)';
-          ProgressForm.Show(false);
+          ProgressForm.Show(nil);
           Enabled := false;
         end;
       for x := 1 to pages do
          begin
            newpage := nil;
-           ProgressForm.Label2.Caption := 'Importing page ' + IntToStr(x);
+           ProgressForm.SetUpdateText('Importing page ' + IntToStr(x));
            Application.ProcessMessages;
            tempfile := '/tmp/temppage.tif';
            if FileExistsUTF8(tempfile) then DeleteFileUTF8(tempfile);
@@ -581,27 +582,13 @@ end;
 procedure TMainForm.SaveButtonClick ( Sender: TObject ) ;
 var
   x: Integer;
-  OurZipper: TZipper;
-  I: Integer;
+   I: Integer;
 begin
   if Project.Filename=''
      then SaveAsMenuItemClick(Sender)
   else
     begin
       Project.SaveToFile(Project.Filename);
-      OurZipper := TZipper.Create;
-      try
-        OurZipper.FileName := '/tmp/' + Project.Title;
-        for I := 0 to Project.PageCount-1 do
-           begin
-             OurZipper.Entries.AddFileEntry(Project.Pages[I].Filename, 'pages/' + ExtractFileName(Project.Pages[I].Filename));
-             OurZipper.Entries[I].CompressionLevel := clNone;
-           end;
-        OurZipper.Entries.AddFileEntry(Project.Filename, ExtractFileName(Project.Filename));
-        OurZipper.ZipAllFiles;
-      finally
-        OurZipper.Free;
-      end;
     end;
 end;
 
@@ -628,7 +615,8 @@ procedure TMainForm.SelTextButtonClick ( Sender: TObject ) ;
 begin
   ICanvas.SelectionMode := smSelect;
   StatusBar.Panels[0].Text := 'SELECT';
-  SelectToolButton.ImageIndex := TMenuItem(Sender).ImageIndex;
+  SelTextButton.Down := true;
+  //SelectToolButton.ImageIndex := TMenuItem(Sender).ImageIndex;
 end;
 
 procedure TMainForm.AnalyseButtonClick ( Sender: TObject ) ;
@@ -708,6 +696,8 @@ begin
       ICanvas.GetSelector(ICanvas.SelectionCount-1).OnSelect := @SelectionChange;
     end;
   editor.OCRData := Project.CurrentPage.OCRData;
+  if Project.CurrentPage.OCRData=nil
+     then ProcessPageMenuItem.Click;
   CorrectionviewImage.Picture.Clear;
 end;
 
@@ -784,9 +774,8 @@ begin
       end;
   if SaveDialog.Execute then
     begin
-      ProgressForm.Label1.Caption := 'Saving project...';
-      ProgressForm.Label2.Caption := '';
-      ProgressForm.Show(true);
+      ProgressForm.SetMainText( 'Saving project...' );
+      ProgressForm.Show(nil);
       Application.ProcessMessages;
       try
       Project.SaveToFile(SaveDialog.FileName);
@@ -827,22 +816,29 @@ end;
 
 procedure TMainForm.SetScannerMenuItemClick ( Sender: TObject ) ;
 begin
-// if ScannerForm=nil then
  try
-//   ScannerForm := TScannerForm.Create(Application);
    Enabled := false;
    ScanSettingsMenuItem.Enabled := ScannerSelector.CheckDevices>0;
  finally
    Enabled := true;
  end;
- ScannerSelector.ShowModal;
- ScannerForm.ShowModal;
+ if ScannerSelector.ShowModal=mrOK
+    then ScannerForm.ShowModal;
 end;
 
 procedure TMainForm.TestTesseractButtonClick ( Sender: TObject ) ;
 begin
   if Project.PageCount<1 then Exit;
-  OCRPage(ThumbnailListBox.ItemIndex);
+  Enabled := false;
+  ProgressForm.SetMainText('Reading page...');
+  ProgressForm.SetUpdateText(' ');
+  ProgressForm.Show(nil);
+  try
+    OCRPage(ThumbnailListBox.ItemIndex);
+  finally
+    Enabled := true;
+    ProgressForm.Hide;
+  end;
   Editor.OCRData := Project.CurrentPage.OCRData;
   if not OCRPanel.Visible
      then OCRScreenMenuItem.Click;
@@ -918,7 +914,8 @@ end;
 procedure TMainForm.ShowOCRProgress ( progress: Single ) ;
 begin
   Inc(OCRProgressCount);
-  StatusBar.Panels[1].Text := 'Processing line ' + IntToStr(OCRProgressCount);
+  //StatusBar.Panels[1].Text := 'Processing line ' + IntToStr(OCRProgressCount);
+  ProgressForm.SetUpdateText('Processing line ' + IntToStr(OCRProgressCount));
   Application.ProcessMessages;
 end;
 
