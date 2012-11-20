@@ -36,14 +36,14 @@ object ScannerForm: TScannerForm
     TabOrder = 1
     object ScanSheet1: TTabSheet
       Caption = 'Scanner'
-      ClientHeight = 250
+      ClientHeight = 252
       ClientWidth = 340
       object ModeComboBox: TComboBox
         AnchorSideTop.Control = SourceComboBox
         AnchorSideTop.Side = asrBottom
         Left = 156
-        Height = 29
-        Top = 105
+        Height = 27
+        Top = 99
         Width = 170
         Anchors = [akTop, akLeft, akRight]
         BorderSpacing.Top = 15
@@ -56,8 +56,8 @@ object ScannerForm: TScannerForm
         AnchorSideTop.Control = ModeComboBox
         AnchorSideTop.Side = asrBottom
         Left = 155
-        Height = 25
-        Top = 149
+        Height = 23
+        Top = 141
         Width = 171
         Anchors = [akTop, akLeft, akRight]
         BorderSpacing.Top = 15
@@ -78,8 +78,8 @@ object ScannerForm: TScannerForm
         AnchorSideTop.Side = asrCenter
         AnchorSideRight.Control = ModeComboBox
         Left = 107
-        Height = 18
-        Top = 110
+        Height = 16
+        Top = 104
         Width = 34
         Anchors = [akTop, akRight]
         BorderSpacing.Right = 15
@@ -90,10 +90,10 @@ object ScannerForm: TScannerForm
         AnchorSideTop.Control = ResolutionComboBox
         AnchorSideTop.Side = asrCenter
         AnchorSideRight.Control = ResolutionComboBox
-        Left = 74
-        Height = 18
-        Top = 152
-        Width = 66
+        Left = 73
+        Height = 16
+        Top = 144
+        Width = 67
         Anchors = [akTop, akRight]
         BorderSpacing.Right = 15
         Caption = 'Resolution'
@@ -104,8 +104,8 @@ object ScannerForm: TScannerForm
         AnchorSideTop.Side = asrCenter
         AnchorSideRight.Control = CounterSpinEdit
         Left = 88
-        Height = 18
-        Top = 192
+        Height = 16
+        Top = 182
         Width = 52
         Anchors = [akTop, akRight]
         BorderSpacing.Right = 15
@@ -116,8 +116,8 @@ object ScannerForm: TScannerForm
         AnchorSideTop.Control = ResolutionComboBox
         AnchorSideTop.Side = asrBottom
         Left = 155
-        Height = 25
-        Top = 189
+        Height = 23
+        Top = 179
         Width = 84
         Anchors = [akTop, akRight]
         BorderSpacing.Top = 15
@@ -128,8 +128,8 @@ object ScannerForm: TScannerForm
         AnchorSideTop.Control = NameLabel
         AnchorSideTop.Side = asrBottom
         Left = 155
-        Height = 29
-        Top = 61
+        Height = 27
+        Top = 57
         Width = 171
         Anchors = [akTop, akLeft, akRight]
         BorderSpacing.Top = 10
@@ -142,8 +142,8 @@ object ScannerForm: TScannerForm
         AnchorSideTop.Side = asrCenter
         AnchorSideRight.Control = SourceComboBox
         Left = 94
-        Height = 18
-        Top = 66
+        Height = 16
+        Top = 62
         Width = 46
         Anchors = [akTop, akRight]
         BorderSpacing.Right = 15
@@ -154,8 +154,8 @@ object ScannerForm: TScannerForm
         AnchorSideTop.Control = Label9
         AnchorSideTop.Side = asrBottom
         Left = 252
-        Height = 18
-        Top = 33
+        Height = 16
+        Top = 31
         Width = 74
         Anchors = [akTop, akRight]
         Caption = 'NameLabel'
@@ -164,7 +164,7 @@ object ScannerForm: TScannerForm
       object Label9: TLabel
         AnchorSideLeft.Control = NameLabel
         Left = 252
-        Height = 18
+        Height = 16
         Top = 15
         Width = 48
         Caption = 'Device:'
@@ -173,7 +173,7 @@ object ScannerForm: TScannerForm
     end
     object ScanSheet2: TTabSheet
       Caption = 'Page size'
-      ClientHeight = 250
+      ClientHeight = 252
       ClientWidth = 340
       object Label3: TLabel
         AnchorSideTop.Control = WidthSpinEdit

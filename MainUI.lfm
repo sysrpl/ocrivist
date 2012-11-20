@@ -1,11 +1,11 @@
 object MainForm: TMainForm
-  Left = 55
+  Left = 44
   Height = 722
-  Top = 225
+  Top = 80
   Width = 1099
   ActiveControl = ListboxPanel
   Caption = 'Ocrivist'
-  ClientHeight = 695
+  ClientHeight = 697
   ClientWidth = 1099
   Icon.Data = {
     BE1000000000010001002020000001002000A810000016000000280000002000
@@ -153,12 +153,12 @@ object MainForm: TMainForm
   WindowState = wsMaximized
   object ListboxPanel: TPanel
     Left = 0
-    Height = 632
+    Height = 636
     Top = 42
     Width = 150
     Align = alLeft
     Caption = 'ListboxPanel'
-    ClientHeight = 632
+    ClientHeight = 636
     ClientWidth = 150
     TabOrder = 1
     object ThumbnailListBox: TListBox
@@ -168,7 +168,7 @@ object MainForm: TMainForm
       AnchorSideRight.Side = asrBottom
       AnchorSideBottom.Control = pagecountLabel
       Left = 1
-      Height = 609
+      Height = 615
       Top = 1
       Width = 148
       Anchors = [akTop, akLeft, akRight, akBottom]
@@ -189,8 +189,8 @@ object MainForm: TMainForm
     end
     object pagecountLabel: TLabel
       Left = 8
-      Height = 18
-      Top = 610
+      Height = 16
+      Top = 616
       Width = 5
       Anchors = [akLeft, akBottom]
       Caption = ' '
@@ -199,18 +199,18 @@ object MainForm: TMainForm
   end
   object Splitter1: TSplitter
     Left = 150
-    Height = 632
+    Height = 636
     Top = 42
     Width = 5
   end
   object OCRPanel: TPanel
     Left = 651
-    Height = 632
+    Height = 636
     Top = 42
     Width = 448
     Align = alRight
     Caption = 'OCRPanel'
-    ClientHeight = 632
+    ClientHeight = 636
     ClientWidth = 448
     TabOrder = 4
     Visible = False
@@ -248,14 +248,14 @@ object MainForm: TMainForm
     object Panel2: TPanel
       Left = 1
       Height = 65
-      Top = 566
+      Top = 570
       Width = 446
       Align = alBottom
       TabOrder = 1
     end
     object Panel3: TPanel
       Left = 1
-      Height = 374
+      Height = 378
       Top = 192
       Width = 446
       Align = alClient
@@ -288,13 +288,13 @@ object MainForm: TMainForm
   end
   object MainPanel: TPanel
     Left = 155
-    Height = 632
+    Height = 636
     Top = 42
     Width = 491
     Align = alClient
     AutoSize = True
     Caption = 'MainPanel'
-    ClientHeight = 632
+    ClientHeight = 636
     ClientWidth = 491
     TabOrder = 3
     object PageToolBar: TToolBar
@@ -312,7 +312,7 @@ object MainForm: TMainForm
       TabOrder = 0
       object TesseractButton: TToolButton
         Tag = 1
-        Left = 381
+        Left = 391
         Hint = 'OCR selections'
         Top = 2
         Caption = 'TesseractButton'
@@ -415,12 +415,19 @@ object MainForm: TMainForm
         OnClick = CropButtonClick
         Style = tbsCheck
       end
+      object ToolButton5: TToolButton
+        Left = 381
+        Top = 2
+        Width = 10
+        Caption = 'ToolButton5'
+        Style = tbsSeparator
+      end
     end
   end
   object StatusBar: TStatusBar
     Left = 0
-    Height = 21
-    Top = 674
+    Height = 19
+    Top = 678
     Width = 1099
     Panels = <    
       item
@@ -508,7 +515,7 @@ object MainForm: TMainForm
       TabOrder = 0
       object LanguageComboBox: TComboBox
         Left = 13
-        Height = 29
+        Height = 27
         Top = 6
         Width = 148
         DropDownCount = 12
@@ -525,7 +532,7 @@ object MainForm: TMainForm
   object Splitter2: TSplitter
     AnchorSideRight.Control = OCRPanel
     Left = 646
-    Height = 632
+    Height = 636
     Top = 42
     Width = 5
     Align = alRight
