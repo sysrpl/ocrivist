@@ -3,7 +3,6 @@ object ScannerSelector: TScannerSelector
   Height = 200
   Top = 340
   Width = 555
-  AutoSize = True
   Caption = 'Select Scanner'
   ClientHeight = 200
   ClientWidth = 555
@@ -29,6 +28,7 @@ object ScannerSelector: TScannerSelector
     ChildSizing.Layout = cclLeftToRightThenTopToBottom
     ChildSizing.ControlsPerLine = 1
     Constraints.MinHeight = 100
+    OnSelectionChanged = DevicesRadioGroupSelectionChanged
     TabOrder = 0
   end
   object ButtonPanel: TPanel
@@ -37,6 +37,7 @@ object ScannerSelector: TScannerSelector
     Top = 150
     Width = 555
     Align = alBottom
+    BevelOuter = bvNone
     ClientHeight = 50
     ClientWidth = 555
     TabOrder = 1
@@ -49,6 +50,7 @@ object ScannerSelector: TScannerSelector
       DefaultCaption = True
       Kind = bkCancel
       ModalResult = 2
+      OnClick = CancelButtonClick
       TabOrder = 0
     end
     object OKButton: TBitBtn
