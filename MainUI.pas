@@ -37,6 +37,7 @@ type
     MenuItem4: TMenuItem;
     HelpMenu: TMenuItem;
     AboutMenuItem: TMenuItem;
+    DebugMenuItem: TMenuItem;
     RightSidePanel: TPanel;
     ScanSettingsMenuItem: TMenuItem;
     NewProjectMenuItem: TMenuItem;
@@ -115,9 +116,9 @@ type
     MainPanel: TPanel;
     Splitter1: TSplitter;
     procedure AboutMenuItemClick ( Sender: TObject ) ;
-    procedure ContrastMenuItemClick(Sender: TObject);
     procedure CopyTextMenuItemClick ( Sender: TObject ) ;
     procedure CropButtonClick ( Sender: TObject ) ;
+    procedure DebugMenuItemClick ( Sender: TObject ) ;
     procedure DelPageMenuItemClick ( Sender: TObject ) ;
     procedure DelSelectButtonClick ( Sender: TObject ) ;
     procedure ExitMenuItemClick ( Sender: TObject ) ;
@@ -152,7 +153,6 @@ type
       Button: TMouseButton; Shift: TShiftState; X, Y: Integer ) ;
     procedure ThumbnailListBoxMouseUp ( Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer ) ;
-    procedure UnsharpMenuItemClick(Sender: TObject);
     procedure UpdateScannerStatus ( Sender: TObject ) ;
     procedure ThumbnailListBoxClick ( Sender: TObject ) ;
     procedure ThumbnailListBoxDrawItem ( Control: TWinControl; Index: Integer;
@@ -225,6 +225,15 @@ begin
   //SelectToolButton.ImageIndex := TMenuItem(Sender).ImageIndex;
 end;
 
+procedure TMainForm.DebugMenuItemClick ( Sender: TObject ) ;
+var
+  x: Integer;
+begin
+  for x := 0 to Project.PageCount-1 do
+     if Project.Pages[x].Active then writeln('page ', x+1, ': ACTIVE')
+     else writeln('page ', x+1, ': DISACTIVATED');
+end;
+
 procedure TMainForm.CopyTextMenuItemClick ( Sender: TObject ) ;
 begin
   Clipboard.AsText := Editor.Text;
@@ -233,11 +242,6 @@ end;
 procedure TMainForm.AboutMenuItemClick ( Sender: TObject ) ;
 begin
   AboutForm.ShowModal;
-end;
-
-procedure TMainForm.ContrastMenuItemClick(Sender: TObject);
-begin
-
 end;
 
 procedure TMainForm.DelPageMenuItemClick ( Sender: TObject ) ;
@@ -325,8 +329,7 @@ begin
   HasDJVU := (SearchFileInPath('djvumake','',
                    SysUtils.GetEnvironmentVariable('PATH'),PathSeparator,[])<>'');
   DjvuButton.Enabled := HasDJVU;
-  //SelTextButtonClick(SelModeSelectButton);
-//  Editor.OnSpellCheck := @SpellCallback;
+  SelTextButtonClick(SelTextButton);
 end;
 
 procedure TMainForm.FormDestroy ( Sender: TObject ) ;
@@ -766,11 +769,6 @@ begin
     MultiSelecting := false;
 end;
 
-procedure TMainForm.UnsharpMenuItemClick(Sender: TObject);
-begin
-
-end;
-
 procedure TMainForm.UpdateScannerStatus ( Sender: TObject ) ;
 begin
   ScanPageMenuItem.Enabled := ScannerHandle<>nil;
@@ -830,6 +828,7 @@ begin
                pagename :=  ExtractFileNameOnly(OpenDialog.Files[i]);
                pixSetText(newpage, PChar(pagename));
                LoadPage(newpage, ThumbnailListBox.ItemIndex+1);
+               Project.Pages[ThumbnailListBox.ItemIndex].Imagesource := OpenDialog.FileName;
                if not MainPanel.Visible
                   then ProcessPageMenuItem.Click;
                for x := 0 to MainToolBar.ControlCount-1 do
@@ -910,8 +909,11 @@ begin
          pixSetResolution(newpage, resolution, resolution);
          nametext := Format('scan_%.3d', [ScannerForm.GetNextCounterValue]);
          pixSetText(newpage, PChar( nametext ));
-         if newpage<>nil
-            then LoadPage(newpage, ThumbnailListBox.ItemIndex+1)
+         if newpage<>nil then
+           begin
+             LoadPage(newpage, ThumbnailListBox.ItemIndex+1);
+             Project.Pages[ThumbnailListBox.ItemIndex].ImageSource:= ScannerForm.NameLabel.Caption;
+           end
          else ShowMessage('Scan page failed');
        finally
          Enabled := true;
