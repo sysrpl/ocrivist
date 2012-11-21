@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
-  ButtonPanel, Buttons;
+  ButtonPanel, Buttons, StdCtrls;
 
 type
 
@@ -14,6 +14,7 @@ type
 
   TScannerSelector = class(TForm)
     CancelButton: TBitBtn;
+    NotFoundLabel: TLabel;
     OKButton: TBitBtn;
     DevicesRadioGroup: TRadioGroup;
     ButtonPanel: TPanel;
@@ -99,6 +100,7 @@ try
              DevicesRadioGroup.ItemIndex := 0;
            end;
          OKButton.Enabled := devicecount>0;
+         NotFoundLabel.Visible := devicecount=0;
        end;
      end;
  Result := devicecount;
