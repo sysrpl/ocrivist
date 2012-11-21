@@ -1,7 +1,7 @@
 object AboutForm: TAboutForm
-  Left = 194
+  Left = 367
   Height = 249
-  Top = 312
+  Top = 378
   Width = 365
   BorderStyle = bsDialog
   Caption = 'About Ocrivist'
@@ -163,8 +163,8 @@ object AboutForm: TAboutForm
         Left = 98
         Height = 25
         Top = 23
-        Width = 132
-        Caption = 'Ocrivist 0.1'
+        Width = 89
+        Caption = 'Ocrivist'
         Font.Height = -20
         Font.Style = [fsBold]
         ParentColor = False
@@ -173,7 +173,7 @@ object AboutForm: TAboutForm
       object Label2: TLabel
         Left = 98
         Height = 18
-        Top = 51
+        Top = 75
         Width = 198
         Caption = 'Copyright: Malcolm Poole 2012'
         ParentColor = False
@@ -191,9 +191,29 @@ object AboutForm: TAboutForm
         ModalResult = 1
         TabOrder = 0
       end
+      object Label3: TLabel
+        Left = 99
+        Height = 18
+        Top = 51
+        Width = 91
+        Caption = 'Version #: 0.1'
+        ParentColor = False
+      end
     end
     object TabSheet2: TTabSheet
       Caption = 'Acknowledgements'
+      ClientHeight = 218
+      ClientWidth = 361
+      object Memo1: TMemo
+        Left = 6
+        Height = 198
+        Top = 13
+        Width = 344
+        Anchors = [akTop, akLeft, akRight, akBottom]
+        ReadOnly = True
+        ScrollBars = ssAutoBoth
+        TabOrder = 0
+      end
     end
   end
 end

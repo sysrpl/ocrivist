@@ -450,8 +450,11 @@ end;
 
 procedure TMainForm.NewProjectMenuItemClick ( Sender: TObject ) ;
 begin
-  Project.Clear;
+  Project.Free;
+  Project := TOcrivistProject.Create;
   ThumbnailListBox.Clear;
+  ICanvas.Picture := nil;
+  editor.Clear;
 end;
 
 procedure TMainForm.PDFToolButtonClick(Sender: TObject);
@@ -817,16 +820,19 @@ begin
          Title := 'Open Ocrivist project';
        end;
   if OpenDialog.Execute then
-    if Project.LoadfromFile(OpenDialog.FileName)=0 then
-      begin
-        ICanvas.Scale :=  Project.ViewerScale;
-        ThumbnailListBox.Clear;
-        for x := 0 to Project.PageCount-1 do
-           ThumbnailListBox.Items.AddObject( Project.Pages[x].Title, Project.Pages[x].Thumbnail );
-        ThumbnailListBox.ItemIndex := Project.ItemIndex;
-        ThumbnailListBoxClick(ThumbnailListBox);
-        Caption := 'Ocrivist : ' + Project.Title;
-      end;
+    begin
+      NewProjectMenuItemClick(nil);
+      if Project.LoadfromFile(OpenDialog.FileName)=0 then
+        begin
+          ICanvas.Scale :=  Project.ViewerScale;
+          ThumbnailListBox.Clear;
+          for x := 0 to Project.PageCount-1 do
+             ThumbnailListBox.Items.AddObject( Project.Pages[x].Title, Project.Pages[x].Thumbnail );
+          ThumbnailListBox.ItemIndex := Project.ItemIndex;
+          ThumbnailListBoxClick(ThumbnailListBox);
+          Caption := 'Ocrivist : ' + Project.Title;
+        end;
+    end;
 end;
 
 procedure TMainForm.SaveAsMenuItemClick ( Sender: TObject ) ;
