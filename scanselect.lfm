@@ -27,8 +27,20 @@ object ScannerSelector: TScannerSelector
     ChildSizing.ShrinkVertical = crsScaleChilds
     ChildSizing.Layout = cclLeftToRightThenTopToBottom
     ChildSizing.ControlsPerLine = 1
+    ClientHeight = 81
+    ClientWidth = 533
     Constraints.MinHeight = 100
     TabOrder = 0
+    object NotFoundLabel: TLabel
+      Left = 6
+      Height = 69
+      Top = 6
+      Width = 521
+      Alignment = taCenter
+      Caption = 'No devices found'
+      ParentColor = False
+      Visible = False
+    end
   end
   object ButtonPanel: TPanel
     Left = 0
