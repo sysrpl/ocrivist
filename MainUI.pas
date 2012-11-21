@@ -26,9 +26,6 @@ type
     DeskewMenuItem: TMenuItem;
     CorrectionviewImage: TImage;
     ImageList1: TImageList;
-    LoadModeMenu: TPopupMenu;
-    LoadModeFileButton: TMenuItem;
-    LoadModeScanButton: TMenuItem;
     ImportMenuItem: TMenuItem;
     CopyTextMenuItem: TMenuItem;
     MenuItem4: TMenuItem;
@@ -96,6 +93,7 @@ type
     ToolButton5: TToolButton;
     PDFToolButton: TToolButton;
     TextButton: TToolButton;
+    ScanPageButton: TToolButton;
     UnsharpMenuItem: TMenuItem;
     View25MenuItem: TMenuItem;
     View100MenuItem: TMenuItem;
