@@ -10,6 +10,12 @@ uses
   ActnList, Buttons, ComCtrls, SpellCheck,
   OcrivistData, selector, Sane, ocreditor;
 
+{ command line for converting pdf pages to tiff:
+  convert -density 300x300 -compress lzw <source>.pdf[0] <output>.tiff
+
+  to get number of pages:
+  pdfinfo <source>.pdf | grep Pages
+}
 
 type
 
@@ -490,7 +496,7 @@ begin
         sourcefiles.nalloc := Project.PageCount;
         for p := 0 to Project.PageCount-1 do
            sourcefiles.strarray[p] := PChar(Project.Pages[p].Filename);
-        saConvertFilesToPdf(@sourcefiles, 300, 1, 90,
+        saConvertFilesToPdf(@sourcefiles, 0, 1, 90,
                              PChar(Project.Title),
                              PChar(SaveDialog.FileName));
       finally
