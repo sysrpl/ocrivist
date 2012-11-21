@@ -31,6 +31,7 @@ type
     MenuItem4: TMenuItem;
     HelpMenu: TMenuItem;
     AboutMenuItem: TMenuItem;
+    RightSidePanel: TPanel;
     ScanSettingsMenuItem: TMenuItem;
     NewProjectMenuItem: TMenuItem;
     OCRScreenMenuItem: TMenuItem;
@@ -94,6 +95,7 @@ type
     PDFToolButton: TToolButton;
     TextButton: TToolButton;
     ScanPageButton: TToolButton;
+    ToolButton6: TToolButton;
     UnsharpMenuItem: TMenuItem;
     View25MenuItem: TMenuItem;
     View100MenuItem: TMenuItem;
@@ -107,6 +109,7 @@ type
     MainPanel: TPanel;
     Splitter1: TSplitter;
     procedure AboutMenuItemClick ( Sender: TObject ) ;
+    procedure ContrastMenuItemClick(Sender: TObject);
     procedure CopyTextMenuItemClick ( Sender: TObject ) ;
     procedure CropButtonClick ( Sender: TObject ) ;
     procedure DelPageMenuItemClick ( Sender: TObject ) ;
@@ -143,6 +146,7 @@ type
       Button: TMouseButton; Shift: TShiftState; X, Y: Integer ) ;
     procedure ThumbnailListBoxMouseUp ( Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer ) ;
+    procedure UnsharpMenuItemClick(Sender: TObject);
     procedure UpdateScannerStatus ( Sender: TObject ) ;
     procedure ThumbnailListBoxClick ( Sender: TObject ) ;
     procedure ThumbnailListBoxDrawItem ( Control: TWinControl; Index: Integer;
@@ -185,6 +189,11 @@ type
 const
   THUMBNAIL_HEIGHT = 100;
 
+  TEMPFILE_HIDDEN_TEXT = '/tmp/ocr-temp.txt';
+  TEMPFILE_DJVU_PAGE = '/tmp/ocr-temp.djvu';
+  TEMPFILE_SINGLEBIT_IMAGE = '/tmp/ocr-temp.pnm';
+  TEMPFILE_MULTIBIT_IMAGE = '/tmp/ocr-temp.pbm';
+
 var
   MainForm: TMainForm;
   ICanvas : TPageViewer;
@@ -218,6 +227,11 @@ end;
 procedure TMainForm.AboutMenuItemClick ( Sender: TObject ) ;
 begin
   AboutForm.ShowModal;
+end;
+
+procedure TMainForm.ContrastMenuItemClick(Sender: TObject);
+begin
+
 end;
 
 procedure TMainForm.DelPageMenuItemClick ( Sender: TObject ) ;
@@ -286,7 +300,7 @@ begin
   ThumbnailListBox.Clear;
   ThumbnailListBox.ItemIndex := -1;
   ThumbnailListBox.ItemHeight := THUMBNAIL_HEIGHT + ThumbnailListBox.Canvas.TextHeight('Yy')+2;
-  OCRDatapath := '/usr/local/share/ocrivist/';
+  OCRDatapath := '/usr/local/share/tessdata/';
   PopulateLanguageList;
 
   OCRLanguage := 'eng';
@@ -468,7 +482,8 @@ begin
          FileName := Project.Title;
        end;
   if SaveDialog.Execute then
-      begin
+      try
+        Enabled := false;
         sourcefiles.refcount := 1;
         SetLength(sourcefiles.strarray, Project.PageCount+1);
         sourcefiles.n := Project.PageCount+1;
@@ -478,6 +493,8 @@ begin
         saConvertFilesToPdf(@sourcefiles, 300, 1, 90,
                              PChar(Project.Title),
                              PChar(SaveDialog.FileName));
+      finally
+        Enabled := True;
       end;
 end;
 
@@ -544,7 +561,10 @@ begin
         FileName := Project.Title;
       end;
  if SaveDialog.Execute then
-     begin
+     try
+       Enabled := false;
+       ProgressForm.SetMainText('Exporting project to Djvu');
+       ProgressForm.Show(nil);
        if FileExistsUTF8(SaveDialog.FileName)
              then DeleteFileUTF8(SaveDialog.FileName);
        for x := 0 to Project.PageCount-1 do
@@ -559,10 +579,9 @@ begin
             p := Project.Pages[x].PageImage;
             pixGetDimensions(p, @w, @h, @d);
             if d=1
-               then fn := '/tmp/ocr-temp.pnm'
-               else fn := '/tmp/ocr-temp.pbm';
-            StatusBar.Panels[1].Text := 'Processing page ' + IntToStr(x+1);
-            Application.ProcessMessages;
+               then fn :=  TEMPFILE_SINGLEBIT_IMAGE
+               else fn := TEMPFILE_MULTIBIT_IMAGE;
+            ProgressForm.SetUpdateText( 'Processing page ' + IntToStr(x+1) );
             if Project.Pages[x].OCRData <> nil then
                begin
                   data.Add(Format('(page 0 0 %d %d', [w, h]));
@@ -583,20 +602,23 @@ begin
                        data.Strings[data.Count-1] := data.Strings[data.Count-1] + ')';
                      end;
                   data.Strings[data.Count-1] := data.Strings[data.Count-1] + ')';
-                  HiddenText := '/tmp/ocr-temp.txt';
+                  HiddenText := TEMPFILE_HIDDEN_TEXT;
                   data.SaveToFile(HiddenText);
                end;
             pixWrite(PChar(fn), p, IFF_PNM);
-            if djvumakepage(fn, '/tmp/ocr-temp.djvu', HiddenText)=0
-               then djvuaddpage(SaveDialog.FileName, '/tmp/ocr-temp.djvu')
+            if djvumakepage(fn, TEMPFILE_DJVU_PAGE, HiddenText)=0
+               then djvuaddpage(SaveDialog.FileName, TEMPFILE_DJVU_PAGE)
                else ShowMessage('Error when encoding page ' + IntToStr(x+1));
           finally
             StatusBar.Panels[1].Text := '';
             data.Free;
             DeleteFileUTF8(fn);
             DeleteFileUTF8(HiddenText);
-            DeleteFileUTF8('/tmp/ocr-temp.djvu');
+            DeleteFileUTF8(TEMPFILE_DJVU_PAGE);
           end;
+     finally
+       ProgressForm.Hide;
+       Enabled := true;
      end;
 end;
 
@@ -738,6 +760,11 @@ begin
     MultiSelecting := false;
 end;
 
+procedure TMainForm.UnsharpMenuItemClick(Sender: TObject);
+begin
+
+end;
+
 procedure TMainForm.UpdateScannerStatus ( Sender: TObject ) ;
 begin
   ScanPageMenuItem.Enabled := ScannerHandle<>nil;
@@ -866,12 +893,11 @@ begin
        then SetScannerMenuItemClick(nil);
 
   if ScanSettingsMenuItem.Enabled then
-     begin
-       ProgressForm.SetMainText('Initialising scanner...');
-       ProgressForm.Show(@CancelScan);
-       Application.ProcessMessages;
-       Enabled := false;
        try
+         Enabled := false;
+         ProgressForm.SetMainText('Initialising scanner...');
+         ProgressForm.Show(@CancelScan);
+         Application.ProcessMessages;
          resolution := ScannerForm.GetResolution;
          ScannerForm.SetScannerOptions;
          newpage := ScanToPix(ScannerHandle, @ShowScanProgress);
@@ -885,7 +911,6 @@ begin
          Enabled := true;
          ProgressForm.Hide;
        end;
-     end;
 end;
 
 procedure TMainForm.SetScannerMenuItemClick ( Sender: TObject ) ;

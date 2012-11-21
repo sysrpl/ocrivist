@@ -18,6 +18,7 @@ object ProgressForm: TProgressForm
     Top = 184
     Width = 377
     Align = alBottom
+    BevelOuter = bvNone
     Caption = 'ButtonPanel'
     ClientHeight = 56
     ClientWidth = 377
@@ -39,9 +40,9 @@ object ProgressForm: TProgressForm
   end
   object MainTextLabel: TLabel
     Left = 29
-    Height = 18
+    Height = 16
     Top = 40
-    Width = 90
+    Width = 91
     Caption = 'MainTextLabel'
     ParentColor = False
   end
@@ -49,8 +50,8 @@ object ProgressForm: TProgressForm
     AnchorSideTop.Control = MainTextLabel
     AnchorSideTop.Side = asrBottom
     Left = 29
-    Height = 18
-    Top = 73
+    Height = 16
+    Top = 71
     Width = 323
     Anchors = [akTop, akLeft, akRight]
     BorderSpacing.Top = 15

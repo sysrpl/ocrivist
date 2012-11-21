@@ -64,6 +64,7 @@ begin
   ButtonPanel.Visible := cancelcb<>nil;
   if cancelcb<>nil then Height := Height + ButtonPanel.Height;
   inherited Show;
+  Application.ProcessMessages;
 end;
 
 procedure TProgressForm.SetMainText ( txt: String ) ;
@@ -75,6 +76,7 @@ end;
 procedure TProgressForm.SetUpdateText ( txt: String ) ;
 begin
   UpdateTextLabel.Caption := txt;
+  Application.ProcessMessages;
 end;
 
 end.
