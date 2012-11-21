@@ -32,6 +32,8 @@ type
     ImportMenuItem: TMenuItem;
     CopyTextMenuItem: TMenuItem;
     MenuItem4: TMenuItem;
+    HelpMenu: TMenuItem;
+    AboutMenuItem: TMenuItem;
     ScanSettingsMenuItem: TMenuItem;
     NewProjectMenuItem: TMenuItem;
     OCRScreenMenuItem: TMenuItem;
@@ -106,6 +108,7 @@ type
     OCRPanel: TPanel;
     MainPanel: TPanel;
     Splitter1: TSplitter;
+    procedure AboutMenuItemClick ( Sender: TObject ) ;
     procedure CopyTextMenuItemClick ( Sender: TObject ) ;
     procedure CropButtonClick ( Sender: TObject ) ;
     procedure DelPageMenuItemClick ( Sender: TObject ) ;
@@ -195,7 +198,7 @@ var
 
  implementation
 
-  uses DjvuUtils, scanner, ocr, Clipbrd, progress, scanselect;
+  uses DjvuUtils, scanner, ocr, Clipbrd, progress, scanselect, about;
 
   {$R *.lfm}
 
@@ -212,6 +215,11 @@ end;
 procedure TMainForm.CopyTextMenuItemClick ( Sender: TObject ) ;
 begin
   Clipboard.AsText := Editor.Text;
+end;
+
+procedure TMainForm.AboutMenuItemClick ( Sender: TObject ) ;
+begin
+  AboutForm.ShowModal;
 end;
 
 procedure TMainForm.DelPageMenuItemClick ( Sender: TObject ) ;

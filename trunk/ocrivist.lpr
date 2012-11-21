@@ -9,7 +9,7 @@ uses
   Interfaces, // this includes the LCL widgetset
   Forms, sane, scanutils, MainUI, LibLeptUtils, leptonica, pageviewer,
   OcrivistData, selector, tessintf, DjvuUtils, scanner, ocr, ocreditor,
-  frmSpell, progress, scanselect
+  frmSpell, progress, scanselect, about
   { you can add units after this };
 
 {$R *.res}
@@ -22,6 +22,7 @@ begin
   Application.CreateForm(TProgressForm, ProgressForm);
   Application.CreateForm(TScannerForm, ScannerForm);
   Application.CreateForm(TScannerSelector, ScannerSelector);
+  Application.CreateForm ( TAboutForm, AboutForm ) ;
   Application.Run;
 end.
 
