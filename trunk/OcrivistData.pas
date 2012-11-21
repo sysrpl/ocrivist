@@ -9,6 +9,9 @@ uses
 
 type
 
+  TPageOperation = (opoCrop, opoDeskew, opoRotate);
+  TPageOperations = set of TPageOperation;
+
   { TOcrivistPage }
 
   TOcrivistPage = class(TObject)
@@ -20,6 +23,8 @@ type
     FModified: Boolean;
     FPix:PLPix;
     FOCRData: TTesseractPage;
+    FImageSource: string;
+    PageOperations: TPageOperations;
   private
     FActive: Boolean;
     function getOCRText: string;
@@ -49,6 +54,7 @@ type
     property Active: Boolean read FActive write SetActive;
     property OCRData: TTesseractPage read FOCRData write SetOCRData;
     property Filename: TFilename read FTempFile;
+    property ImageSource: string read FImageSource write FImageSource;
   end;
 
   { TOcrivistProject }
@@ -246,6 +252,12 @@ begin
            FileWrite(F, bytes, SizeOf(bytes));                 //1 - Integer - length of string Title
            if bytes>0 then
               FileWrite(F, databuf[1], bytes);                 //2 - array of char - string Title
+           bytes := Length(aPage.FImageSource);
+           FileWrite(F, bytes, SizeOf(bytes));                 //2a - Integer - length of string FImageSource
+           databuf := aPage.FImageSource;                      //2b - array of char - = string Text
+           if bytes>0 then
+              FileWrite(F, databuf[1], bytes);
+
            bytes := Length(aPage.Text);
            FileWrite(F, bytes, SizeOf(bytes));                 //3 - Integer - length of string Text
            databuf := aPage.Text;                              //4 - array of char - = string Text
@@ -362,9 +374,13 @@ begin
            aPage.FActive := false;                // do not load image until necessary
            FPages[page] := aPage;
            FileRead(F, bytes, SizeOf(bytes));                 //1 - Integer - length of string Title
-           SetLength(apage.FTitle, bytes+1);
+           SetLength(apage.FTitle, bytes);
            if bytes>0 then
               FileRead(F, apage.FTitle[1], bytes);            //2 - array of char - string Title
+           FileRead(F, bytes, SizeOf(bytes));                 //2a - Integer - length of string FImageSource
+           SetLength(apage.FImageSource, bytes+1);
+           if bytes>0 then
+              FileRead(F, apage.FImageSource[1], bytes);      //2b - array of char - string FImageSource
            FileRead(F, bytes, SizeOf(bytes));                 //3 - Integer - length of string Text
            if bytes>0 then
               begin
@@ -372,7 +388,6 @@ begin
                  SetLength(strbuf, bytes);
                  if bytes>0 then
                     FileRead(F, strbuf[1], bytes);                  //4 - array of char - = string Text
-                    //writeln('Got Page Text=', strbuf);
                  aPage.OCRData.Text := strbuf;
               end;
            FileRead(F, bytes, SizeOf(bytes));                 //5 - Integer - length of FTempFile
@@ -624,6 +639,7 @@ begin
           LoadThread := TPixFileThread.Create(true);
           LoadThread.LoadFromFile(@PixL, FTempFile);
           Result := PixL;
+          FActive := true;
         end;
 end;
 
