@@ -172,6 +172,7 @@ type
     ThumbnailStartPoint: TPoint;
     DraggingThumbnail: Boolean;
     MultiSelecting: Boolean;
+    ScanCancelled: Boolean;
     procedure CancelScan ( Sender: TObject );
     procedure MakeSelection ( Sender: TObject );
     procedure DeleteSelection ( Sender: TObject );
@@ -208,6 +209,8 @@ var
   OCRLanguage: string;
   OCRDatapath: string;
   HasDJVU: Boolean;
+
+  AutoDeskewOnScan: Boolean;
 
  implementation
 
@@ -329,6 +332,7 @@ begin
   HasDJVU := (SearchFileInPath('djvumake','',
                    SysUtils.GetEnvironmentVariable('PATH'),PathSeparator,[])<>'');
   DjvuButton.Enabled := HasDJVU;
+  AutoDeskewOnScan := true;
   SelTextButtonClick(SelTextButton);
 end;
 
@@ -808,7 +812,7 @@ begin
   if LeftOffset<2 then LeftOffset := 2;
   TListbox(Control).Canvas.Rectangle(ARect);
   TListbox(Control).Canvas.Draw(LeftOffset, ARect.Top + TListbox(Control).Canvas.TextHeight('Yy')+2, TBitmap(TListbox(Control).Items.Objects[Index]));
-  TListbox(Control).Canvas.TextOut(2, ARect.Top + 2, IntToStr(Index+1) + #32 + TListbox(Control).Items[Index]);
+  TListbox(Control).Canvas.TextOut(2, ARect.Top + 2, IntToStr(Index+1) + ': ' + TListbox(Control).Items[Index]);
 end;
 
 procedure TMainForm.LoadPageMenuItemClick ( Sender: TObject ) ;
@@ -891,30 +895,48 @@ end;
 procedure TMainForm.ScanPageMenuItemClick ( Sender: TObject ) ;
 var
   newpage: PLPix;
+  temppix: PLPix;
   nametext: String;
   resolution: Integer;
 begin
+  newpage := nil;
   if not ScanSettingsMenuItem.Enabled
        then SetScannerMenuItemClick(nil);
 
   if ScanSettingsMenuItem.Enabled then
        try
          Enabled := false;
+         ScanCancelled := false;
          ProgressForm.SetMainText('Initialising scanner...');
          ProgressForm.Show(@CancelScan);
          Application.ProcessMessages;
          resolution := ScannerForm.GetResolution;
-         ScannerForm.SetScannerOptions;
-         newpage := ScanToPix(ScannerHandle, @ShowScanProgress);
-         pixSetResolution(newpage, resolution, resolution);
-         nametext := Format('scan_%.3d', [ScannerForm.GetNextCounterValue]);
-         pixSetText(newpage, PChar( nametext ));
-         if newpage<>nil then
+         Application.ProcessMessages;
+         if not ScanCancelled
+            then ScannerForm.SetScannerOptions;
+         Application.ProcessMessages;
+         if not ScanCancelled then
            begin
-             LoadPage(newpage, ThumbnailListBox.ItemIndex+1);
-             Project.Pages[ThumbnailListBox.ItemIndex].ImageSource:= ScannerForm.NameLabel.Caption;
-           end
-         else ShowMessage('Scan page failed');
+             newpage := ScanToPix(ScannerHandle, @ShowScanProgress);
+             pixSetResolution(newpage, resolution, resolution);
+             nametext := Format('scan_%.3d', [ScannerForm.GetNextCounterValue]);
+             pixSetText(newpage, PChar( nametext ));
+             if newpage<>nil then
+                begin
+                  if AutoDeskewOnScan then
+                     begin
+                       ProgressForm.SetMainText('Deskewing page...');
+                       temppix := pixDeskew(newpage, 0);
+                       if temppix<>nil then
+                         begin
+                           pixDestroy(@newpage);
+                           newpage := temppix;
+                         end;
+                     end;
+                  LoadPage(newpage, ThumbnailListBox.ItemIndex+1)
+                end
+             else ShowMessage('Scan page failed');
+           end;
        finally
          Enabled := true;
          ProgressForm.Hide;
@@ -969,6 +991,7 @@ end;
 procedure TMainForm.CancelScan(Sender: TObject);
 begin
  Application.ProcessMessages;
+ ScanCancelled := true;
  sane_cancel(ScannerHandle);
 end;
 
