@@ -15,3 +15,5 @@ Another python project, [http://sourceforge.net/projects/gimagereader/ gimagerea
 A more recent project, [https://code.google.com/p/lector/ lector] has a very similar interface to my early pre-release versions of Ocrivist.
 
 The project has also given me a reason to produce freepascal bindings for [http://code.google.com/p/tesseract-ocr/ libtesseract] and the [http://www.leptonica.com/ Leptonica] library. These can be found in their own folders in the base folder of the SVN repository.
+
+At present Ocrivist is available only as Pascal source code from the [http://code.google.com/p/ocrivist/source/checkout SVN repository]. The code can be compiled using the [http://www.lazarus.freepascal.org/ Lazarus IDE]. It is planned to have binaries available for download early in December 2012.
