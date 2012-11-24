@@ -30,7 +30,7 @@ Ocrivist makes use of a number of Linux libraries and other programs. Many of th
 *liblept.so.2* is required by both the ocrivist program and by libocrivist. It can be compiled and installed after downloading [http://code.google.com/p/leptonica/downloads/detail?name=leptonica-1.68.tar.gz leptonica v.1.68] from the [http://code.google.com/p/leptonica/ Leptonica Project]. See [Dependencies#Compiling_and_installing_libraries below] for guidance on compiling.
 ----
 ===libocrivist.so.3===
-*libocrivist.so.3* is derived from v.3.00 of [http://code.google.com/p/tesseract-ocr/ Tesseract-ocr]. It can be downloaded from the [http://code.google.com/p/ocrivist/downloads/detail?name=libocrivist-3.00r3.tar.gz Ocrivist] downloads section, compiled and installed. See [Dependencies#Compiling_and_installing_libraries below] for guidance on compiling.
+*libocrivist.so.3* is derived from v.3.00 of [http://code.google.com/p/tesseract-ocr/ Tesseract-ocr]. It can be downloaded from the [http://code.google.com/p/ocrivist/downloads/detail?name=libocrivist-3.00r4.tar.gz Ocrivist] downloads section, compiled and installed. See [Dependencies#Compiling_and_installing_libraries below] for guidance on compiling.
 ----
 ===libsane.so.1===
 *libsane.so.1* is installed by default on most distributions.
@@ -41,9 +41,12 @@ Ocrivist makes use of a number of Linux libraries and other programs. Many of th
 ===Djvulibre===
 The *djvulibre* suite provides a number of programs used for manipulating and creating _djvu_ format files. It is usually available from your distribution repositories or from [http://djvu.sourceforge.net/ Sourceforge].
 
-The *djvulibre* programs are _not_ essential for Ocrivist to run, but without them it will not be possible to export Ocrivist projects to Djvu format.
+The *djvulibre* programs are _not_ essential for Ocrivist to run, but without them it will not be possible to export Ocrivist projects to DjVu format.
 
 ==Compiling and installing libraries===
+*Important:* both liblept and libocrivist will compile without libtiff but the ocrivist program will not work correctly if this happens. Most Linux distributions install libtiff by default but the *development* package also needs to be installed before attempting to compile a program or library that links to libtiff.
+
+
 To compile and install *liblept*, first ensure that the libtiff development files are installed, then  download [http://code.google.com/p/leptonica/downloads/detail?name=leptonica-1.68.tar.gz leptonica v.1.68] and extract all the files to a convenient location. Using a terminal console, *cd* into the *leptonica* folder and enter 
 
 {{{./configure}}}
@@ -58,6 +61,6 @@ If all goes well you can then then use root privileges (*su* or *sudo*)  and ins
 
 *libocrivist* is compiled and installed using the same procedure.
 
-Note the that *liblept* and *libtiff* must be installed before you attempt to compile *libocrivist*
+Note that *liblept* and *libtiff* must be installed before you attempt to compile *libocrivist*
 
  
