@@ -17,7 +17,7 @@ type
   TOcrivistPage = class(TObject)
   private
     FTitle: string;
-    FTempFile: TFilename;
+    FImageFile: TFilename;
     FThumbnail: TBitmap;
     FSelections: array of TRect;
     FModified: Boolean;
@@ -27,6 +27,7 @@ type
     PageOperations: TPageOperations;
   private
     FActive: Boolean;
+    FImageID: Integer;
     function getOCRText: string;
     function GetPageImage: PLPix;
     function GetSelection ( aIndex: Integer ) : TRect;
@@ -53,14 +54,17 @@ type
     property Thumbnail: TBitmap read FThumbnail;
     property Active: Boolean read FActive write SetActive;
     property OCRData: TTesseractPage read FOCRData write SetOCRData;
-    property Filename: TFilename read FTempFile;
+    property Filename: TFilename read FImageFile;
     property ImageSource: string read FImageSource write FImageSource;
+    property ImageID: Integer read FImageID;
   end;
 
   { TOcrivistProject }
+  TLanguageString = array[1..3] of char;
 
   TOcrivistProject = class( TObject )
   private
+    FLanguage: TLanguageString;
     FTitle: string;
     FPages: array of TOcrivistPage;
     FFilename: string;
@@ -69,7 +73,9 @@ type
     FcurrentPage: Integer;
     FPageWidth: Integer;
     FPageHeight: Integer;
+    FLoadCount: integer;
     function GetCurrentPage: TOcrivistPage;
+    function GetLoadCount: integer;
     function GetPage ( aIndex: Integer ) : TOcrivistPage;
     function GetPageCount: Integer;
     // PutPage assigns a TOcrivistPage to FPages[aIndex]
@@ -92,6 +98,9 @@ type
     property PageCount: Integer read GetPageCount;
     property Filename: TFilename read FFilename;
     property ViewerScale: Single read FViewerScale write FViewerScale;
+    property LoadCount: integer read GetLoadCount;
+    property Language: TLanguageString read FLanguage write FLanguage;
+    property WorkFolder: string read FWorkFolder write FWorkFolder;
   end;
 
   { TPixFileThread }
@@ -119,9 +128,12 @@ type
       property Filename: TFilename read FFilename write FFilename;
   end;
 
+var
+  CurrentProject: TOcrivistProject;  // Placing this here allows TOcrivistPages to access it
+
 const
 
-  FILEVERSION = #1;
+  FILEVERSION = #3;
 
 implementation
 
@@ -144,6 +156,12 @@ begin
      else Result := nil;
 end;
 
+function TOcrivistProject.GetLoadCount: integer;
+begin
+  Inc(FLoadCount);
+  Result := FLoadCount;
+end;
+
 function TOcrivistProject.GetPageCount: Integer;
 begin
   Result := Length(FPages);
@@ -163,6 +181,7 @@ begin
   FPageWidth := 0;
   FPageHeight := 0;
   FWorkFolder := '/tmp/';
+  FLoadCount := 0;
 end;
 
 destructor TOcrivistProject.Destroy;
@@ -241,7 +260,9 @@ begin
        bytes := Length(tempTitle);
        FileWrite(F, bytes, SizeOf(bytes));                     //5 - Integer - length of string FTitle
        if bytes>0 then
-              FileWrite(F, tempTitle[1], Length(tempTitle));         //6 - array of char - string FTitle
+              FileWrite(F, tempTitle[1], Length(tempTitle));   //6 - array of char - string FTitle
+       FileWrite(F, FLanguage[1], 3);                          //6a - Last language used for OCR
+       Filewrite(F, FLoadCount, SizeOf(FLoadCount));           //6b - Unique number for page image filenames
        bytes := Length(FPages);
        FileWrite(F, bytes, SizeOf(bytes));                     //7 - Integer - number of pages in project
        for page := 0 to Length(FPages)-1 do
@@ -257,24 +278,25 @@ begin
            databuf := aPage.FImageSource;                      //2b - array of char - = string Text
            if bytes>0 then
               FileWrite(F, databuf[1], bytes);
-
-           bytes := Length(aPage.Text);
-           FileWrite(F, bytes, SizeOf(bytes));                 //3 - Integer - length of string Text
-           databuf := aPage.Text;                              //4 - array of char - = string Text
-           if bytes>0 then
-              FileWrite(F, databuf[1], bytes);
-           databuf := ExtractFileName( aPage.FTempFile );
+           bytes := Length(aPage.Text);                        //3 - Integer - length of string Text
+           FileWrite(F, bytes, SizeOf(bytes));                 //    (indicates that OCRData exists for LoadFromFile)
+           if aPage.FImageID<0 then aPage.FImageID := page;    //TODO: should not be necessary
+           FileWrite(F, aPage.FImageID, SizeOf(aPage.FImageID)); //4 - integer - Image ID
+           //databuf := aPage.Text;
+           //if bytes>0 then
+           //   FileWrite(F, databuf[1], bytes);
+           databuf := ExtractFileName( aPage.FImageFile );
            //databuf := ExtractFileNameOnly( aPage.FTempFile ) + '.tiff';
            bytes := Length(databuf);
            FileWrite(F, bytes, SizeOf(bytes));                 //5 - Integer - length of string FTempFile
            if bytes>0 then
               FileWrite(F, databuf[1], bytes);                 //6 - array of char - = string FtempFile
-           if filesdirectory<>ExtractFilePath(aPage.FTempFile) then
+           if filesdirectory<>ExtractFilePath(aPage.FImageFile) then
               begin
-                CopyFile(aPage.FTempFile, filesdirectory + databuf);
+                CopyFile(aPage.FImageFile, filesdirectory + databuf);
                 if FWorkFolder='/tmp/'
-                   then DeleteFileUTF8(aPage.FTempFile);
-                aPage.FTempFile := filesdirectory + databuf;
+                   then DeleteFileUTF8(aPage.FImageFile);
+                aPage.FImageFile := filesdirectory + databuf;
               end;
 
            memstream := TMemoryStream.Create;
@@ -335,6 +357,7 @@ end;
 function TOcrivistProject.LoadfromFile ( aFileName: TFilename ) : integer;
 var
   F: THandle;
+  thisfileversion: byte;
   databuf: array of char;
   strbuf: string;
   tempbuf: PByte;
@@ -356,7 +379,9 @@ begin
   if F > 0 then
      try
        SetLength(databuf, 6);
-       FileRead(F, databuf[0], 6);
+       FileRead(F, databuf[0], 3);                            // file header - should be 'OVP'
+       FileRead(F, thisfileversion, 1);
+       FileRead(F, databuf[0], 2);                            // spare bytes
        FileRead(F, FcurrentPage, SizeOf(FcurrentPage));       //2 - integer - current page
        FileRead(F, FPageWidth, SizeOf(FPageWidth));           //3 - Integer - page width
        FileRead(F, FPageHeight, SizeOf(FPageHeight));         //4 - Integer - page height;
@@ -366,6 +391,11 @@ begin
        if bytes>0 then
               FileRead(F, FTitle[1], bytes);                  //6 - array of char - string FTitle
        FWorkFolder := ExtractFilePath(aFileName) + FTitle + '-files' + DirectorySeparator;
+       if thisfileversion>2 then
+          begin
+            FileRead(F, FLanguage[1], 3);                          //6a - Last language used for OCR
+            FileRead(F, FLoadCount, SizeOf(FLoadCount));           //6b - Unique number for page image filenames
+          end;
        FileRead(F, bytes, SizeOf(bytes));                     //7 - Integer - number of pages in project
        SetLength(FPages, bytes);
        for page := 0 to PageCount-1 do
@@ -377,25 +407,34 @@ begin
            SetLength(apage.FTitle, bytes);
            if bytes>0 then
               FileRead(F, apage.FTitle[1], bytes);            //2 - array of char - string Title
-           FileRead(F, bytes, SizeOf(bytes));                 //2a - Integer - length of string FImageSource
-           SetLength(apage.FImageSource, bytes+1);
-           if bytes>0 then
-              FileRead(F, apage.FImageSource[1], bytes);      //2b - array of char - string FImageSource
+//           if thisfileversion>1 then
+              begin
+               FileRead(F, bytes, SizeOf(bytes));                 //2a - Integer - length of string FImageSource
+               SetLength(apage.FImageSource, bytes);
+               if bytes>0 then
+                  FileRead(F, apage.FImageSource[1], bytes);      //2b - array of char - string FImageSource
+
+              end;
            FileRead(F, bytes, SizeOf(bytes));                 //3 - Integer - length of string Text
            if bytes>0 then
               begin
                 aPage.FOCRData := TTesseractPage.Create(nil, nil, nil); // TODO: initialise language and datapath
-                 SetLength(strbuf, bytes);
-                 if bytes>0 then
-                    FileRead(F, strbuf[1], bytes);                  //4 - array of char - = string Text
-                 aPage.OCRData.Text := strbuf;
+                if thisfileversion<2 then
+                   begin
+                     SetLength(strbuf, bytes);
+                     if bytes>0 then
+                        FileRead(F, strbuf[1], bytes);                  //4 - array of char - = string Text
+//                     aPage.OCRData.Text := strbuf;         // REDUNDANT ?
+                   end;
               end;
+           if thisfileversion>2
+              then FileRead(F, aPage.FImageID, SizeOf(aPage.FImageID)); //4 - integer - Image ID
            FileRead(F, bytes, SizeOf(bytes));                 //5 - Integer - length of FTempFile
            SetLength(strbuf, bytes);
            if bytes>0 then
               begin
                 FileRead(F, strbuf[1], bytes);                //6 - array of char - = string FtempFile
-                aPage.FTempFile := FWorkFolder + strbuf;
+                aPage.FImageFile := FWorkFolder + strbuf;
                 if page=FcurrentPage
                    then aPage.PageImage := aPage.LoadFromFileBackground;
               end;
@@ -509,6 +548,7 @@ begin
   if P <> nil then
      begin
        SetLength(FPages, Length(FPages)+1);
+       P.FImageID := LoadCount;
        P.SaveToFileBackground(Pix, FWorkFolder);
        for pg := PageCount-2 downto pageindex do
          FPages[pg+1] := FPages[pg];
@@ -529,16 +569,16 @@ end;
 
 function TOcrivistPage.getOCRText: string;
 begin
-  Result := '';
-  if Assigned(FOCRData)
-     then Result := FOCRData.Text;
+  Result := 'Helloooo!';
+  {if Assigned(FOCRData)
+     then Result := FOCRData.Text;}
 end;
 
 function TOcrivistPage.GetPageImage: PLPix;
 begin
-  writeln('FTempFile: ', FTempFile);
+  writeln('FImageFile: ', FImageFile);
   if FPix = nil
-     then if FileExists(FTempFile)
+     then if FileExists(FImageFile)
         then FPix := LoadFromFile;
   Result := FPix;
 end;
@@ -607,6 +647,7 @@ end;
 constructor TOcrivistPage.Create( pix: PLPix );
 begin
   FThumbnail := nil;
+  FImageID := -1;
   FActive := true;
   FOCRData := nil;
   FPix := pix;
@@ -633,11 +674,11 @@ var
   LoadThread: TPixFileThread;
 begin
   Result := nil;
-  if Length(FTempFile)>0
-     then if FileExists(FTempFile) then
+  if Length(FImageFile)>0
+     then if FileExists(FImageFile) then
         begin
           LoadThread := TPixFileThread.Create(true);
-          LoadThread.LoadFromFile(@PixL, FTempFile);
+          LoadThread.LoadFromFile(@PixL, FImageFile);
           Result := PixL;
           FActive := true;
         end;
@@ -649,10 +690,10 @@ var
   SaveThread: TPixFileThread;
 begin
   if Length(Path)=0 then Path := GetTempDir;
-  if FTempFile=''
-     then FTempFile := GetTempFileName( Path, 'ovp' );
+  if FImageFile=''
+     then FImageFile := Path + Format( 'image%.3d.tif', [ImageID] );
   SaveThread := TPixFileThread.Create(true);
-  SaveThread.SaveToFile(pix, FTempFile);
+  SaveThread.SaveToFile(pix, FImageFile);
 end;
 
 procedure TOcrivistPage.AddSelection ( Sel: TRect ) ;
@@ -676,7 +717,7 @@ end;
 
 function TOcrivistPage.LoadFromFile: PLPix;
 begin
-  FPix := pixRead(PChar(FTempFile));
+  FPix := pixRead(PChar(FImageFile));
   FActive := FPix<>nil;
   Result := FPix;
 end;

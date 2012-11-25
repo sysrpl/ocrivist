@@ -167,7 +167,6 @@ type
   private
     { private declarations }
     Editor: TOcrivistEdit;
-    Project: TOcrivistProject;
     AddingThumbnail: Boolean;
     ThumbnailStartPoint: TPoint;
     DraggingThumbnail: Boolean;
@@ -232,9 +231,10 @@ procedure TMainForm.DebugMenuItemClick ( Sender: TObject ) ;
 var
   x: Integer;
 begin
-  for x := 0 to Project.PageCount-1 do
-     if Project.Pages[x].Active then writeln('page ', x+1, ': ACTIVE')
-     else writeln('page ', x+1, ': DISACTIVATED');
+  {for x := 0 to CurrentProject.PageCount-1 do
+     if CurrentProject.Pages[x].Active then writeln('page ', x+1, ': ACTIVE')
+     else writeln('page ', x+1, ': DISACTIVATED');}
+  ShowMessage(Format( 'pageimage%.3d.tif', [5] ));
 end;
 
 procedure TMainForm.CopyTextMenuItemClick ( Sender: TObject ) ;
@@ -268,7 +268,7 @@ begin
                   else NewPage := -1;
                   ThumbnailListBox.Items.Delete(DelPage);
                   ThumbnailListBox.ItemIndex := NewPage;
-                  Project.DeletePage(DelPage);
+                  CurrentProject.DeletePage(DelPage);
                   if ThumbnailListBox.Count>0
                      then ThumbnailListBoxClick(ThumbnailListBox)
                      else ICanvas.Picture := nil;
@@ -313,15 +313,15 @@ begin
   ThumbnailListBox.Clear;
   ThumbnailListBox.ItemIndex := -1;
   ThumbnailListBox.ItemHeight := THUMBNAIL_HEIGHT + ThumbnailListBox.Canvas.TextHeight('Yy')+2;
-  OCRDatapath := '/usr/local/share/tessdata/';
+  OCRDatapath := '/usr/local/share/ocrdata/';
   PopulateLanguageList;
 
   OCRLanguage := 'eng';
   LanguageComboBox.ItemIndex :=
              LanguageComboBox.Items.IndexOf(GetLanguageFromToken(OCRLanguage));
 
-  Project := TOcrivistProject.Create;
-  Project.Title := 'Untitled';
+  CurrentProject := TOcrivistProject.Create;
+  CurrentProject.Title := 'Untitled';
   AddingThumbnail := false;
   DraggingThumbnail := false;
   Editor := TOcrivistEdit.Create(Self);
@@ -342,8 +342,8 @@ var
 begin
   {for x := 0 to ThumbnailListBox.Items.Count-1 do
     TBitmap(ThumbnailListBox.Items.Objects[x]).Free;}  //NB: these are now freed by TOcrivistPage;
-  if Assigned(Project)
-    then FreeAndNil( Project );
+  if Assigned(CurrentProject)
+    then FreeAndNil( CurrentProject );
   if Assigned(ScannerHandle) then
       begin
         sane_close(ScannerHandle);
@@ -389,7 +389,7 @@ begin
       pages := djvuGetDocInfo(OpenDialog.FileName).PageCount;
       if pages>0 then
         begin
-          Project.Clear;
+          CurrentProject.Clear;
           ThumbnailListBox.Clear;
           ProgressForm.MainTextLabel.Caption := 'Importing DJVU file: ' + ExtractFileName( OpenDialog.FileName ) +#10
            + '(' + IntToStr(pages) + ' pages)';
@@ -410,7 +410,7 @@ begin
                pagename :=  ExtractFileNameOnly(OpenDialog.FileName)+IntToStr(x);
                pixSetText(newpage, PChar(pagename));
                LoadPage(newpage, ThumbnailListBox.ItemIndex+1);
-           //    if x>2 then Project.Pages[x-2].Active := false;
+           //    if x>2 then CurrentProject.Pages[x-2].Active := false;
              end;
            if FileExistsUTF8(tempfile) then DeleteFileUTF8(tempfile);
          end;
@@ -439,13 +439,13 @@ procedure TMainForm.miAutoAllClick ( Sender: TObject ) ;
 var
   x: Integer;
 begin
-  if Project.PageCount<1 then Exit;
-  for x := 0 to Project.PageCount-1 do
+  if CurrentProject.PageCount<1 then Exit;
+  for x := 0 to CurrentProject.PageCount-1 do
      begin
        AnalysePage(x);
        OCRPage(x);
      end;
-  Editor.OCRData := Project.CurrentPage.OCRData;
+  Editor.OCRData := CurrentProject.CurrentPage.OCRData;
 end;
 
 procedure TMainForm.miAutoProcessPageClick ( Sender: TObject ) ;
@@ -454,7 +454,7 @@ begin
     begin
       ThumbnailListBoxClick(ThumbnailListBox);
       OCRPage(ThumbnailListBox.ItemIndex);
-      Editor.OCRData := Project.CurrentPage.OCRData;
+      Editor.OCRData := CurrentProject.CurrentPage.OCRData;
     end;
 end;
 
@@ -475,8 +475,8 @@ end;
 
 procedure TMainForm.NewProjectMenuItemClick ( Sender: TObject ) ;
 begin
-  Project.Free;
-  Project := TOcrivistProject.Create;
+  CurrentProject.Free;
+  CurrentProject := TOcrivistProject.Create;
   ThumbnailListBox.Clear;
   ICanvas.Picture := nil;
   editor.Clear;
@@ -492,19 +492,19 @@ begin
          DefaultExt := '.pdf';
          Filter := 'PDF Files|*.pdf|All Files|*';
          Title := 'Export project as PDF file';
-         FileName := Project.Title;
+         FileName := CurrentProject.Title;
        end;
   if SaveDialog.Execute then
       try
         Enabled := false;
         sourcefiles.refcount := 1;
-        SetLength(sourcefiles.strarray, Project.PageCount+1);
-        sourcefiles.n := Project.PageCount+1;
-        sourcefiles.nalloc := Project.PageCount;
-        for p := 0 to Project.PageCount-1 do
-           sourcefiles.strarray[p] := PChar(Project.Pages[p].Filename);
+        SetLength(sourcefiles.strarray, CurrentProject.PageCount+1);
+        sourcefiles.n := CurrentProject.PageCount+1;
+        sourcefiles.nalloc := CurrentProject.PageCount;
+        for p := 0 to CurrentProject.PageCount-1 do
+           sourcefiles.strarray[p] := PChar(CurrentProject.Pages[p].Filename);
         saConvertFilesToPdf(@sourcefiles, 0, 1, 90,
-                             PChar(Project.Title),
+                             PChar(CurrentProject.Title),
                              PChar(SaveDialog.FileName));
       finally
         Enabled := True;
@@ -517,10 +517,10 @@ var
   oldpix: PLPix;
   direction: LongInt;
 begin
- if Project.CurrentPage=nil then exit;
+ if CurrentProject.CurrentPage=nil then exit;
  direction := 0;
  newpix := nil;
- oldpix := Project.CurrentPage.PageImage;
+ oldpix := CurrentProject.CurrentPage.PageImage;
 
  if (Sender=RotateLeftTButton) or (Sender=RotateLMenuItem)
     then direction := -1
@@ -532,7 +532,7 @@ begin
  if newpix<>nil then
     begin
       if oldpix <> nil then pixDestroy(@oldpix);
-      Project.CurrentPage.PageImage := newpix;
+      CurrentProject.CurrentPage.PageImage := newpix;
       ICanvas.Picture := newpix;
     end;
 end;
@@ -571,7 +571,7 @@ begin
         DefaultExt := '.djvu';
         Filter := 'Djvu Files|*.djvu|All Files|*';
         Title := 'Export project to djvu...';
-        FileName := Project.Title;
+        FileName := CurrentProject.Title;
       end;
  if SaveDialog.Execute then
      try
@@ -580,7 +580,7 @@ begin
        ProgressForm.Show(nil);
        if FileExistsUTF8(SaveDialog.FileName)
              then DeleteFileUTF8(SaveDialog.FileName);
-       for x := 0 to Project.PageCount-1 do
+       for x := 0 to CurrentProject.PageCount-1 do
           try
             HiddenText := nil;
             data := TStringList.Create;
@@ -589,19 +589,19 @@ begin
             data.Add('select 1');
             data.Add('set-txt');
 
-            p := Project.Pages[x].PageImage;
+            p := CurrentProject.Pages[x].PageImage;
             pixGetDimensions(p, @w, @h, @d);
             if d=1
                then fn :=  TEMPFILE_SINGLEBIT_IMAGE
                else fn := TEMPFILE_MULTIBIT_IMAGE;
             ProgressForm.SetUpdateText( 'Processing page ' + IntToStr(x+1) );
-            if Project.Pages[x].OCRData <> nil then
+            if CurrentProject.Pages[x].OCRData <> nil then
                begin
                   data.Add(Format('(page 0 0 %d %d', [w, h]));
-                  for lline := 0 to Project.Pages[x].OCRData.Linecount-1 do
-                     if Project.Pages[x].OCRData.Lines[lline].WordCount>0 then
+                  for lline := 0 to CurrentProject.Pages[x].OCRData.Linecount-1 do
+                     if CurrentProject.Pages[x].OCRData.Lines[lline].WordCount>0 then
                      begin
-                       lin := Project.Pages[x].OCRData.Lines[lline];
+                       lin := CurrentProject.Pages[x].OCRData.Lines[lline];
                        data.Add( Format(' (line %d %d %d %d', [lin.Box.Left,
                                                                h-lin.Box.Bottom,
                                                                lin.Box.Right,
@@ -640,14 +640,14 @@ var
   oldpix: PLPix;
   newpix: PLPix;
 begin
-  if Project.CurrentPage=nil then exit;
+  if CurrentProject.CurrentPage=nil then exit;
   newpix := nil;
-  oldpix := Project.CurrentPage.PageImage;
+  oldpix := CurrentProject.CurrentPage.PageImage;
   newpix := pixDeskew(oldpix, 0);
   if newpix<>nil then
      begin
        ICanvas.Picture := newpix;
-       Project.CurrentPage.PageImage := newpix;
+       CurrentProject.CurrentPage.PageImage := newpix;
        if oldpix<>nil then pixDestroy(@oldpix);
      end;
 end;
@@ -657,11 +657,11 @@ var
   x: Integer;
    I: Integer;
 begin
-  if Project.Filename=''
+  if CurrentProject.Filename=''
      then SaveAsMenuItemClick(Sender)
   else
     begin
-      Project.SaveToFile(Project.Filename);
+      CurrentProject.SaveToFile(CurrentProject.Filename);
     end;
 end;
 
@@ -713,15 +713,15 @@ begin
         DefaultExt := '.txt';
         Filter := 'Text Files|*.txt|All Files|*';
         Title := 'Save recognised text to file';
-        FileName := Project.Title;
+        FileName := CurrentProject.Title;
       end;
  if SaveDialog.Execute then
      begin
        AssignFile(OutFile, SaveDialog.FileName);
        try
          Rewrite(OutFile);
-         for p := 0 to Project.PageCount-1 do
-            WriteLn(OutFile, Project.Pages[p].Text);
+         for p := 0 to CurrentProject.PageCount-1 do
+            WriteLn(OutFile, CurrentProject.Pages[p].Text);
        finally
          CloseFile(OutFile);
        end;
@@ -744,7 +744,7 @@ var
         writeln(StartPosition, ' --> ', DropPosition);
         Items.Move(StartPosition, DropPosition) ;
         // Now apply move to contents of TOcrivistProject, too
-        Project.MovePage(StartPosition, DropPosition);
+        CurrentProject.MovePage(StartPosition, DropPosition);
         ThumbnailListBox.ItemIndex := DropPosition;
         ThumbnailListBoxClick( ThumbnailListBox );
       end;
@@ -786,18 +786,18 @@ begin
   if AddingThumbnail then exit;
   if MultiSelecting then Exit;
   if ThumbnailListBox.ItemIndex<0 then Exit;
-  for X := Project.CurrentPage.SelectionCount-1 downto 0 do
+  for X := CurrentProject.CurrentPage.SelectionCount-1 downto 0 do
     ICanvas.DeleteSelector(X);
-  Project.ItemIndex := TListBox(Sender).ItemIndex;
-  ICanvas.Picture := Project.CurrentPage.PageImage;
+  CurrentProject.ItemIndex := TListBox(Sender).ItemIndex;
+  ICanvas.Picture := CurrentProject.CurrentPage.PageImage;
   Invalidate;
-  for x := 0 to Project.CurrentPage.SelectionCount-1 do
+  for x := 0 to CurrentProject.CurrentPage.SelectionCount-1 do
     begin
-      ICanvas.AddSelection(Project.CurrentPage.Selection[x]);
+      ICanvas.AddSelection(CurrentProject.CurrentPage.Selection[x]);
       ICanvas.GetSelector(ICanvas.SelectionCount-1).OnSelect := @SelectionChange;
     end;
-  editor.OCRData := Project.CurrentPage.OCRData;
-  if Project.CurrentPage.OCRData=nil
+  editor.OCRData := CurrentProject.CurrentPage.OCRData;
+  if CurrentProject.CurrentPage.OCRData=nil
      then ProcessPageMenuItem.Click;
   CorrectionviewImage.Picture.Clear;
 end;
@@ -832,7 +832,7 @@ begin
                pagename :=  ExtractFileNameOnly(OpenDialog.Files[i]);
                pixSetText(newpage, PChar(pagename));
                LoadPage(newpage, ThumbnailListBox.ItemIndex+1);
-               Project.Pages[ThumbnailListBox.ItemIndex].Imagesource := OpenDialog.FileName;
+               CurrentProject.Pages[ThumbnailListBox.ItemIndex].Imagesource := OpenDialog.FileName;
                if not MainPanel.Visible
                   then ProcessPageMenuItem.Click;
                for x := 0 to MainToolBar.ControlCount-1 do
@@ -856,15 +856,15 @@ begin
   if OpenDialog.Execute then
     begin
       NewProjectMenuItemClick(nil);
-      if Project.LoadfromFile(OpenDialog.FileName)=0 then
+      if CurrentProject.LoadfromFile(OpenDialog.FileName)=0 then
         begin
-          ICanvas.Scale :=  Project.ViewerScale;
+          ICanvas.Scale :=  CurrentProject.ViewerScale;
           ThumbnailListBox.Clear;
-          for x := 0 to Project.PageCount-1 do
-             ThumbnailListBox.Items.AddObject( Project.Pages[x].Title, Project.Pages[x].Thumbnail );
-          ThumbnailListBox.ItemIndex := Project.ItemIndex;
+          for x := 0 to CurrentProject.PageCount-1 do
+             ThumbnailListBox.Items.AddObject( CurrentProject.Pages[x].Title, CurrentProject.Pages[x].Thumbnail );
+          ThumbnailListBox.ItemIndex := CurrentProject.ItemIndex;
           ThumbnailListBoxClick(ThumbnailListBox);
-          Caption := 'Ocrivist : ' + Project.Title;
+          Caption := 'Ocrivist : ' + CurrentProject.Title;
         end;
     end;
 end;
@@ -883,9 +883,9 @@ begin
       ProgressForm.Show(nil);
       Application.ProcessMessages;
       try
-      Project.SaveToFile(SaveDialog.FileName);
-      Caption := 'Ocrivist : ' + Project.Title;
-      ThumbnailListBox.ItemIndex := Project.ItemIndex;
+      CurrentProject.SaveToFile(SaveDialog.FileName);
+      Caption := 'Ocrivist : ' + CurrentProject.Title;
+      ThumbnailListBox.ItemIndex := CurrentProject.ItemIndex;
       finally
         ProgressForm.Hide;
       end;
@@ -919,7 +919,7 @@ begin
            begin
              newpage := ScanToPix(ScannerHandle, @ShowScanProgress);
              pixSetResolution(newpage, resolution, resolution);
-             nametext := Format('scan_%.3d', [ScannerForm.GetNextCounterValue]);
+             nametext := Format('scan_%.3d', [CurrentProject.LoadCount]);
              pixSetText(newpage, PChar( nametext ));
              if newpage<>nil then
                 begin
@@ -961,20 +961,21 @@ end;
 
 procedure TMainForm.TestTesseractButtonClick ( Sender: TObject ) ;
 begin
-  if Project.PageCount<1 then Exit;
+  if CurrentProject.PageCount<1 then Exit;
   Enabled := false;
   ProgressForm.SetMainText('Reading page...');
   ProgressForm.SetUpdateText(' ');
   ProgressForm.Show(nil);
   try
     OCRPage(ThumbnailListBox.ItemIndex);
+    Editor.OCRData := CurrentProject.CurrentPage.OCRData;
+    CurrentProject.Language := GetLanguageToken(LanguageComboBox.Text);
+    if not OCRPanel.Visible
+       then OCRScreenMenuItem.Click;
   finally
     Enabled := true;
     ProgressForm.Hide;
   end;
-  Editor.OCRData := Project.CurrentPage.OCRData;
-  if not OCRPanel.Visible
-     then OCRScreenMenuItem.Click;
 end;
 
 procedure TMainForm.ViewMenuItemClick ( Sender: TObject ) ;
@@ -985,7 +986,7 @@ begin
        else
          ICanvas.Scale := TMenuItem(Sender).Tag/100;
        end;
-  Project.ViewerScale := ICanvas.Scale;
+  CurrentProject.ViewerScale := ICanvas.Scale;
 end;
 
 procedure TMainForm.CancelScan(Sender: TObject);
@@ -1003,15 +1004,15 @@ begin
     begin
       ICanvas.AddSelection(ICanvas.CurrentSelection);
       ICanvas.GetSelector(ICanvas.SelectionCount-1).OnSelect := @SelectionChange;
-      Project.CurrentPage.AddSelection(ICanvas.CurrentSelection);
+      CurrentProject.CurrentPage.AddSelection(ICanvas.CurrentSelection);
     end;
 end;
 
 procedure TMainForm.DeleteSelection(Sender: TObject);
 begin
   writeln('delete selection');
-  if Project<>nil then
-     Project.CurrentPage.DeleteSelection(ICanvas.SelectionIndex(TSelector(Sender)));
+  if CurrentProject<>nil then
+     CurrentProject.CurrentPage.DeleteSelection(ICanvas.SelectionIndex(TSelector(Sender)));
 end;
 
 procedure TMainForm.SelectionChange ( Sender: TObject ) ;
@@ -1022,7 +1023,7 @@ begin
     begin
       SelectionId := ICanvas.SelectionIndex(TSelector(Sender));
       ICanvas.SetSelection(SelectionId, TSelector(Sender).Selection);
-      Project.CurrentPage.Selection[SelectionId] := UnScaleRect(TSelector(Sender).Selection, ICanvas.Scale);
+      CurrentProject.CurrentPage.Selection[SelectionId] := UnScaleRect(TSelector(Sender).Selection, ICanvas.Scale);
 
     end;
 end;
@@ -1034,7 +1035,7 @@ var
 begin
  if AddingThumbnail then exit
     else if ThumbnailListBox.Count<1 then exit;
- thumbBMP := Project.CurrentPage.Thumbnail;
+ thumbBMP := CurrentProject.CurrentPage.Thumbnail;
  if thumbBMP<>nil then
    begin
      ThumbnailListBox.Items.Objects[ThumbnailListBox.ItemIndex] := thumbBMP;
@@ -1066,12 +1067,12 @@ begin
  AddingThumbnail := true;  //avoid triggering reload through ThumbList.Click;
  ICanvas.Picture := newpage;
  Application.ProcessMessages;  // Draw the screen before doing some background work
- If Project.ItemIndex>=0
-  then for X := Project.CurrentPage.SelectionCount-1 downto 0 do
+ If CurrentProject.ItemIndex>=0
+  then for X := CurrentProject.CurrentPage.SelectionCount-1 downto 0 do
        ICanvas.DeleteSelector(X);
  Editor.OCRData := nil;
- Project.AddPage(ICanvas.Picture, pageindex);
- thumbBMP := Project.CurrentPage.Thumbnail;
+ CurrentProject.AddPage(ICanvas.Picture, pageindex);
+ thumbBMP := CurrentProject.CurrentPage.Thumbnail;
  if thumbBMP<>nil then
    begin
      ThumbnailListBox.Items.InsertObject(pageindex, newpage^.text, thumbBMP);
@@ -1089,7 +1090,7 @@ var
   newpix: PLPix;
   oldpix: PLPix;
 begin
- if Project.CurrentPage=nil then exit;
+ if CurrentProject.CurrentPage=nil then exit;
  newpix := nil;
  oldpix := ICanvas.Picture;
  newpix := CropPix( oldpix,  ICanvas.CurrentSelection );
@@ -1097,7 +1098,7 @@ begin
    begin
      ICanvas.ClearSelection;
      ICanvas.Picture := newpix;
-     Project.CurrentPage.PageImage := newpix;
+     CurrentProject.CurrentPage.PageImage := newpix;
      if oldpix <> nil
         then pixDestroy(@oldpix);
    end;
@@ -1114,10 +1115,10 @@ var
   p: PLPix;
 begin
   Result := 0;
-  if (pageindex<0) or (pageindex>Project.PageCount-1) then Exit;
+  if (pageindex<0) or (pageindex>CurrentProject.PageCount-1) then Exit;
   Textmask := nil;
   BinaryPix := nil;
-  Pix := Project.Pages[pageindex].PageImage;
+  Pix := CurrentProject.Pages[pageindex].PageImage;
   if pixGetDepth(Pix) > 1
      then BinaryPix := pixThresholdToBinary(Pix, 60)
      else BinaryPix := pixClone(Pix);
@@ -1129,7 +1130,7 @@ begin
        for count := 0 to boxaGetCount(B)-1 do
             begin
               boxaGetBoxGeometry(B, count, @x, @y, @w, @h);
-              Project.Pages[pageindex].AddSelection( Rect(x-10, y-5, x+w+10, y+h+5) );
+              CurrentProject.Pages[pageindex].AddSelection( Rect(x-10, y-5, x+w+10, y+h+5) );
 //              ICanvas.AddSelection(Rect(x-10, y-5, x+w+10, y+h+5));
             end;
        Result := boxaGetCount(B);
@@ -1149,16 +1150,17 @@ var
   OCRJob: TTesseractPage;
   x: Integer;
 begin
-  if (pageindex<0) or (pageindex>Project.PageCount-1) then Exit;
+  if (pageindex<0) or (pageindex>CurrentProject.PageCount-1) then Exit;
   try
     writeln(OCRLanguage);
-    OCRJob := TTesseractPage.Create(Project.Pages[pageindex].PageImage, PChar(OCRDatapath), PChar(OCRLanguage));
+    OCRJob := TTesseractPage.Create(CurrentProject.Pages[pageindex].PageImage, PChar(OCRDatapath), PChar(OCRLanguage));
     OCRProgressCount := 0;
     OCRJob.OnOCRLine := @ShowOCRProgress;
-    for x := 0 to Project.Pages[pageindex].SelectionCount-1 do
-        OCRJob.RecognizeRect( Project.Pages[pageindex].Selection[x] );
-    Project.Pages[pageindex].OCRData := OCRJob;
-   // Editor.OCRData := Project.CurrentPage.OCRData;
+    for x := 0 to CurrentProject.Pages[pageindex].SelectionCount-1 do
+        OCRJob.RecognizeRect( CurrentProject.Pages[pageindex].Selection[x] );
+    CurrentProject.Pages[pageindex].OCRData := OCRJob;
+    CurrentProject.Language := GetLanguageToken(LanguageComboBox.Text);
+   // Editor.OCRData := CurrentProject.CurrentPage.OCRData;
     //MainPanel.Visible := false;
     OCRPanel.Visible := true;
     StatusBar.Panels[1].Text := '';
@@ -1203,7 +1205,7 @@ begin
             selTop,
             Editor.OCRData.Lines[aline].Box.Right - Editor.OCRData.Lines[aline].Box.Left,
             selBottom);
-  tmpPix := pixClipRectangle(Project.CurrentPage.PageImage, selBox, nil);
+  tmpPix := pixClipRectangle(CurrentProject.CurrentPage.PageImage, selBox, nil);
   pixd := pixConvertTo32(tmpPix);
   boxDestroy(@selBox);
   wtop :=  Editor.OCRData.Lines[aline].Words[aword].Box.Top - selTop;
