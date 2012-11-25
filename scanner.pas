@@ -16,7 +16,6 @@ type
     Label9: TLabel;
     NameLabel: TLabel;
     SourceComboBox: TComboBox;
-    Label7: TLabel;
     Label8: TLabel;
     PaperFormatBox: TComboBox;
     Label1: TLabel;
@@ -31,7 +30,6 @@ type
     ResolutionComboBox: TComboBox;
     ScanSheet1: TTabSheet;
     ScanSheet2: TTabSheet;
-    CounterSpinEdit: TSpinEdit;
     WidthSpinEdit: TSpinEdit;
     HeightSpinEdit: TSpinEdit;
     procedure HeightSpinEditChange ( Sender: TObject ) ;
@@ -53,7 +51,6 @@ type
     function GetColorMode: string;
     function GetSource: string;
     function GetResolution: Integer;
-    function GetNextCounterValue: Integer;
   end;
 
   TPaperformats =(pfCustom, pfA3, pfA4, pfA5, pfB4, pfB5, pfB6, pfLetter, pfExecutive);
@@ -237,14 +234,6 @@ begin
   Result := 300;
   if ResolutionComboBox.ItemIndex>-1
      then Result := StrToInt(ResolutionComboBox.Items[ResolutionComboBox.ItemIndex]);
-end;
-
-function TScannerForm.GetNextCounterValue: Integer;
-begin
- if CounterSpinEdit.Value=CounterSpinEdit.MaxValue
-    then CounterSpinEdit.Value := CounterSpinEdit.MinValue
-    else CounterSpinEdit.Value := CounterSpinEdit.Value+1;
- Result := CounterSpinEdit.Value;
 end;
 
 procedure TScannerForm.DeviceSelect(DeviceName: string);
