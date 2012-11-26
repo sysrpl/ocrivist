@@ -5,7 +5,7 @@ unit OcrivistData;
 interface
 
 uses
-  Classes, SysUtils, types, leptonica, selector, Graphics, ocr, FileUtil;
+  Classes, SysUtils, types, leptonica, selector, Graphics, ocr, FileUtil, zipper, zstream;
 
 type
 
@@ -65,12 +65,13 @@ type
   TOcrivistProject = class( TObject )
   private
     FLanguage: TLanguageString;
+    FOnSaveProgress: TProgressEvent;
     FTitle: string;
     FPages: array of TOcrivistPage;
     FFilename: string;
     FViewerScale: Single;
     FWorkFolder: string;
-    FcurrentPage: Integer;
+    FCurrentPage: Integer;
     FPageWidth: Integer;
     FPageHeight: Integer;
     FLoadCount: integer;
@@ -80,6 +81,8 @@ type
     function GetPageCount: Integer;
     // PutPage assigns a TOcrivistPage to FPages[aIndex]
     procedure PutPage ( aIndex: Integer; const AValue: TOcrivistPage ) ;
+  protected
+    UnzipFile: TUnZipper;
   public
     constructor Create;
     destructor Destroy; override;
@@ -89,6 +92,7 @@ type
     procedure DeletePage( aIndex: Integer );
     procedure MovePage( sourceIndex, destIndex: Integer );
     procedure AddPage( Pix: PLPix; pageindex: integer );
+    function ExtractPage( imageID: Integer): Integer;
     property Pages[aIndex: Integer]: TOcrivistPage read GetPage write PutPage;
     property Title: string read FTitle write FTitle;
     property Width: Integer read FPageWidth write FPageWidth;
@@ -101,6 +105,7 @@ type
     property LoadCount: integer read GetLoadCount;
     property Language: TLanguageString read FLanguage write FLanguage;
     property WorkFolder: string read FWorkFolder write FWorkFolder;
+    property OnSaveProgress: TProgressEvent read FOnSaveProgress write FOnSaveProgress;
   end;
 
   { TPixFileThread }
@@ -137,7 +142,7 @@ const
 
 implementation
 
-uses LibLeptUtils, zipper, zstream;
+uses LibLeptUtils;
 
 { TOcrivistProject }
 
@@ -180,7 +185,13 @@ begin
   FcurrentPage := -1;
   FPageWidth := 0;
   FPageHeight := 0;
-  FWorkFolder := '/tmp/';
+  FWorkFolder := GetTempDir(true) + 'ocrivist-' + GetEnvironmentVariableUTF8('USER') + DirectorySeparator;
+  if DirectoryExistsUTF8(FWorkFolder) then
+     begin
+       //offer to recover any files in it
+     end
+  else
+     ForceDirectoriesUTF8(FWorkFolder);
   FLoadCount := 0;
 end;
 
@@ -188,6 +199,7 @@ destructor TOcrivistProject.Destroy;
 var
   c: Integer;
 begin
+  DeleteDirectory(WorkFolder,True);
   for c := Length(FPages)-1 downto 0 do
     TOcrivistPage(FPages[c]).Free;
   inherited Destroy;
@@ -202,7 +214,6 @@ begin
   SetLength( FPages, 0 );
   FTitle := 'Untitled';
   FFilename := '';
-  FWorkFolder := '/tmp/';
   FcurrentPage := 0;
 end;
 
@@ -226,29 +237,17 @@ var
   sel: Integer;
   aRect: TRect;
   tempTitle: String;
+  SaveZip: TZipper;
 begin
-  if FileExists(aFileName)
-     then DeleteFile(aFileName);
   tempTitle := ExtractFileNameOnly(aFileName);
+  SaveZip := TZipper.Create;
+  SaveZip.OnProgress := FOnSaveProgress;
+  SaveZip.FileName :=  aFileName + '.part';
   filesdirectory := ChangeFileExt(aFileName, '') + '-files' + DirectorySeparator;
 
   if not DirectoryExists(filesdirectory)
          then ForceDirectories(filesdirectory);
-  {      OurZipper := TZipper.Create;
-      try
-        OurZipper.FileName := '/tmp/' + Project.Title;
-        for I := 0 to Project.PageCount-1 do
-           begin
-             OurZipper.Entries.AddFileEntry(Project.Pages[I].Filename, 'pages/' + ExtractFileName(Project.Pages[I].Filename));
-             OurZipper.Entries[I].CompressionLevel := clNone;
-           end;
-        OurZipper.Entries.AddFileEntry(Project.Filename, ExtractFileName(Project.Filename));
-        OurZipper.ZipAllFiles;
-      finally
-        OurZipper.Free;
-      end;
-}
-  F := FileCreate(aFileName);
+  F := FileCreate(FWorkFolder + 'project');
   if F > 0 then
      try
        databuf := 'OVT'+ FILEVERSION + #0#0;
@@ -262,6 +261,7 @@ begin
        if bytes>0 then
               FileWrite(F, tempTitle[1], Length(tempTitle));   //6 - array of char - string FTitle
        FileWrite(F, FLanguage[1], 3);                          //6a - Last language used for OCR
+       if FLoadCount<PageCount then FLoadCount := PageCount;   // should be unnecessary in practoce
        Filewrite(F, FLoadCount, SizeOf(FLoadCount));           //6b - Unique number for page image filenames
        bytes := Length(FPages);
        FileWrite(F, bytes, SizeOf(bytes));                     //7 - Integer - number of pages in project
@@ -282,23 +282,15 @@ begin
            FileWrite(F, bytes, SizeOf(bytes));                 //    (indicates that OCRData exists for LoadFromFile)
            if aPage.FImageID<0 then aPage.FImageID := page;    //TODO: should not be necessary
            FileWrite(F, aPage.FImageID, SizeOf(aPage.FImageID)); //4 - integer - Image ID
-           //databuf := aPage.Text;
-           //if bytes>0 then
-           //   FileWrite(F, databuf[1], bytes);
            databuf := ExtractFileName( aPage.FImageFile );
-           //databuf := ExtractFileNameOnly( aPage.FTempFile ) + '.tiff';
            bytes := Length(databuf);
            FileWrite(F, bytes, SizeOf(bytes));                 //5 - Integer - length of string FTempFile
            if bytes>0 then
               FileWrite(F, databuf[1], bytes);                 //6 - array of char - = string FtempFile
-           if filesdirectory<>ExtractFilePath(aPage.FImageFile) then
-              begin
-                CopyFile(aPage.FImageFile, filesdirectory + databuf);
-                if FWorkFolder='/tmp/'
-                   then DeleteFileUTF8(aPage.FImageFile);
-                aPage.FImageFile := filesdirectory + databuf;
-              end;
-
+           SaveZip.Entries.AddFileEntry(aPage.FImageFile, Format('%.3d', [aPage.FImageID]) + '.tif');
+           SaveZip.Entries[SaveZip.Entries.Count-1].CompressionLevel := clnone;
+           if not FileExistsUTF8(aPage.FImageFile)
+              then ExtractPage(aPage.FImageID);
            memstream := TMemoryStream.Create;
            try
              aPage.FThumbnail.SaveToStream(memstream);
@@ -345,13 +337,21 @@ begin
                FileWrite(F, aRect, SizeOf(aRect));
              end;
            FFilename := aFileName;
-           FWorkFolder := filesdirectory;
            FTitle := tempTitle;
          end;
      finally
        FileClose(F);
      end
   else Raise Exception.Create('Unable to save project ' + FileName);
+  SaveZip.Entries.AddFileEntry(FWorkFolder + 'project', 'project');
+  try
+    SaveZip.ZipAllFiles;
+    if FileExistsUTF8(aFileName)
+       then DeleteFileUTF8(aFileName);
+    RenameFileUTF8(aFileName + '.part', aFileName);
+  finally
+   SaveZip.Free;
+  end;
 end;
 
 function TOcrivistProject.LoadfromFile ( aFileName: TFilename ) : integer;
@@ -372,10 +372,21 @@ var
   memstream: TMemoryStream;
   sel: Integer;
   aRect: TRect;
+  sl: TStringList;
 begin
   Result := -1;
+  if UnzipFile<>nil then FreeAndNil(UnzipFile);
+  //TODO: check for modifications and prompt to save
+  UnzipFile := TUnZipper.Create;
+  UnzipFile.FileName := aFileName;
+  UnzipFile.OutputPath := FWorkFolder;
+  sl := TStringList.Create;
+  sl.Add('project');
+  UnzipFile.UnZipFiles(sl);
+  sl.Free;
+  //TODO: unzip to MemoryStream and parse from there
   Clear;
-  F := FileOpen(aFileName, fmOpenRead);
+  F := FileOpen(FWorkFolder + 'project', fmOpenRead);
   if F > 0 then
      try
        SetLength(databuf, 6);
@@ -390,7 +401,6 @@ begin
        SetLength(FTitle, bytes);
        if bytes>0 then
               FileRead(F, FTitle[1], bytes);                  //6 - array of char - string FTitle
-       FWorkFolder := ExtractFilePath(aFileName) + FTitle + '-files' + DirectorySeparator;
        if thisfileversion>2 then
           begin
             FileRead(F, FLanguage[1], 3);                          //6a - Last language used for OCR
@@ -424,7 +434,6 @@ begin
                      SetLength(strbuf, bytes);
                      if bytes>0 then
                         FileRead(F, strbuf[1], bytes);                  //4 - array of char - = string Text
-//                     aPage.OCRData.Text := strbuf;         // REDUNDANT ?
                    end;
               end;
            if thisfileversion>2
@@ -434,7 +443,9 @@ begin
            if bytes>0 then
               begin
                 FileRead(F, strbuf[1], bytes);                //6 - array of char - = string FtempFile
-                aPage.FImageFile := FWorkFolder + strbuf;
+                //if thisfileversion>2 then
+                   aPage.FImageFile := FWorkFolder + Format('%.3d', [aPage.FImageID]) + '.tif';
+               // else aPage.FImageFile := FWorkFolder + strbuf;
                 if page=FcurrentPage
                    then aPage.PageImage := aPage.LoadFromFileBackground;
               end;
@@ -482,7 +493,7 @@ begin
                            Words[wwords].Confidence := aWord.Confidence;
                            Words[wwords].Text := strbuf;
                          end;
-                     writeln('Loaded word: ', aPage.FOCRData.Lines[lline].Words[wwords].Text);
+//                     writeln('Loaded word: ', aPage.FOCRData.Lines[lline].Words[wwords].Text);
                    end;
                end;
            end;
@@ -558,6 +569,25 @@ begin
      end;
 end;
 
+function TOcrivistProject.ExtractPage ( imageID: Integer ) : Integer;
+var
+  sl: TStringList;
+  pageimage: String;
+begin
+  Result := -1;
+  pageimage := Format('%.3d', [ImageID]) + '.tif';
+  if FileExistsUTF8(pageimage) then begin Result := 0; Exit; end;
+  sl := TStringList.Create;
+  try
+    sl.Add(pageimage);
+    UnzipFile.UnZipFiles(sl);
+    if FileExistsUTF8(pageimage)
+       then Result := 0;
+  finally
+    sl.Free;
+  end;
+end;
+
 { TOcrivistPage }
 
 function TOcrivistPage.GetSelection ( aIndex: Integer ) : TRect;
@@ -578,8 +608,7 @@ function TOcrivistPage.GetPageImage: PLPix;
 begin
   writeln('FImageFile: ', FImageFile);
   if FPix = nil
-     then if FileExists(FImageFile)
-        then FPix := LoadFromFile;
+     then FPix := LoadFromFile;
   Result := FPix;
 end;
 
@@ -689,7 +718,7 @@ procedure TOcrivistPage.SaveToFileBackGround ( Pix: PLPix; Path: String ) ;
 var
   SaveThread: TPixFileThread;
 begin
-  if Length(Path)=0 then Path := GetTempDir;
+  if Length(Path)=0 then Path := CurrentProject.WorkFolder;
   if FImageFile=''
      then FImageFile := Path + Format( 'image%.3d.tif', [ImageID] );
   SaveThread := TPixFileThread.Create(true);
@@ -717,6 +746,8 @@ end;
 
 function TOcrivistPage.LoadFromFile: PLPix;
 begin
+  if not FileExistsUTF8(FImageFile)
+     then CurrentProject.ExtractPage(FImageID);
   FPix := pixRead(PChar(FImageFile));
   FActive := FPix<>nil;
   Result := FPix;
