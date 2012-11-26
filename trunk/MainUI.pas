@@ -179,6 +179,7 @@ type
     procedure UpdateThumbnail ( Sender: TObject );
     procedure ShowScanProgress( progress: Single );
     procedure ShowOCRProgress ( progress: Single );
+    Procedure ShowSaveProgress(Sender : TObject; Const Pct : Double);
     procedure LoadPage( newpage: PLPix; pageindex: integer );
     procedure DoCrop;
     function AnalysePage(pageindex: integer): integer;
@@ -322,6 +323,7 @@ begin
 
   CurrentProject := TOcrivistProject.Create;
   CurrentProject.Title := 'Untitled';
+  CurrentProject.OnSaveProgress := @ShowSaveProgress;
   AddingThumbnail := false;
   DraggingThumbnail := false;
   Editor := TOcrivistEdit.Create(Self);
@@ -339,11 +341,16 @@ end;
 procedure TMainForm.FormDestroy ( Sender: TObject ) ;
 var
   x: Integer;
+  Folder: String;
 begin
   {for x := 0 to ThumbnailListBox.Items.Count-1 do
     TBitmap(ThumbnailListBox.Items.Objects[x]).Free;}  //NB: these are now freed by TOcrivistPage;
+  Folder := CurrentProject.WorkFolder;
   if Assigned(CurrentProject)
     then FreeAndNil( CurrentProject );
+  if DeleteDirectory(Folder,True)
+      then RemoveDirUTF8(Folder);
+
   if Assigned(ScannerHandle) then
       begin
         sane_close(ScannerHandle);
@@ -477,6 +484,7 @@ procedure TMainForm.NewProjectMenuItemClick ( Sender: TObject ) ;
 begin
   CurrentProject.Free;
   CurrentProject := TOcrivistProject.Create;
+  CurrentProject.OnSaveProgress := @ShowSaveProgress;
   ThumbnailListBox.Clear;
   ICanvas.Picture := nil;
   editor.Clear;
@@ -876,6 +884,7 @@ begin
         DefaultExt := '.ovp';
         Filter := 'Ocrivist Projects|*.ovp|All Files|*';
         Title := 'Save project as ..';
+        FileName := CurrentProject.Title;
       end;
   if SaveDialog.Execute then
     begin
@@ -1056,6 +1065,12 @@ procedure TMainForm.ShowOCRProgress ( progress: Single ) ;
 begin
   Inc(OCRProgressCount);
   ProgressForm.SetUpdateText('Processing line ' + IntToStr(OCRProgressCount));
+  Application.ProcessMessages;
+end;
+
+procedure TMainForm.ShowSaveProgress ( Sender: TObject; const Pct: Double ) ;
+begin
+  StatusBar.Panels[1].Text := FloatToStr(Pct);
   Application.ProcessMessages;
 end;
 
