@@ -12,6 +12,20 @@ object ProgressForm: TProgressForm
   Position = poOwnerFormCenter
   ShowInTaskBar = stNever
   LCLVersion = '1.0.1.3'
+  object ProgressBar: TProgressBar
+    AnchorSideTop.Control = MainTextLabel
+    AnchorSideTop.Side = asrBottom
+    Left = 29
+    Height = 20
+    Top = 76
+    Width = 311
+    Anchors = [akTop, akLeft, akRight]
+    BorderSpacing.Top = 18
+    Smooth = True
+    Step = 5
+    TabOrder = 1
+    Visible = False
+  end
   object ButtonPanel: TPanel
     Left = 0
     Height = 56
@@ -40,9 +54,9 @@ object ProgressForm: TProgressForm
   end
   object MainTextLabel: TLabel
     Left = 29
-    Height = 16
+    Height = 18
     Top = 40
-    Width = 91
+    Width = 90
     Caption = 'MainTextLabel'
     ParentColor = False
   end
@@ -50,8 +64,8 @@ object ProgressForm: TProgressForm
     AnchorSideTop.Control = MainTextLabel
     AnchorSideTop.Side = asrBottom
     Left = 29
-    Height = 16
-    Top = 71
+    Height = 18
+    Top = 73
     Width = 323
     Anchors = [akTop, akLeft, akRight]
     BorderSpacing.Top = 15

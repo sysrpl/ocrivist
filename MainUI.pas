@@ -884,7 +884,7 @@ begin
         DefaultExt := '.ovp';
         Filter := 'Ocrivist Projects|*.ovp|All Files|*';
         Title := 'Save project as ..';
-        FileName := CurrentProject.Title;
+        FileName := CurrentProject.Title + '.ovp';
       end;
   if SaveDialog.Execute then
     begin
@@ -1070,8 +1070,7 @@ end;
 
 procedure TMainForm.ShowSaveProgress ( Sender: TObject; const Pct: Double ) ;
 begin
-  StatusBar.Panels[1].Text := FloatToStr(Pct);
-  Application.ProcessMessages;
+  ProgressForm.SetProgressBar(Trunc(Pct));
 end;
 
 procedure TMainForm.LoadPage ( newpage: PLPix; pageindex: integer ) ;
