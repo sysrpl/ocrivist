@@ -75,12 +75,14 @@ type
     FPageWidth: Integer;
     FPageHeight: Integer;
     FLoadCount: integer;
+    FSaveCount: integer;
     function GetCurrentPage: TOcrivistPage;
     function GetLoadCount: integer;
     function GetPage ( aIndex: Integer ) : TOcrivistPage;
     function GetPageCount: Integer;
     // PutPage assigns a TOcrivistPage to FPages[aIndex]
     procedure PutPage ( aIndex: Integer; const AValue: TOcrivistPage ) ;
+    procedure DoProgress ( Sender: TObject; const Pct: Double ) ;
   protected
     UnzipFile: TUnZipper;
   public
@@ -180,6 +182,18 @@ begin
      else Raise Exception.Create('Page index out of range (' + IntToStr(aIndex) + ')');
 end;
 
+procedure TOcrivistProject.DoProgress ( Sender: TObject; const Pct: Double ) ;
+var
+  OverallProgress: Extended;
+  allpages: Integer;
+begin
+  if Pct=0 then Inc(FSaveCount);
+  AllPages := PageCount+1;      // allow for project file
+  OverallProgress := ((FSaveCount-1)/allpages*100) + (Pct / allpages);
+  if Assigned (FOnSaveProgress)
+     then FOnSaveProgress(Sender, OverallProgress);
+end;
+
 constructor TOcrivistProject.Create;
 begin
   FcurrentPage := -1;
@@ -241,8 +255,9 @@ var
 begin
   tempTitle := ExtractFileNameOnly(aFileName);
   SaveZip := TZipper.Create;
-  SaveZip.OnProgress := FOnSaveProgress;
+  SaveZip.OnProgress := @DoProgress;
   SaveZip.FileName :=  aFileName + '.part';
+  FSaveCount := 0;
   filesdirectory := ChangeFileExt(aFileName, '') + '-files' + DirectorySeparator;
 
   if not DirectoryExists(filesdirectory)

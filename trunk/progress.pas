@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
-  Buttons, StdCtrls;
+  Buttons, StdCtrls, ComCtrls;
 
 type
 
@@ -16,6 +16,7 @@ type
     CancelButton: TBitBtn;
     ButtonPanel: TPanel;
     MainTextLabel: TLabel;
+    ProgressBar: TProgressBar;
     UpdateTextLabel: TLabel;
     procedure CancelButtonClick ( Sender: TObject ) ;
     procedure FormCloseQuery ( Sender: TObject; var CanClose: boolean ) ;
@@ -28,6 +29,7 @@ type
     procedure Show( cancelcb: TNotifyEvent );
     procedure SetMainText( txt: String );
     procedure SetUpdateText( txt: String );
+    procedure SetProgressBar( Pct: Integer );
   end;
 
 var
@@ -75,7 +77,17 @@ end;
 
 procedure TProgressForm.SetUpdateText ( txt: String ) ;
 begin
+  ProgressBar.Visible := false;
+  UpdateTextLabel.Visible := true;
   UpdateTextLabel.Caption := txt;
+  Application.ProcessMessages;
+end;
+
+procedure TProgressForm.SetProgressBar ( Pct: Integer ) ;
+begin
+  ProgressBar.Visible := true;
+  UpdateTextLabel.Visible := false;
+  ProgressBar.Position := Pct;
   Application.ProcessMessages;
 end;
 
