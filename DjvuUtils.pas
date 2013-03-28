@@ -37,22 +37,20 @@ implementation
 function djvumakepage ( sourceimage, dest: TFilename; dsedtext: PChar ): Integer;
 var
   Encoder: TProcess;
- //workfolder: String;
   cmd: String;
   encformat: Tdjvuencoder;
 begin
   Result := -1;
   Encoder := TProcess.Create(nil);
   Encoder.Options := Encoder.Options + [poWaitOnExit];
-  //workfolder := ExtractFileDir(sourceimage);
-  if ExtractFileExt(sourceimage)='pbm'
+  if ExtractFileExt(sourceimage)='.pnm'
      then encformat := encCJB2
      else encformat := encC44;
   case encformat of
        encC44:  cmd := 'c44 ';
        encCJB2: cmd := 'cjb2 ';
   end;
-  Encoder.CommandLine := cmd + sourceimage + #32 + dest;
+  Encoder.CommandLine := cmd + '-dpi 300 ' + sourceimage + #32 + dest;
   Encoder.Execute;
   Result := Encoder.ExitStatus;
   if dsedtext<> nil then
