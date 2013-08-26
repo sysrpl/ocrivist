@@ -4,7 +4,7 @@
 = Introduction =
 Why is Ocrivist being developed?
 
-I started to write Ocrivist because I would like to have a way of making digitised copies of magazines and other paper documents with searchable content. 
+I started to write Ocrivist because I wanted a way of making digitised copies of magazines and other paper documents with searchable content. 
 
 [http://gscan2pdf.sourceforge.net/ gscan2pdf] contains a lot of the functionality that I was looking for but unfortunately there is no way of selecting text to be scanned, so that tesseract attempts to scan everything on the page and text in columns becomes hopelessly mixed together.
 
