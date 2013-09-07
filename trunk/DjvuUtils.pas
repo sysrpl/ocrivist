@@ -27,14 +27,14 @@ const
   READ_BYTES = 2048;
 
 
-function djvumakepage( sourceimage, dest: TFilename; dsedtext: PChar ): Integer;
+function djvumakepage( sourceimage, dest: TFilename; dsedtext: PChar; resolution: Integer = 300 ): Integer;
 function djvuaddpage( docname, pagename: TFilename ): Integer;
 function djvuGetDocInfo( doc: TFilename ): TDjvuDocInfo;
 function djvuExtractPage ( doc, dest: TFilename; pageindex: Integer ) : Boolean;
 
 implementation
 
-function djvumakepage ( sourceimage, dest: TFilename; dsedtext: PChar ): Integer;
+function djvumakepage ( sourceimage, dest: TFilename; dsedtext: PChar; resolution: Integer = 300 ): Integer;
 var
   Encoder: TProcess;
   cmd: String;
@@ -50,7 +50,7 @@ begin
        encC44:  cmd := 'c44 ';
        encCJB2: cmd := 'cjb2 ';
   end;
-  Encoder.CommandLine := cmd + '-dpi 300 ' + sourceimage + #32 + dest;
+  Encoder.CommandLine := cmd + '-dpi ' + IntToStr(resolution) + #32 + sourceimage + #32 + dest;
   Encoder.Execute;
   Result := Encoder.ExitStatus;
   if dsedtext<> nil then
