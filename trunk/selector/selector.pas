@@ -17,6 +17,7 @@ TResizeHandle = (rhNone, rhTopLeft, rhTopRight, rhBottomLeft, rhBottomRight);
 
 TSelector = class (TGraphicControl)
   private
+    FAspect: Single;
     FOnDelete: TNotifyEvent;
     FOnSelect: TNotifyEvent;
     fFocussed: Boolean;
@@ -42,9 +43,11 @@ TSelector = class (TGraphicControl)
     fDrawHandles: Boolean;
     FUserData: Pointer;
     function GetSelection: TRect;
+    procedure SetAspect ( AValue: Single ) ;
     procedure SetCaption ( const AValue: string ) ;
     procedure SetColor ( const AValue: TColor ) ;
     procedure SetDrawHandles ( const AValue: Boolean ) ;
+    procedure SetFocussed ( AValue: Boolean ) ;
     procedure SetPenSize ( const AValue: Integer ) ;
     procedure SetSelection ( const AValue: TRect ) ;
   protected
@@ -67,9 +70,10 @@ TSelector = class (TGraphicControl)
     property DrawHandles: Boolean read fDrawHandles write SetDrawHandles;
     property OnSelect: TNotifyEvent read FOnSelect write FOnSelect;
     property OnFocus: TNotifyEvent read FOnFocus write FOnFocus;
-    property Focussed: Boolean read fFocussed write fFocussed;
+    property Focussed: Boolean read fFocussed write SetFocussed;
     property UserData: Pointer read FUserData write FUserData;
     property OnDelete: TNotifyEvent read FOnDelete write FOnDelete;
+    property Aspect: Single read FAspect write SetAspect default 0.0;
   end;
 
 PSelector = ^TSelector;
@@ -224,10 +228,18 @@ begin
   Result := R;
 end;
 
+procedure TSelector.SetAspect ( AValue: Single ) ;
+begin
+  if FAspect = AValue then Exit;
+  FAspect := AValue;
+end;
+
 procedure TSelector.SelectorMouseMove ( Sender: TObject; Shift: TShiftState; X,
   Y: Integer ) ;
 var
   MouseCoords: TPoint;
+  heightdiff: Integer;
+  widthdiff: Integer;
 
   procedure ResetCoords;
   begin
@@ -254,7 +266,9 @@ begin
    Self.BringToFront;
    if fResizing then
      begin
-      case fResizehandle of
+       heightdiff := Y-fStartY;
+       widthdiff  := X-fStartX;
+       case fResizehandle of
            rhTopLeft: begin
                         Top := Top + (Y-fStartY);
                         Left := Left + (X-fStartX);
@@ -282,7 +296,10 @@ begin
                      end;
            rhBottomRight: begin
                        Height := fStartHeight + (Y-fStartY);
-                       Width := fStartWidth + (X-fStartX);
+
+                       if FAspect<>0.0 then
+                         Width := Round(Height * FAspect)
+                         else Width := fStartWidth + (X-fStartX);
                        {HandleCollision(fTopRightHandle, rhTopRight);
                        HandleCollision(fBottomLeftHandle, rhBottomLeft);
                        HandleCollision(fTopLeftHandle, rhTopLeft);    }
@@ -334,6 +351,14 @@ begin
   if fDrawHandles = AValue then Exit;
   fDrawHandles := AValue;
   Paint;
+end;
+
+procedure TSelector.SetFocussed ( AValue: Boolean ) ;
+begin
+  if fFocussed = AValue then Exit;
+  fFocussed := AValue;
+  if fFocussed then SetFocus;
+  Invalidate;
 end;
 
 procedure TSelector.SetPenSize ( const AValue: Integer ) ;
