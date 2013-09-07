@@ -5,7 +5,7 @@ unit ocr;
 interface
 
 uses
-  Classes, SysUtils, types, leptonica, LibLeptUtils, tessintf;
+  Classes, SysUtils, types, leptonica, LibLeptUtils, tesseract;
 
 const
   BIN_THRESHOLD = 150;
@@ -104,7 +104,7 @@ type
     FLanguage: string;
     FOnOCRLine: TProgressCallback;
     FPageImage: PLPix;
-    FTesseract: TTesseract;
+    FTesseract: TessAPIHandle;
     FBoxes: PBoxArrayArray;
     FConfidenceRating: TConfidenceList;
     FText: String;
@@ -194,8 +194,9 @@ var
 //  pixWrite('/tmp/testOCRimage.bmp', FPageImage, IFF_BMP);
   if FileExists(FDatapath + FLanguage + '.traineddata') then
   try
-    FTesseract := tesseract_new(data, lang);
-    tesseract_SetImage(FTesseract, FPageImage);
+    FTesseract := TessBaseAPICreate;
+    TessBaseAPIInit3 (FTesseract, nil, nil);
+    TessBaseAPISetImage2(FTesseract, FPageImage);
     FLineCount := 0;
     SetLength(FLines, FLineCount);
   except
@@ -209,7 +210,7 @@ end;
 destructor TTesseractPage.Destroy;
 begin
   if FPageImage<>nil then pixDestroy(@FPageImage);
-  tesseract_destroy(FTesseract);
+  TessBaseAPIDelete(FTesseract);
   boxaaDestroy(@FBoxes);
   inherited Destroy;
 end;
@@ -227,7 +228,7 @@ var
   n: Integer;
   R: TRect;
   TextRegion: PLPix;
-  conf: PInteger;
+  conf: PIntegerArray;
   UTF8Text: PChar;
   b: PLBox;
   wb: PLBox;
@@ -324,19 +325,19 @@ begin
               begin
               writeln ('ocr line ', x);
               writeln(Format('line Rect: %d %d %d %d', [R.Left, R.Top, R.Right, R.Bottom]));
-              tesseract_SetRectangle(FTesseract, inRect.Left + R.Left,
+              TessBaseAPISetRectangle(FTesseract, inRect.Left + R.Left,
                                                  inRect.Top + R.Top,
                                                  R.Right-R.Left,
                                                  R.Bottom-R.Top);
               try
-                UTF8Text := tesseract_GetUTF8Text(FTesseract);
+                UTF8Text := TessBaseAPIGetUTF8Text(FTesseract);
                 FText := Ftext + UTF8Text;
                 except
                 writeln('error in GetUTF8Text');
               end;
               n := length(Ftext);
               if FText[n]=#10 then SetLength(FText, n-1);
-              wa := tesseract_GetWords(FTesseract, @pixa);
+              wa := TessBaseAPIGetWords(FTesseract, @pixa);
 
               {  For debugging:
               // Display each component as a random color in cmapped 8 bpp.
@@ -355,18 +356,18 @@ begin
                   begin
                      writeln('Tesseract wordcount: ', boxaGetCount(wa));
                      deletedtokens := 0;
-                     conf := tesseract_AllWordConfidences(FTesseract);
+                     conf := TessBaseAPIAllWordConfidences(FTesseract);
                     //writeln( boxaWrite(Pchar('/tmp/tessboxes' + IntToStr(x) + '.txt'), wa));
                      for n := 0 to boxaGetCount(wa)-1 do
                           begin
-                            writeln('confidence ', conf[n]);
+                            writeln('confidence ', conf^[n]);
                             b := boxaGetBox(wa, n, L_COPY);
                             if b<>nil then
                             begin
                               AdjustToArea(b, x);
                               boxaReplaceBox(wa, n, b);
                             end;
-                            FLines[FLineCount + x].Words[n-deletedtokens].Confidence := conf[n];
+                            FLines[FLineCount + x].Words[n-deletedtokens].Confidence := conf^[n];
                             FLines[FLineCount + x].Words[n-deletedtokens].Box := BoxToRect(b);
                             while UTF8Text[wordend]>#32 do Inc(wordend);
                             Inc(wordend);
@@ -383,10 +384,10 @@ begin
                           end;
                      //writeln( boxaWrite(Pchar('/tmp/adjusted-tessboxes' + IntToStr(x) + '.txt'), wa));
 
-                     tesseract_DeleteWordConfidences(conf);
+                     TessDeleteIntArray(conf);
                      boxaDestroy(@wa);
                   end;
-              tesseract_DeleteString(UTF8Text);
+              TessDeleteText(UTF8Text);
               if Assigned(FOnOCRLine)
                  then FOnOCRLine(1);
             end
