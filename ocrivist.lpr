@@ -9,11 +9,11 @@ uses
   Interfaces, // this includes the LCL widgetset
   Forms,
   {$IFDEF HAS_LIBSANE}
-  sane, scanutils,
+  sane, scanutils, scanner, scanselect,
   {$ENDIF}
-  MainUI, LibLeptUtils, leptonica, pageviewer,
-  OcrivistData, selector, DjvuUtils, scanner, ocr, ocreditor,
-  frmSpell, progress, scanselect, about, threshold, tesseract
+  MainUI, LibLeptUtils, leptonica, pageviewer, OcrivistData, selector,
+  DjvuUtils, ocr, ocreditor, frmSpell, progress, about, threshold, tesseract,
+  PasDoc_Aspell
   { you can add units after this };
 
 {$R *.res}
@@ -24,8 +24,10 @@ begin
   Application.CreateForm ( TMainForm, MainForm ) ;
   Application.CreateForm ( TSpellcheckForm, SpellcheckForm ) ;
   Application.CreateForm ( TProgressForm, ProgressForm ) ;
+  {$IFDEF HAS_LIBSANE}
   Application.CreateForm ( TScannerForm, ScannerForm ) ;
   Application.CreateForm ( TScannerSelector, ScannerSelector ) ;
+  {$ENDIF}
   Application.CreateForm ( TAboutForm, AboutForm ) ;
   Application.Run;
 end.

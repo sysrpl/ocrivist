@@ -6,11 +6,11 @@ interface
 
 uses
   Classes, ExtCtrls, Controls, StdCtrls, Forms, SysUtils, Graphics, ocr, SynMemo, SynEdit, SynHighlighterPosition,
-  SynEditHighlighter, Ocrivist_Spell, frmSpell;
+  SynEditHighlighter, PasDoc_Aspell, frmSpell;
 
 
 type
-  TSpellcheckCallback = function( var aword: string; suggestions: TSuggestionArray ): TSpellResponse of object;
+  TSpellcheckCallback = function( var aword: string; suggestions: TObjectVector ): TSpellResponse of object;
   TSelectTokenCallback = procedure( aline, aword: integer ) of object;
 
 type
@@ -23,8 +23,10 @@ type
     FOnSpellcheck: TSpellcheckCallback;
     FOnChangeToken: TSelectTokenCallback;
     FCurrentToken: TPoint;
+    FStartToken: TPoint;
     TextNormal: TtkTokenKind;
     TextHighlight: TtkTokenKind;
+    function GetHasSpellCheck: Boolean;
     function GetText: string;
     procedure SetOCRData ( const AValue: TTesseractPage ) ;
     function GetUpdatedToken( aline, aword: Integer ): string;
@@ -34,8 +36,10 @@ type
     procedure KeyUp ( var Key: Word; Shift: TShiftState ) ; override;
     procedure MouseDown ( Button: TMouseButton; Shift: TShiftState; X, Y: Integer ) ;
       override;
+    procedure MouseUp ( Button: TMouseButton; Shift: TShiftState; X, Y: Integer ) ;
+      override;
     procedure SetCurrentToken( lline, charpos: Integer );
-    function CorrectSpelling( var aword: string; suggestions: TSuggestionArray ): TSpellResponse;
+    function CorrectSpelling( var aword: string; suggestions: TObjectVector ): TSpellResponse;
     procedure LineRefresh( aline: Integer );
   public
     constructor Create ( AOwner: TComponent ) ; override;
@@ -47,6 +51,7 @@ type
     property Text: string read GetText;
     property OnSpellCheck: TSpellcheckCallback read FOnSpellcheck write FOnSpellcheck;
     property OnSelectToken: TSelectTokenCallback read FOnChangeToken write FOnChangeToken;
+    property HasSpellCheck: Boolean read GetHasSpellCheck;
   end;
 
 implementation
@@ -72,6 +77,11 @@ begin
   for x := 0 to Lines.Count-1 do
       T := T + Lines[x];
   Result := T;
+end;
+
+function TOcrivistEdit.GetHasSpellCheck: Boolean;
+begin
+  Result := PathToAspell<>'';
 end;
 
 function TOcrivistEdit.GetUpdatedToken ( aline, aword: Integer ): string ;
@@ -132,8 +142,20 @@ procedure TOcrivistEdit.MouseDown ( Button: TMouseButton; Shift: TShiftState;
   X, Y: Integer ) ;
 begin
   inherited MouseDown ( Button, Shift, X, Y ) ;
+  writeln('TOcrivistEdit.MouseDown');
   writeln(x, #32, CaretX );
   writeln(Y, #32, CaretY );
+  SetCurrentToken(CaretY-1, CaretX);
+end;
+
+procedure TOcrivistEdit.MouseUp ( Button: TMouseButton; Shift: TShiftState; X,
+  Y: Integer ) ;
+begin
+  inherited MouseUp ( Button, Shift, X, Y ) ;
+  writeln('TOcrivistEdit.MouseUp');
+  writeln(x, #32, CaretX );
+  writeln(Y, #32, CaretY );
+  FStartToken := FCurrentToken;
   SetCurrentToken(CaretY-1, CaretX);
 end;
 
@@ -162,17 +184,26 @@ begin
 end;
 
 function TOcrivistEdit.CorrectSpelling ( var aword: string;
-  suggestions: TSuggestionArray ) : TSpellResponse;
+  suggestions: TObjectVector ) : TSpellResponse;
 var
   x: Integer;
+  S: String;
+  p: SizeInt;
 begin
   Result := srIgnore;
   with SpellcheckForm do
        begin
          SuggestionList.Clear;
          WordEdit.Text := aword;
-         for x := 0 to High(suggestions) do
-            SuggestionList.Items.Add(suggestions[x]);
+         S := TSpellingError(suggestions.Items[0]).Suggestions;
+         p := Pos(',', S);
+         while p>0 do
+             begin
+               SuggestionList.Items.Add(Copy(S, 1, p-1));
+               Delete(S, 1, p);
+               p := Pos(',', S);
+             end;
+         if Length(S)>0 then SuggestionList.Items.Add(S);
          if ShowModal=mrOK
              then begin
                     aword := WordEdit.Text;
@@ -207,9 +238,9 @@ begin
 
   Highlighter := PosHighlighter;
 
-  HideSelection := true;
+  //HideSelection := true;
   Options := Options-[eoAutoIndent, eoGroupUndo, eoScrollPastEol, eoSmartTabs]
-                    +[eoNoSelection, eoHideRightMargin];
+                    +[{eoNoSelection, }eoHideRightMargin];
   ScrollBars := ssAutoBoth;
   FOnSpellcheck := @CorrectSpelling;
   //Keystrokes.Clear;
@@ -236,15 +267,14 @@ end;
 procedure TOcrivistEdit.Spellcheck;
 var
   i, j: Integer;
-  s: TSuggestionArray; { in case the word is wrong, this array contains
-                         a list of suggestions }
-  Speller: TWordSpeller;
+  suggestions: TObjectVector;
+  Speller: TAspellProcess;
   wword: Integer;
   lline: Integer;
   w: String;
   spellcheckresponse: TSpellResponse;
 
-  function TrimPunctuation( aword: string ): string;
+  function TrimPunctuation( aword: string ): string;  // very crude and only reliable for English - feel free to improve this :)
   var
     p: Integer;
     wordin: String;
@@ -254,14 +284,14 @@ var
      if Length(wordin)=0 then Exit;
      p := 1;
      if p<length(wordin) then
-        while (not (wordin[p] in ['a'..'z'] + ['A'..'Z'] + ['0'..'9'] + [#32]))
+        while (not (wordin[p] in ['a'..'z'] + ['A'..'Z'] + ['0'..'9'] + [#32] + ['-']))
               and (p<length(wordin))
               do Inc(p);
      Delete(wordin, 1, p-1);
      wordin := #32 + wordin;
      p := Length(wordin);
      if p>0 then
-        while (not (wordin[p] in ['a'..'z'] + ['A'..'Z'] + ['0'..'9'] + [#32]))
+        while (not (wordin[p] in ['a'..'z'] + ['A'..'Z'] + ['0'..'9'] + [#32] + ['-']))
               and (p>0)
               do Dec(p);
      if p < Length(wordin)
@@ -272,23 +302,25 @@ var
 begin
   if FOCRData=nil then Exit;
   try
-    Speller := TWordSpeller.Create;
-    Speller.Language := ParamStr(1);
+  suggestions := TObjectVector.Create(false);
+    try
+    Speller := TAspellProcess.Create('', 'en', nil);
     for lline := 0 to FOCRData.Linecount-1 do
        with FOCRData.Lines[lline]do
             for wword := 0 to WordCount-1 do
                begin
-                 SetLength(s, 0);
                  writeln(Words[wword].Text, ': l w ', lline, #32, wword);
                  w := TrimPunctuation( Words[wword].Text );
+                 if length(w)>0 then
+                    if (w[Length(w)]='-') and (wword=WordCount-1) then w:= '';  //TODO: deal with hyphens instead of skipping them
                  if Length(w)>0 then
-                    s := Speller.SpellCheck(w); // spellcheck each word
-                 if Length(s) > 0 then
+                    Speller.CheckString(w, suggestions); // spellcheck each word
+                 if suggestions.Count>0 then
                     begin
                       HighlightToken(lline, wword);
                       if Assigned(FOnChangeToken)
                            then FOnChangeToken( lline, wword );
-                      spellcheckresponse := CorrectSpelling(w, s);
+                      spellcheckresponse := CorrectSpelling(w, suggestions);
                       TSynPositionHighlighter(Highlighter).ClearTokens(lline);
                       if spellcheckresponse=srCancel then Exit else
                       case spellcheckresponse of
@@ -303,14 +335,19 @@ begin
                                   end;
                            srIgnore: begin
                                     LineRefresh(lline);
-                                    Speller.AddToSession(w);
+                                    Speller.AcceptForSession(w);
                                   end;
                            end;
                       Refresh;
                     end;
                end;
+    except
+
+
+    end;
   finally
-    Speller.SaveWordlists;
+    Speller.SaveWordlist;
+    suggestions.Free;
     Speller.Free;
   end;
 end;
