@@ -7,8 +7,12 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls,
   ExtCtrls, Menus, leptonica, LibLeptUtils, pageviewer, types, LCLType,
-  ActnList, Buttons, ComCtrls, SpellCheck,
-  OcrivistData, selector, Sane, ocreditor;
+  ActnList, Buttons, ComCtrls,
+  OcrivistData, selector,
+  {$IFDEF HAS_LIBSANE}
+  Sane,
+  {$ENDIF}
+  ocreditor;
 
 { command line for converting pdf pages to tiff:
   convert -density 300x300 -compress lzw <source>.pdf[0] <output>.tiff
@@ -25,6 +29,9 @@ type
     AutoselectButton: TToolButton;
     ContrastMenuItem: TMenuItem;
     DeskewButton: TToolButton;
+    EditMenu: TMenuItem;
+    MenuItem6: TMenuItem;
+    MenuItem7: TMenuItem;
     EnhanceMenuItem: TMenuItem;
     FitHeightButton: TToolButton;
     FitWidthButton: TToolButton;
@@ -38,6 +45,7 @@ type
     HelpMenu: TMenuItem;
     AboutMenuItem: TMenuItem;
     DebugMenuItem: TMenuItem;
+    miThreshold: TMenuItem;
     RightSidePanel: TPanel;
     ScanSettingsMenuItem: TMenuItem;
     NewProjectMenuItem: TMenuItem;
@@ -130,6 +138,8 @@ type
     procedure ImportMenuItemClick ( Sender: TObject ) ;
     procedure LanguageComboBoxChange(Sender: TObject);
     procedure LoadModeOptionClick(Sender: TObject);
+    procedure miThresholdClick ( Sender: TObject ) ;
+    procedure MenuItem6Click ( Sender: TObject ) ;
     procedure miAutoAllClick ( Sender: TObject ) ;
     procedure miAutoProcessPageClick ( Sender: TObject ) ;
     procedure ModeChange ( Sender: TObject ) ;
@@ -209,12 +219,13 @@ var
   OCRLanguage: string;
   OCRDatapath: string;
   HasDJVU: Boolean;
+  undoPix: PLPix;
 
   AutoDeskewOnScan: Boolean;
 
  implementation
 
-  uses DjvuUtils, scanner, ocr, Clipbrd, progress, scanselect, about;
+  uses DjvuUtils, {$IFDEF HAS_LIBSANE} scanner, scanselect,{$ENDIF} ocr, Clipbrd, progress, about, threshold;
 
   {$R *.lfm}
 
@@ -320,6 +331,10 @@ begin
   OCRLanguage := 'eng';
   LanguageComboBox.ItemIndex :=
              LanguageComboBox.Items.IndexOf(GetLanguageFromToken(OCRLanguage));
+  {$IFNDEF HAS_LIBSANE}
+  ScanPageButton.Visible := false;
+  ScanPageMenuItem.Visible := false;
+  {$Endif}
 
   CurrentProject := TOcrivistProject.Create;
   CurrentProject.Title := 'Untitled';
@@ -336,6 +351,7 @@ begin
   DjvuButton.Enabled := HasDJVU;
   AutoDeskewOnScan := true;
   SelTextButtonClick(SelTextButton);
+  SpellcheckButton.Enabled := Editor.HasSpellCheck;
 end;
 
 procedure TMainForm.FormDestroy ( Sender: TObject ) ;
@@ -350,13 +366,14 @@ begin
     then FreeAndNil( CurrentProject );
   if DeleteDirectory(Folder,True)
       then RemoveDirUTF8(Folder);
-
+  {$IFDEF HAS_LIBSANE}
   if Assigned(ScannerHandle) then
       begin
         sane_close(ScannerHandle);
         sane_exit;
       end;
   if PDevices <> nil then Freemem(PDevices);
+  {$ENDIF}
 end;
 
 procedure TMainForm.FormKeyDown ( Sender: TObject; var Key: Word;
@@ -440,6 +457,21 @@ begin
   end;
   AddPageButton.ImageIndex := TMenuItem(Sender).ImageIndex;
   AddPageButton.Hint := TMenuItem(Sender).Hint;
+end;
+
+procedure TMainForm.miThresholdClick ( Sender: TObject ) ;
+begin
+   {undoPix := ICanvas.Picture;
+   CurrentProject.CurrentPage.PageImage := pixThresholdToBinary(ICanvas.Picture, StrToInt(ThresholdEdit.Text));}
+  ThresholdForm:= TThresholdForm.Create(nil);
+  if ThresholdForm.ShowModal=mrOK
+   then CurrentProject.CurrentPage.PageImage := pixThresholdToBinary(ICanvas.Picture, ThresholdForm.ThreshTrackBar.Position);
+  ThresholdForm.Free;
+end;
+
+procedure TMainForm.MenuItem6Click ( Sender: TObject ) ;
+begin
+  if undoPix<>nil then CurrentProject.CurrentPage.PageImage := undoPix;
 end;
 
 procedure TMainForm.miAutoAllClick ( Sender: TObject ) ;
@@ -600,8 +632,9 @@ begin
             p := CurrentProject.Pages[x].PageImage;
             pixGetDimensions(p, @w, @h, @d);
             if d=1
-               then fn :=  TEMPFILE_SINGLEBIT_IMAGE
-               else fn := TEMPFILE_MULTIBIT_IMAGE;
+                then fn :=  TEMPFILE_SINGLEBIT_IMAGE
+                else fn := TEMPFILE_MULTIBIT_IMAGE;
+
             ProgressForm.SetUpdateText( 'Processing page ' + IntToStr(x+1) );
             if CurrentProject.Pages[x].OCRData <> nil then
                begin
@@ -689,7 +722,9 @@ end;
 
 procedure TMainForm.ScanSettingsMenuItemClick ( Sender: TObject ) ;
 begin
-  ScannerForm.ShowModal;
+ {$IFDEF HAS_LIBSANE}
+ ScannerForm.ShowModal;
+ {$ENDIF}
 end;
 
 procedure TMainForm.SelTextButtonClick ( Sender: TObject ) ;
@@ -783,7 +818,9 @@ end;
 
 procedure TMainForm.UpdateScannerStatus ( Sender: TObject ) ;
 begin
-  ScanPageMenuItem.Enabled := ScannerHandle<>nil;
+ {$IFDEF HAS_LIBSANE}
+ ScanPageMenuItem.Enabled := ScannerHandle<>nil;
+ {$ENDIF}
 end;
 
 procedure TMainForm.ThumbnailListBoxClick ( Sender: TObject ) ;
@@ -908,7 +945,8 @@ var
   nametext: String;
   resolution: Integer;
 begin
-  newpage := nil;
+ {$IFDEF HAS_LIBSANE}
+ newpage := nil;
   if not ScanSettingsMenuItem.Enabled
        then SetScannerMenuItemClick(nil);
 
@@ -950,10 +988,12 @@ begin
          Enabled := true;
          ProgressForm.Hide;
        end;
+  {$ENDIF}
 end;
 
 procedure TMainForm.SetScannerMenuItemClick ( Sender: TObject ) ;
 begin
+ {$IFDEF HAS_LIBSANE}
  try
    Enabled := false;
    ScanSettingsMenuItem.Enabled := ScannerSelector.CheckDevices>0;
@@ -966,6 +1006,7 @@ begin
       ScannerSelector.GetSelectedScannerSettings;
       ScannerForm.ShowModal;
     end;
+ {$ENDIF}
 end;
 
 procedure TMainForm.TestTesseractButtonClick ( Sender: TObject ) ;
@@ -979,8 +1020,11 @@ begin
     OCRPage(ThumbnailListBox.ItemIndex);
     Editor.OCRData := CurrentProject.CurrentPage.OCRData;
     CurrentProject.Language := GetLanguageToken(LanguageComboBox.Text);
-    if not OCRPanel.Visible
-       then OCRScreenMenuItem.Click;
+    if not OCRPanel.Visible then
+       begin
+         OCRScreenMenuItem.Click;
+         OCRScreenMenuItem.Checked := True;
+       end;
   finally
     Enabled := true;
     ProgressForm.Hide;
@@ -1000,9 +1044,11 @@ end;
 
 procedure TMainForm.CancelScan(Sender: TObject);
 begin
- Application.ProcessMessages;
- ScanCancelled := true;
- sane_cancel(ScannerHandle);
+  {$IFDEF HAS_LIBSANE}
+  Application.ProcessMessages;
+  ScanCancelled := true;
+  sane_cancel(ScannerHandle);
+  {$ENDIF}
 end;
 
 procedure TMainForm.MakeSelection ( Sender: TObject ) ;

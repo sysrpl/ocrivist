@@ -192,7 +192,7 @@ var
      then FPageImage := pixThresholdToBinary(PixIn, BIN_THRESHOLD)
   else FPageImage := pixClone(PixIn);
 //  pixWrite('/tmp/testOCRimage.bmp', FPageImage, IFF_BMP);
-  if FileExists(FDatapath + FLanguage + '.traineddata') then
+//  if FileExists(FDatapath + FLanguage + '.traineddata') then
   try
     FTesseract := TessBaseAPICreate;
     TessBaseAPIInit3 (FTesseract, nil, nil);
@@ -203,7 +203,7 @@ var
     if FTesseract=nil then
        writeln('tesseract_new failed :(')
   end
-  else writeln('Unable to open ' + FDatapath + FLanguage + '.traineddata') ; //TODO: handle this better!
+  ;//else writeln('Unable to open ' + FDatapath + FLanguage + '.traineddata') ; //TODO: handle this better!
 
 end;
 
