@@ -8,7 +8,7 @@ object SpellcheckForm: TSpellcheckForm
   LCLVersion = '1.0.1.3'
   object Label1: TLabel
     Left = 24
-    Height = 18
+    Height = 16
     Top = 16
     Width = 181
     Caption = 'Word not found in dictionary:'
@@ -16,7 +16,7 @@ object SpellcheckForm: TSpellcheckForm
   end
   object WordEdit: TEdit
     Left = 28
-    Height = 25
+    Height = 23
     Top = 43
     Width = 308
     AutoSelect = False
@@ -40,7 +40,7 @@ object SpellcheckForm: TSpellcheckForm
     Height = 25
     Top = 235
     Width = 75
-    Caption = 'Change'
+    Caption = '&Change'
     Default = True
     OnClick = ChangeButtonClick
     TabOrder = 2
@@ -50,7 +50,7 @@ object SpellcheckForm: TSpellcheckForm
     Height = 25
     Top = 304
     Width = 75
-    Caption = 'Ignore'
+    Caption = '&Ignore'
     OnClick = IgnoreButtonClick
     TabOrder = 3
   end
@@ -59,7 +59,7 @@ object SpellcheckForm: TSpellcheckForm
     Height = 25
     Top = 272
     Width = 75
-    Caption = 'Add'
+    Caption = '&Add'
     OnClick = AddButtonClick
     TabOrder = 4
   end
