@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
-  ButtonPanel, Buttons, StdCtrls;
+  ButtonPanel, Buttons, StdCtrls, scansane;
 
 type
 
@@ -61,7 +61,7 @@ begin
   DevName := PDevices^[DevicesRadioGroup.ItemIndex]^.name;
   ScannerForm.NameLabel.Caption := UnderlineToSpace(PDevices^[DevicesRadioGroup.ItemIndex]^.model) + #32
                                               + PDevices^[DevicesRadioGroup.ItemIndex]^.dev_type;
-  ScannerForm.DeviceSelect(DevName);
+  DeviceSelect(DevName);
 end;
 
 function TScannerSelector.CheckDevices: integer;
