@@ -15,12 +15,6 @@ type
 
 type
 
-  TParsedToken = record
-    word: string;
-    prepunct: string;
-    postpunct: string;
-  end;
-
   { TOcrivistEdit }
 
   TOcrivistEdit = class( TSynMemo )
@@ -277,22 +271,22 @@ var
   Speller: TAspellProcess;
   wword: Integer;
   lline: Integer;
+  w: String;
   spellcheckresponse: TSpellResponse;
-  w: TParsedToken;
 
-  function TrimPunctuation( aword: string ): TParsedToken;  // very crude and only reliable for English - feel free to improve this :)
+  function TrimPunctuation( aword: string ): string;  // very crude and only reliable for English - feel free to improve this :)
   var
     p: Integer;
     wordin: String;
   begin
-     wordin := Trim(aword);
+     Result := '';
+     wordin := aword;
      if Length(wordin)=0 then Exit;
      p := 1;
      if p<length(wordin) then
         while (not (wordin[p] in ['a'..'z'] + ['A'..'Z'] + ['0'..'9'] + [#32] + ['-']))
               and (p<length(wordin))
               do Inc(p);
-     if p>1 then Result.prepunct := wordin[1];
      Delete(wordin, 1, p-1);
      wordin := #32 + wordin;
      p := Length(wordin);
@@ -300,12 +294,9 @@ var
         while (not (wordin[p] in ['a'..'z'] + ['A'..'Z'] + ['0'..'9'] + [#32] + ['-']))
               and (p>0)
               do Dec(p);
-     if p < Length(wordin) then
-          begin
-            Result.postpunct := wordin[Length(wordin)];
-            Delete(wordin, p+1, MaxInt);
-          end;
-     Result.word := Trim(wordin);
+     if p < Length(wordin)
+          then Delete(wordin, p+1, MaxInt);
+     Result := Trim(wordin);
   end;
 
 begin
@@ -320,31 +311,31 @@ begin
                begin
                  writeln(Words[wword].Text, ': l w ', lline, #32, wword);
                  w := TrimPunctuation( Words[wword].Text );
-                 if length(w.word)>0 then
-                    if (w.word[Length(w.word)]='-') and (wword=WordCount-1) then w.word:= '';  //TODO: deal with hyphens instead of skipping them
-                 if Length(w.word)>0 then
-                    Speller.CheckString(w.word, suggestions); // spellcheck each word
+                 if length(w)>0 then
+                    if (w[Length(w)]='-') and (wword=WordCount-1) then w:= '';  //TODO: deal with hyphens instead of skipping them
+                 if Length(w)>0 then
+                    Speller.CheckString(w, suggestions); // spellcheck each word
                  if suggestions.Count>0 then
                     begin
                       HighlightToken(lline, wword);
                       if Assigned(FOnChangeToken)
                            then FOnChangeToken( lline, wword );
-                      spellcheckresponse := CorrectSpelling(w.word, suggestions);
+                      spellcheckresponse := CorrectSpelling(w, suggestions);
                       TSynPositionHighlighter(Highlighter).ClearTokens(lline);
                       if spellcheckresponse=srCancel then Exit else
                       case spellcheckresponse of
                            srChange: begin
-                                    Words[wword].Text := w.prepunct + w.word + w.postpunct;
+                                    Words[wword].Text := w;
                                     LineRefresh(lline);
                                   end;
                            srAdd: begin
-                                    Words[wword].Text := w.prepunct + w.word + w.postpunct;
+                                    Words[wword].Text := w;
                                     LineRefresh(lline);
-                                    Speller.AddToPersonalDict(w.word);
+                                    Speller.AddToPersonalDict(w);
                                   end;
                            srIgnore: begin
                                     LineRefresh(lline);
-                                    Speller.AcceptForSession(w.word);
+                                    Speller.AcceptForSession(w);
                                   end;
                            end;
                       Refresh;

@@ -1,0 +1,14 @@
+DELPHITWAIN CHANGE LOG
+======================
+
+2013/08/18 - New method OnTransferComplete: fired when all documents are
+  scanned or the scan is canceled. Thanks to Andrei Galatyn.
+
+2013/07/26 - Color problems solved (thanks to Marco & Christian).
+  TWAIN drivers did not respond - now both WIA and TWAIN can be used.
+
+2012/11/01 - Ondrej Pokorny: small changes for Lazarus and 64bit compiler
+
+2009/11/10 - Some changes to make it work in Delphi 2009, and above
+
+2004/01/20 - Some updates and bug fixes by Nemeth Peter

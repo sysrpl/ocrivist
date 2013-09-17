@@ -7,12 +7,13 @@ uses
   cthreads,
   {$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms,
+  Forms, scanner,
   {$IFDEF HAS_LIBSANE}
-  sane, scanutils, scanner, scanselect,
+  sane, scanutils, scanselect, scansane,
   {$ENDIF}
+  {$IFDEF MSWINDOWS} DelphiTwain, scantwain, {$ENDIF}
   MainUI, LibLeptUtils, leptonica, pageviewer, OcrivistData, selector,
-  DjvuUtils, ocr, ocreditor, frmSpell, progress, about, threshold, tesseract,
+  DjvuUtils, ocr, ocreditor, frmSpell, progress, about,  tesseract,
   PasDoc_Aspell
   { you can add units after this };
 
@@ -24,11 +25,10 @@ begin
   Application.CreateForm ( TMainForm, MainForm ) ;
   Application.CreateForm ( TSpellcheckForm, SpellcheckForm ) ;
   Application.CreateForm ( TProgressForm, ProgressForm ) ;
-  {$IFDEF HAS_LIBSANE}
   Application.CreateForm ( TScannerForm, ScannerForm ) ;
-  Application.CreateForm ( TScannerSelector, ScannerSelector ) ;
-  {$ENDIF}
   Application.CreateForm ( TAboutForm, AboutForm ) ;
+  {$IFDEF HAS_LIBSANE}
+  {$ENDIF}
   Application.Run;
 end.
 

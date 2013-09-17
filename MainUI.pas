@@ -9,9 +9,8 @@ uses
   ExtCtrls, Menus, leptonica, LibLeptUtils, pageviewer, types, LCLType,
   ActnList, Buttons, ComCtrls,
   OcrivistData, selector,
-  {$IFDEF HAS_LIBSANE}
-  Sane,
-  {$ENDIF}
+  {$IFDEF HAS_LIBSANE} Sane, scansane,{$ENDIF}
+  {$IFDEF MSWINDOWS} DelphiTwain, scantwain,{$ENDIF}
   ocreditor;
 
 { command line for converting pdf pages to tiff:
@@ -225,7 +224,7 @@ var
 
  implementation
 
-  uses DjvuUtils, {$IFDEF HAS_LIBSANE} scanner, scanselect,{$ENDIF} ocr, Clipbrd, progress, about, threshold;
+  uses DjvuUtils, scanner, {$IFDEF HAS_LIBSANE} scanselect, {$ENDIF} ocr, Clipbrd, progress, about{, threshold};
 
   {$R *.lfm}
 
@@ -334,8 +333,14 @@ begin
   {$IFNDEF HAS_LIBSANE}
   ScanPageButton.Visible := false;
   ScanPageMenuItem.Visible := false;
+  SetScannerMenuItem.Enabled := false;
   {$Endif}
-
+  {$IFDEF MSWINDOWS}
+  ScanPageButton.Visible := true;
+  ScanPageButton.Enabled := IsTwainInstalled;
+  SetScannerMenuItem.Enabled := IsTwainInstalled;
+  ScanPageMenuItem.Visible := true;
+  {$ENDIF}
   CurrentProject := TOcrivistProject.Create;
   CurrentProject.Title := 'Untitled';
   CurrentProject.OnSaveProgress := @ShowSaveProgress;
@@ -463,10 +468,10 @@ procedure TMainForm.miThresholdClick ( Sender: TObject ) ;
 begin
    {undoPix := ICanvas.Picture;
    CurrentProject.CurrentPage.PageImage := pixThresholdToBinary(ICanvas.Picture, StrToInt(ThresholdEdit.Text));}
-  ThresholdForm:= TThresholdForm.Create(nil);
+{  ThresholdForm:= TThresholdForm.Create(nil);
   if ThresholdForm.ShowModal=mrOK
    then CurrentProject.CurrentPage.PageImage := pixThresholdToBinary(ICanvas.Picture, ThresholdForm.ThreshTrackBar.Position);
-  ThresholdForm.Free;
+  ThresholdForm.Free;}
 end;
 
 procedure TMainForm.MenuItem6Click ( Sender: TObject ) ;
@@ -722,9 +727,7 @@ end;
 
 procedure TMainForm.ScanSettingsMenuItemClick ( Sender: TObject ) ;
 begin
- {$IFDEF HAS_LIBSANE}
  ScannerForm.ShowModal;
- {$ENDIF}
 end;
 
 procedure TMainForm.SelTextButtonClick ( Sender: TObject ) ;
@@ -945,7 +948,6 @@ var
   nametext: String;
   resolution: Integer;
 begin
- {$IFDEF HAS_LIBSANE}
  newpage := nil;
   if not ScanSettingsMenuItem.Enabled
        then SetScannerMenuItemClick(nil);
@@ -959,12 +961,21 @@ begin
          Application.ProcessMessages;
          resolution := ScannerForm.GetResolution;
          Application.ProcessMessages;
+         {$IFDEF MSWINDOWS}
+         TwainScanner := TTwainScanner.Create;
+         {$ENDIF}
          if not ScanCancelled
-            then ScannerForm.SetScannerOptions;
+            then SetScannerOptions;
          Application.ProcessMessages;
          if not ScanCancelled then
            begin
-             newpage := ScanToPix(ScannerHandle, @ShowScanProgress);
+              {$IFDEF MSWINDOWS}
+              newpage := TwainScanner.ScanToPix;
+              TwainScanner.Free;
+              {$ENDIF}
+              {$IFDEF LINUX}
+              newpage := ScanToPix(ScannerHandle, @ShowScanProgress);
+              {$ENDIF}
              pixSetResolution(newpage, resolution, resolution);
              nametext := Format('scan_%.3d', [CurrentProject.LoadCount]);
              pixSetText(newpage, PChar( nametext ));
@@ -988,25 +999,28 @@ begin
          Enabled := true;
          ProgressForm.Hide;
        end;
-  {$ENDIF}
 end;
 
 procedure TMainForm.SetScannerMenuItemClick ( Sender: TObject ) ;
 begin
- {$IFDEF HAS_LIBSANE}
- try
-   Enabled := false;
-   ScanSettingsMenuItem.Enabled := ScannerSelector.CheckDevices>0;
- finally
-   Enabled := true;
- end;
- if ScannerSelector.ShowModal=mrOK then
+  {$IFDEF HAS_LIBSANE}
+  Enabled := false;
+  try
+    ScanSettingsMenuItem.Enabled := SelectScanner;
+  finally
+    Enabled := true;
+  end;
+  {$ENDIF}
+  {$IFDEF WINDOWS}
+  ScanSettingsMenuItem.Enabled := SelectDevice>-1;
+  if ScanSettingsMenuItem.Enabled then
     begin
       Application.ProcessMessages;
-      ScannerSelector.GetSelectedScannerSettings;
+      GetSelectedScannerSettings;
       ScannerForm.ShowModal;
     end;
- {$ENDIF}
+
+  {$ENDIF}
 end;
 
 procedure TMainForm.TestTesseractButtonClick ( Sender: TObject ) ;
