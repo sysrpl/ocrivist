@@ -195,7 +195,7 @@ var
 //  if FileExists(FDatapath + FLanguage + '.traineddata') then
   try
     FTesseract := TessBaseAPICreate;
-    TessBaseAPIInit3 (FTesseract, nil, nil);
+    TessBaseAPIInit3 (FTesseract, data, lang);
     TessBaseAPISetImage2(FTesseract, FPageImage);
     FLineCount := 0;
     SetLength(FLines, FLineCount);
@@ -244,6 +244,7 @@ var
   pixa: PPixArray;
   pixd: PLPix;
   cmap: Pointer;
+  wordcount: Integer;
 
   procedure AdjustToArea( abox: PLBox; lineref: integer );
   var
@@ -268,14 +269,16 @@ var
 
 begin
     if FPageImage=nil then Exit;
+    ba := nil;
     pa := nil;
     na := nil;
     TextRegion := CropPix(FPageImage, inRect);
-    writeln('Created TextRegion');
-    pixWrite('/tmp/textregion.bmp', TextRegion, IFF_BMP);
+    //pixWrite('/tmp/textregion.bmp', TextRegion, IFF_BMP);
+    pixGetWordsInTextlines(TextRegion, 1, 5, 20, inRect.Right-inRect.Left, 200, @ba, @pa, @na);
+    {$IFDEF DEBUG}
     writeln(Format('inRect: %d %d %d %d', [inrect.Left, inRect.Top, inRect.Right, inRect.Bottom]));
-    writeln( pixGetWordsInTextlines(TextRegion, 1, 5, 20, inRect.Right-inRect.Left, 200, @ba, @pa, @na) );
     writeln('Boxarray.Getcount: ', boxaGetCount(ba));
+    {$ENDIF}
     lncount := 0;
 
      // --------- loop through word boxes to construct line boxes --------
@@ -303,12 +306,16 @@ begin
                    end;
              ra[lineindex] := R;
              lineindex := lineNum;
+             {$IFDEF DEBUG}
              writeln( 'Lineindex: ', FormatFloat('0.00', lineindex));
+             {$ENDIF}
            end;
 
      SetLength(FLines, FLineCount + lncount);
+     {$IFDEF DEBUG}
      writeln('Lncount: ', lncount);
      writeln('FLineCount: ', FLineCount);
+     {$ENDIF}
 
       // --------- OCR inRect one line at a time to allow for progress callback --------
      for x := 0 to lncount-1 do
@@ -320,11 +327,13 @@ begin
                                                  inRect.Top + R.Top,
                                                  R.Right-R.Left,
                                                  R.Bottom-R.Top);
-            writeln(Format('ra(%d): %d %d %d %d', [x, R.Left, R.Top, R.Right, R.Bottom]));
+            //writeln(Format('ra(%d): %d %d %d %d', [x, R.Left, R.Top, R.Right, R.Bottom]));
             if RectIsValid(R) then
               begin
+              {$IFDEF DEBUG}
               writeln ('ocr line ', x);
               writeln(Format('line Rect: %d %d %d %d', [R.Left, R.Top, R.Right, R.Bottom]));
+              {$ENDIF}
               TessBaseAPISetRectangle(FTesseract, inRect.Left + R.Left,
                                                  inRect.Top + R.Top,
                                                  R.Right-R.Left,
@@ -333,10 +342,13 @@ begin
                 UTF8Text := TessBaseAPIGetUTF8Text(FTesseract);
                 FText := Ftext + UTF8Text;
                 except
+                {$IFDEF DEBUG}
                 writeln('error in GetUTF8Text');
+                {$ENDIF}
               end;
               n := length(Ftext);
-              if FText[n]=#10 then SetLength(FText, n-1);
+              if n>0
+                 then if FText[n]=#10 then SetLength(FText, n-1);
               wa := TessBaseAPIGetWords(FTesseract, @pixa);
 
               {  For debugging:
@@ -347,20 +359,25 @@ begin
           pixcmapResetColor(cmap, 0, 255, 255, 255);  // reset background to white */
           pixDisplayWrite(pixd, 1);     }
 
-
-              SetLength(FLines[FLineCount + x].Words, boxaGetCount(wa));
-              FLines[FLineCount + x].Wordcount := boxaGetCount(wa);
+              wordcount := boxaGetCount(wa);
+              SetLength(FLines[FLineCount + x].Words, wordcount);
+              FLines[FLineCount + x].Wordcount := wordcount;
               wordpos := 1;
               wordend := 1;
               if wa<>nil then
+                //TODO: I can't remember what this is doing. Analyse and comment this code
                   begin
-                     writeln('Tesseract wordcount: ', boxaGetCount(wa));
+                     {$IFDEF DEBUG}
+                     writeln('Tesseract wordcount: ', wordcount);
+                     {$ENDIF}
                      deletedtokens := 0;
                      conf := TessBaseAPIAllWordConfidences(FTesseract);
                     //writeln( boxaWrite(Pchar('/tmp/tessboxes' + IntToStr(x) + '.txt'), wa));
-                     for n := 0 to boxaGetCount(wa)-1 do
+                     for n := 0 to wordcount-1 do
                           begin
+                            {$IFDEF DEBUG}
                             writeln('confidence ', conf^[n]);
+                            {$ENDIF}
                             b := boxaGetBox(wa, n, L_COPY);
                             if b<>nil then
                             begin
@@ -391,13 +408,15 @@ begin
               if Assigned(FOnOCRLine)
                  then FOnOCRLine(1);
             end
-          else writeln('empty box: ', x);
+          else {$IFDEF DEBUG} writeln('empty box: ', x) {$ENDIF};
+          {$IFDEF DEBUG}
           for n := 0 to FLines[FLineCount + x].WordCount-1 do write('[',n, #32, FLines[FLineCount + x].Words[n].Text+'] ');
           WriteLn('');
+          {$ENDIF}
          end;
 
     FLineCount := FLineCount + lncount;
-    if ba<>nil then boxDestroy(@ba);
+    if ba<>nil then boxaDestroy(@ba);
     if pa<>nil then ptaDestroy(@pa);
     if na<>nil then numaDestroy(@na);
     if TextRegion<>nil then pixDestroy(@TextRegion);
