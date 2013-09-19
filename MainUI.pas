@@ -29,6 +29,9 @@ type
     ContrastMenuItem: TMenuItem;
     DeskewButton: TToolButton;
     EditMenu: TMenuItem;
+    FileExportMenu: TMenuItem;
+    FileDjVuMenuItem: TMenuItem;
+    FilePDFMenuItem: TMenuItem;
     MenuItem6: TMenuItem;
     MenuItem7: TMenuItem;
     EnhanceMenuItem: TMenuItem;
@@ -44,6 +47,7 @@ type
     HelpMenu: TMenuItem;
     AboutMenuItem: TMenuItem;
     DebugMenuItem: TMenuItem;
+    FileTextMenuItem: TMenuItem;
     miThreshold: TMenuItem;
     RightSidePanel: TPanel;
     ScanSettingsMenuItem: TMenuItem;
@@ -181,7 +185,9 @@ type
     DraggingThumbnail: Boolean;
     MultiSelecting: Boolean;
     ScanCancelled: Boolean;
+    DjvuCancelled: Boolean;
     procedure CancelScan ( Sender: TObject );
+    procedure CancelDjVu ( Sender: TObject );
     procedure MakeSelection ( Sender: TObject );
     procedure DeleteSelection ( Sender: TObject );
     procedure SelectionChange ( Sender: TObject );
@@ -371,6 +377,7 @@ begin
   {$ENDIF}
   HasDJVU := (DjVuPath<>'');
   DjvuButton.Enabled := HasDJVU;
+  FileDjVuMenuItem.Enabled := HasDJVU;
   if HasDJVU then DjVuPath := IncludeTrailingPathDelimiter(DjVuPath);
   AutoDeskewOnScan := true;
   SelTextButtonClick(SelTextButton);
@@ -612,6 +619,7 @@ var
   lin: TLineData;
   lline: Integer;
   wword: Integer;
+  messagetext: String;
 
   function DjvuescapeText( inStr: string ): string;
   var
@@ -629,6 +637,7 @@ var
     Result := inStr;
   end;
 begin
+ DjvuCancelled := false;
  with SaveDialog do
       begin
         DefaultExt := '.djvu';
@@ -640,7 +649,7 @@ begin
      try
        Enabled := false;
        ProgressForm.SetMainText('Exporting project to Djvu');
-       ProgressForm.Show(nil);
+       ProgressForm.Show(@CancelDjVu);
        if FileExistsUTF8(SaveDialog.FileName)
              then DeleteFileUTF8(SaveDialog.FileName);
        for x := 0 to CurrentProject.PageCount-1 do
@@ -657,8 +666,8 @@ begin
             if d=1
                 then fn :=  TEMPFILE_SINGLEBIT_IMAGE
                 else fn := TEMPFILE_MULTIBIT_IMAGE;
-
-            ProgressForm.SetUpdateText( 'Processing page ' + IntToStr(x+1) );
+            messagetext := 'Processing page ' + IntToStr(x+1);
+            ProgressForm.SetUpdateText( messagetext );
             if CurrentProject.Pages[x].OCRData <> nil then
                begin
                   data.Add(Format('(page 0 0 %d %d', [w, h]));
@@ -682,14 +691,20 @@ begin
                   HiddenText := TEMPFILE_HIDDEN_TEXT;
                   data.SaveToFile(HiddenText);
                end;
+            Application.ProcessMessages;
+            if DjvuCancelled then exit;
             pixWrite(PChar(fn), p, IFF_PNM);
-            ProgressForm.SetUpdateText( 'Creating page ' + IntToStr(x+1));
+            ProgressForm.SetUpdateText( messagetext + ': Creating page');
             if djvumakepage(fn, TEMPFILE_DJVU_PAGE, HiddenText)=0 then
                begin
-                 ProgressForm.SetUpdateText( 'Adding page ' + IntToStr(x+1) + ' to document');
+                 Application.ProcessMessages;
+                 if DjvuCancelled then exit;
+                 ProgressForm.SetUpdateText( messagetext + ': Adding page to document');
                  djvuaddpage(SaveDialog.FileName, TEMPFILE_DJVU_PAGE);
                end
             else ShowMessage('Error when encoding page ' + IntToStr(x+1));
+            Application.ProcessMessages;
+            if DjvuCancelled then exit;
           finally
             StatusBar.Panels[1].Text := '';
             data.Free;
@@ -700,6 +715,7 @@ begin
      finally
        ProgressForm.Hide;
        Enabled := true;
+       if DjvuCancelled then ShowMessage('Operation cancelled');
      end;
 end;
 
@@ -1088,6 +1104,12 @@ begin
   ScanCancelled := true;
   sane_cancel(ScannerHandle);
   {$ENDIF}
+end;
+
+procedure TMainForm.CancelDjVu ( Sender: TObject ) ;
+begin
+  DjvuCancelled := true;
+  Application.ProcessMessages;
 end;
 
 procedure TMainForm.MakeSelection ( Sender: TObject ) ;
