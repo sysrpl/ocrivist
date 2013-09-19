@@ -171,7 +171,7 @@ type
     procedure SaveAsMenuItemClick ( Sender: TObject ) ;
     procedure ScanPageMenuItemClick ( Sender: TObject ) ;
     procedure SetScannerMenuItemClick ( Sender: TObject ) ;
-    procedure TestTesseractButtonClick ( Sender: TObject ) ;
+    procedure TesseractButtonClick ( Sender: TObject ) ;
     procedure ViewMenuItemClick ( Sender: TObject ) ;
   private
     { private declarations }
@@ -195,7 +195,7 @@ type
     procedure OCRPage(pageindex: integer);
     procedure DoSpellcheck;
     procedure EditorSelectToken( aline, aword: integer );
-    procedure PopulateLanguageList;
+    function PopulateLanguageList: Integer;
   public
     { public declarations }
   end;
@@ -205,10 +205,10 @@ type
 const
   THUMBNAIL_HEIGHT = 100;
 
-  TEMPFILE_HIDDEN_TEXT = '/tmp/ocr-temp.txt';
-  TEMPFILE_DJVU_PAGE = '/tmp/ocr-temp.djvu';
-  TEMPFILE_SINGLEBIT_IMAGE = '/tmp/ocr-temp.pnm';
-  TEMPFILE_MULTIBIT_IMAGE = '/tmp/ocr-temp.pbm';
+  TEMPFILE_HIDDEN_TEXT = 'ocr-temp.txt';
+  TEMPFILE_DJVU_PAGE = 'ocr-temp.djvu';
+  TEMPFILE_SINGLEBIT_IMAGE = 'ocr-temp.pnm';
+  TEMPFILE_MULTIBIT_IMAGE = 'ocr-temp.pbm';
 
 var
   MainForm: TMainForm;
@@ -324,8 +324,17 @@ begin
   ThumbnailListBox.Clear;
   ThumbnailListBox.ItemIndex := -1;
   ThumbnailListBox.ItemHeight := THUMBNAIL_HEIGHT + ThumbnailListBox.Canvas.TextHeight('Yy')+2;
-  OCRDatapath := '/usr/local/share/ocrdata/';
-  PopulateLanguageList;
+  {$IFDEF LINUX}
+  OCRDatapath := '/usr/local/share/tessdata/';
+  {$ENDIF}
+  {$IFDEF MSWINDOWS}
+  OCRDatapath := 'C:\Program Files\Tesseract-OCR\tessdata\';
+  {$ENDIF}
+  if PopulateLanguageList<1 then
+    begin
+      TesseractButton.Enabled := false;
+      OCRMenu.Enabled := false;
+    end;
 
   OCRLanguage := 'eng';
   LanguageComboBox.ItemIndex :=
@@ -351,9 +360,18 @@ begin
   editor.Align := alClient;
   Editor.PopupMenu := TextPopupMenu;
   Editor.OnSelectToken := @EditorSelectToken;
-  HasDJVU := (SearchFileInPath('djvumake','',
-                   SysUtils.GetEnvironmentVariable('PATH'),PathSeparator,[])<>'');
+  DjVuPath := SearchFileInPath('djvumake','',
+                   SysUtils.GetEnvironmentVariable('PATH'),PathSeparator,[]);
+  if Length(DjVuPath)>0
+     then DjVuPath := ExtractFilePath(DjVuPath);
+  {$IFDEF MSWINDOWS}
+  if Length(DjVuPath)=0
+    then if FileExists('C:\Program Files\DjvuLibre\djvumake.exe')
+        then DjVuPath := 'C:\Program Files\DjvuLibre\';
+  {$ENDIF}
+  HasDJVU := (DjVuPath<>'');
   DjvuButton.Enabled := HasDJVU;
+  if HasDJVU then DjVuPath := IncludeTrailingPathDelimiter(DjVuPath);
   AutoDeskewOnScan := true;
   SelTextButtonClick(SelTextButton);
   SpellcheckButton.Enabled := Editor.HasSpellCheck;
@@ -665,9 +683,13 @@ begin
                   data.SaveToFile(HiddenText);
                end;
             pixWrite(PChar(fn), p, IFF_PNM);
-            if djvumakepage(fn, TEMPFILE_DJVU_PAGE, HiddenText)=0
-               then djvuaddpage(SaveDialog.FileName, TEMPFILE_DJVU_PAGE)
-               else ShowMessage('Error when encoding page ' + IntToStr(x+1));
+            ProgressForm.SetUpdateText( 'Creating page ' + IntToStr(x+1));
+            if djvumakepage(fn, TEMPFILE_DJVU_PAGE, HiddenText)=0 then
+               begin
+                 ProgressForm.SetUpdateText( 'Adding page ' + IntToStr(x+1) + ' to document');
+                 djvuaddpage(SaveDialog.FileName, TEMPFILE_DJVU_PAGE);
+               end
+            else ShowMessage('Error when encoding page ' + IntToStr(x+1));
           finally
             StatusBar.Panels[1].Text := '';
             data.Free;
@@ -970,11 +992,13 @@ begin
          if not ScanCancelled then
            begin
               {$IFDEF MSWINDOWS}
+              ProgressForm.Hide;
               newpage := TwainScanner.ScanToPix;
               TwainScanner.Free;
               {$ENDIF}
               {$IFDEF LINUX}
               newpage := ScanToPix(ScannerHandle, @ShowScanProgress);
+              ProgressForm.Hide;
               {$ENDIF}
              pixSetResolution(newpage, resolution, resolution);
              nametext := Format('scan_%.3d', [CurrentProject.LoadCount]);
@@ -984,6 +1008,7 @@ begin
                   if AutoDeskewOnScan then
                      begin
                        ProgressForm.SetMainText('Deskewing page...');
+                       ProgressForm.Show(nil);
                        temppix := pixDeskew(newpage, 0);
                        if temppix<>nil then
                          begin
@@ -1023,7 +1048,7 @@ begin
   {$ENDIF}
 end;
 
-procedure TMainForm.TestTesseractButtonClick ( Sender: TObject ) ;
+procedure TMainForm.TesseractButtonClick ( Sender: TObject ) ;
 begin
   if CurrentProject.PageCount<1 then Exit;
   Enabled := false;
@@ -1226,7 +1251,6 @@ var
 begin
   if (pageindex<0) or (pageindex>CurrentProject.PageCount-1) then Exit;
   try
-    writeln(OCRLanguage);
     OCRJob := TTesseractPage.Create(CurrentProject.Pages[pageindex].PageImage, PChar(OCRDatapath), PChar(OCRLanguage));
     OCRProgressCount := 0;
     OCRJob.OnOCRLine := @ShowOCRProgress;
@@ -1234,12 +1258,12 @@ begin
         OCRJob.RecognizeRect( CurrentProject.Pages[pageindex].Selection[x] );
     CurrentProject.Pages[pageindex].OCRData := OCRJob;
     CurrentProject.Language := GetLanguageToken(LanguageComboBox.Text);
-   // Editor.OCRData := CurrentProject.CurrentPage.OCRData;
-    //MainPanel.Visible := false;
     OCRPanel.Visible := true;
     StatusBar.Panels[1].Text := '';
   except
+    {$IFDEF DEBUG}
     writeln('Error in OCRPage');
+    {$ENDIF}
   end;
 end;
 
@@ -1295,12 +1319,13 @@ begin
   pixDestroy(@pixd);
 end;
 
-procedure TMainForm.PopulateLanguageList;
+function TMainForm.PopulateLanguageList: Integer;
 Var
    SearchResult : TSearchRec;
    Filemask: String;
    token: String;
 begin
+  Result := 0;
   LanguageComboBox.Items.Clear;
   Filemask := OCRDatapath + '*.traineddata';
   writeln (Filemask);
@@ -1316,6 +1341,7 @@ begin
      finally
        FindClose (SearchResult);
      end;
+  Result := LanguageComboBox.Items.Count;
 end;
 
 

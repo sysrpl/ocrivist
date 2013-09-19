@@ -317,7 +317,7 @@ object MainForm: TMainForm
         Top = 2
         Caption = 'TesseractButton'
         ImageIndex = 19
-        OnClick = TestTesseractButtonClick
+        OnClick = TesseractButtonClick
       end
       object AutoselectButton: TToolButton
         Tag = 1
@@ -754,7 +754,7 @@ object MainForm: TMainForm
       end
       object miReadPage: TMenuItem
         Caption = '&Read page'
-        OnClick = TestTesseractButtonClick
+        OnClick = TesseractButtonClick
       end
       object miAutoProcessPage: TMenuItem
         Caption = 'Auto&process page'

@@ -26,6 +26,8 @@ type
 const
   READ_BYTES = 2048;
 
+var
+    DjVuPath: string;
 
 function djvumakepage( sourceimage, dest: TFilename; dsedtext: PChar; resolution: Integer = 300 ): Integer;
 function djvuaddpage( docname, pagename: TFilename ): Integer;
@@ -47,15 +49,15 @@ begin
      then encformat := encCJB2
      else encformat := encC44;
   case encformat of
-       encC44:  cmd := 'c44 ';
-       encCJB2: cmd := 'cjb2 ';
+       encC44:  cmd := '"' + DjVuPath + 'c44" ';
+       encCJB2: cmd := '"' + DjVuPath + 'cjb2" ';
   end;
   Encoder.CommandLine := cmd + '-dpi ' + IntToStr(resolution) + #32 + sourceimage + #32 + dest;
   Encoder.Execute;
   Result := Encoder.ExitStatus;
   if dsedtext<> nil then
      begin
-       Encoder.CommandLine := 'djvused ' + dest + ' -f ' + dsedtext + ' -s';
+       Encoder.CommandLine := '"' + DjVuPath + 'djvused" ' + dest + ' -f ' + dsedtext + ' -s';
        Encoder.Execute;
        Result := Encoder.ExitStatus;
      end;
@@ -71,8 +73,8 @@ begin
   Encoder := TProcess.Create(nil);
   Encoder.Options := Encoder.Options + [poWaitOnExit];
   if FileExists(docname)
-     then cmd := 'djvm -i "' + docname + '" "' + pagename + '"'
-     else cmd := 'djvm -c "' + docname + '" "' + pagename + '"';
+     then cmd := '"' + DjVuPath + 'djvm" -i "' + docname + '" "' + pagename + '"'
+     else cmd := '"' + DjVuPath + 'djvm" -c "' + docname + '" "' + pagename + '"';
   Encoder.CommandLine := cmd;
   Encoder.Execute;
   Result := Encoder.ExitStatus;
@@ -98,7 +100,7 @@ begin
   BytesRead := 0;
   Decoder := TProcess.Create(nil);
   Decoder.Options := Decoder.Options + [poUsePipes];
-  Decoder.CommandLine := 'djvudump "' + doc + '"';
+  Decoder.CommandLine := '"' + DjVuPath + 'djvudump" "' + doc + '"';
   Decoder.Execute;
   while Decoder.Running do
     begin
@@ -155,7 +157,7 @@ begin
      then raise Exception.Create(doc + ' not found in djvuExtractPage');
   Decoder := TProcess.Create(nil);
   Decoder.Options := Decoder.Options + [poWaitOnExit];
-  Decoder.CommandLine := 'ddjvu -format=tif -page=' + IntToStr(pageindex) + ' -1 "' + doc + '" ' + dest;
+  Decoder.CommandLine := '"' + DjVuPath + 'ddjvu" -format=tif -page=' + IntToStr(pageindex) + ' -1 "' + doc + '" ' + dest;
   Decoder.Execute;
   Result := Decoder.ExitStatus=0;
   Decoder.Free;
