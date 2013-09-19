@@ -602,6 +602,21 @@ object MainForm: TMainForm
         Caption = 'Save &As ...'
         OnClick = SaveAsMenuItemClick
       end
+      object FileExportMenu: TMenuItem
+        Caption = '&Export as'
+        object FileDjVuMenuItem: TMenuItem
+          Caption = 'DjVu'
+          OnClick = DjvuButtonClick
+        end
+        object FilePDFMenuItem: TMenuItem
+          Caption = 'PDF'
+          OnClick = PDFToolButtonClick
+        end
+        object FileTextMenuItem: TMenuItem
+          Caption = 'Text'
+          OnClick = TextButtonClick
+        end
+      end
       object MenuItem4: TMenuItem
         Caption = '-'
       end
