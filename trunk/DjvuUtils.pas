@@ -123,27 +123,26 @@ begin
   Decoder.Free;
   DocOutput := TStringList.Create;
   DocOutput.LoadFromStream(M);
-  writeln( DocOutput.Strings[0]);
   M.Free;
   n := 0;
   while ( n<DocOutput.Count ) and (Pos('DIRM [', DocOutput.Strings[n]) = 0)  do
         Inc(n);
   p := Pos('DIRM [', DocOutput.Strings[n]);
-  writeln('p=', p, ' n=', n);
+//  writeln('p=', p, ' n=', n);
   if p > 0 then
     begin
       x := 0;
       q := Pos(' pages', DocOutput.Strings[n]);
-      writeln('q=', q);
+//      writeln('q=', q);
       p := q-1;
       while (DocOutput.Strings[n][p] in ['0'..'9']) do Dec(p);
-      writeln('p=', p);
-writeln      (Copy(DocOutput.Strings[n], p+1, q-p));
+//      writeln('p=', p);
+//writeln      (Copy(DocOutput.Strings[n], p+1, q-p));
       if not TryStrToInt( Copy(DocOutput.Strings[n], p+1, q-p-1), x )
-         then writeln('Error in djvuGetDocInfo retrieving pagecount: '+#10+#32+DocOutput.Strings[n] );
+         then {$IFDEF DEBUG} writeln('Error in djvuGetDocInfo retrieving pagecount: '+#10+#32+DocOutput.Strings[n] ) {$ENDIF};
     end;
   dc.PageCount := x;
-  writeln('dc.PageCount=', dc.PageCount);
+//  writeln('dc.PageCount=', dc.PageCount);
   Result := dc;
   DocOutput.Free;
 end;

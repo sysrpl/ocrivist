@@ -595,6 +595,9 @@ object MainForm: TMainForm
         Caption = '&Open'
         OnClick = OpenProjectMenuItemClick
       end
+      object OpenRecentMenuItem: TMenuItem
+        Caption = 'Open Recent'
+      end
       object SaveProjectMenuItem: TMenuItem
         Caption = '&Save'
       end
@@ -790,7 +793,6 @@ object MainForm: TMainForm
     object DebugMenuItem: TMenuItem
       Caption = 'Debug'
       Visible = False
-      OnClick = DebugMenuItemClick
     end
   end
   object SaveDialog: TSaveDialog
