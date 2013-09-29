@@ -11,7 +11,7 @@ uses
   OcrivistData, selector,
   {$IFDEF HAS_LIBSANE} Sane, scansane,{$ENDIF}
   {$IFDEF MSWINDOWS} DelphiTwain, scantwain,{$ENDIF}
-  ocreditor;
+  ocreditor, historymenu, IniFiles;
 
 { command line for converting pdf pages to tiff:
   convert -density 300x300 -compress lzw <source>.pdf[0] <output>.tiff
@@ -32,6 +32,7 @@ type
     FileExportMenu: TMenuItem;
     FileDjVuMenuItem: TMenuItem;
     FilePDFMenuItem: TMenuItem;
+    OpenRecentMenuItem: TMenuItem;
     MenuItem6: TMenuItem;
     MenuItem7: TMenuItem;
     EnhanceMenuItem: TMenuItem;
@@ -129,7 +130,6 @@ type
     procedure AboutMenuItemClick ( Sender: TObject ) ;
     procedure CopyTextMenuItemClick ( Sender: TObject ) ;
     procedure CropButtonClick ( Sender: TObject ) ;
-    procedure DebugMenuItemClick ( Sender: TObject ) ;
     procedure DelPageMenuItemClick ( Sender: TObject ) ;
     procedure DelSelectButtonClick ( Sender: TObject ) ;
     procedure ExitMenuItemClick ( Sender: TObject ) ;
@@ -177,6 +177,7 @@ type
     procedure SetScannerMenuItemClick ( Sender: TObject ) ;
     procedure TesseractButtonClick ( Sender: TObject ) ;
     procedure ViewMenuItemClick ( Sender: TObject ) ;
+    procedure RecentMenuItemClick ( Sender: TObject ) ;
   private
     { private declarations }
     Editor: TOcrivistEdit;
@@ -186,6 +187,7 @@ type
     MultiSelecting: Boolean;
     ScanCancelled: Boolean;
     DjvuCancelled: Boolean;
+    RecentList: TRecentFiles;
     procedure CancelScan ( Sender: TObject );
     procedure CancelDjVu ( Sender: TObject );
     procedure MakeSelection ( Sender: TObject );
@@ -204,6 +206,7 @@ type
     function PopulateLanguageList: Integer;
   public
     { public declarations }
+    procedure OpenProject(fn: TFilename);
   end;
 
 
@@ -225,6 +228,7 @@ var
   OCRDatapath: string;
   HasDJVU: Boolean;
   undoPix: PLPix;
+  Preferences: TIniFile;
 
   AutoDeskewOnScan: Boolean;
 
@@ -239,19 +243,8 @@ var
 
 procedure TMainForm.CropButtonClick ( Sender: TObject ) ;
 begin
-  ICanvas.SelectionMode := smCrop;  writeln('crop button');
+  ICanvas.SelectionMode := smCrop;
   StatusBar.Panels[0].Text := 'CROP';
-  //SelectToolButton.ImageIndex := TMenuItem(Sender).ImageIndex;
-end;
-
-procedure TMainForm.DebugMenuItemClick ( Sender: TObject ) ;
-var
-  x: Integer;
-begin
-  {for x := 0 to CurrentProject.PageCount-1 do
-     if CurrentProject.Pages[x].Active then writeln('page ', x+1, ': ACTIVE')
-     else writeln('page ', x+1, ': DISACTIVATED');}
-  ShowMessage(Format( 'pageimage%.3d.tif', [5] ));
 end;
 
 procedure TMainForm.CopyTextMenuItemClick ( Sender: TObject ) ;
@@ -319,6 +312,9 @@ end;
 procedure TMainForm.FormCreate ( Sender: TObject ) ;
 var
   x: Integer;
+  UserHome: String;
+  PrefFileName: String;
+  RecentFile: String;
 begin
   ICanvas := TPageViewer.Create(self);
   ICanvas.Parent := MainPanel;
@@ -330,6 +326,37 @@ begin
   ThumbnailListBox.Clear;
   ThumbnailListBox.ItemIndex := -1;
   ThumbnailListBox.ItemHeight := THUMBNAIL_HEIGHT + ThumbnailListBox.Canvas.TextHeight('Yy')+2;
+  UserHome := SysUtils.GetEnvironmentVariable('HOME');
+
+  {$IFDEF LINUX}
+  if FileExists(UserHome + '/.config')
+     then SettingsDir := UserHome + '/.config/ocrivist/'
+     else SettingsDir := UserHome + '/.ocrivist/';
+  PrefFileName := SettingsDir + 'ocrivist.ini';
+  {$ENDIF}
+
+  {$IFDEF MSWINDOWS}
+  SettingsDir := GetAppConfigDir(False);
+  PrefFileName := GetAppConfigFile(false);
+  {$ENDIF}
+
+  if not DirectoryExistsUTF8(SettingsDir)
+     then mkdir(SettingsDir);
+  RecentList := TRecentFiles.Create(Self);
+  RecentList.OnClick := @RecentMenuItemClick;
+  OpenRecentMenuItem.Add(RecentList);
+  Preferences := TIniFile.Create(PrefFileName);
+  RecentList.IniFile := Preferences;
+  RecentList.Max := Preferences.ReadInteger(CfgUserPrefs, cfgRecentFileCnt, 5);
+  x := 0;
+  RecentFile := Preferences.ReadString ( CfgRecentFiles, CfgRecentX + IntToStr(x) , '' ) ;
+  while (RecentFile <> '') and (x < Preferences.ReadInteger(CfgUserPrefs, cfgRecentFileCnt, 5)) do
+        begin
+          RecentList.AddFile(RecentFile, false);
+          Inc(x);
+          RecentFile := Preferences.ReadString(CfgRecentFiles,CfgRecentX + IntToStr(x),'');
+        end;
+
   {$IFDEF LINUX}
   OCRDatapath := '/usr/local/share/tessdata/';
   {$ENDIF}
@@ -416,7 +443,7 @@ begin
      end;
   if ssCtrl in Shift then if Key=77 then
      begin
-       writeln('Key detected: ', Key);
+       {$IFDEF DEBUG} writeln('Key detected: ', Key); {$ENDIF}
        if OCRScreenMenuItem.Checked
         then ProcessPageMenuItem.Click
         else OCRScreenMenuItem.Click;
@@ -538,8 +565,6 @@ begin
   Application.ProcessMessages;
   OCRPanel.Visible := OCRScreenMenuItem.Checked;
   MainPanel.Visible := ProcessPageMenuItem.Checked;
-  if MainPanel.Visible then writeln('MainPanel.Visible')
-  else WriteLn('MainPanel not visible');
 end;
 
 procedure TMainForm.NewProjectMenuItemClick ( Sender: TObject ) ;
@@ -825,7 +850,7 @@ var
       begin
         StartPosition := ItemAtPos(ThumbnailStartPoint, True) ;
         DropPosition := ItemAtPos(DropPoint, True) ;
-        writeln(StartPosition, ' --> ', DropPosition);
+        // Move the thumbnail
         Items.Move(StartPosition, DropPosition) ;
         // Now apply move to contents of TOcrivistProject, too
         CurrentProject.MovePage(StartPosition, DropPosition);
@@ -941,17 +966,7 @@ begin
        end;
   if OpenDialog.Execute then
     begin
-      NewProjectMenuItemClick(nil);
-      if CurrentProject.LoadfromFile(OpenDialog.FileName)=0 then
-        begin
-          ICanvas.Scale :=  CurrentProject.ViewerScale;
-          ThumbnailListBox.Clear;
-          for x := 0 to CurrentProject.PageCount-1 do
-             ThumbnailListBox.Items.AddObject( CurrentProject.Pages[x].Title, CurrentProject.Pages[x].Thumbnail );
-          ThumbnailListBox.ItemIndex := CurrentProject.ItemIndex;
-          ThumbnailListBoxClick(ThumbnailListBox);
-          Caption := 'Ocrivist : ' + CurrentProject.Title;
-        end;
+      OpenProject(OpenDialog.FileName);
     end;
 end;
 
@@ -973,6 +988,7 @@ begin
       CurrentProject.SaveToFile(SaveDialog.FileName);
       Caption := 'Ocrivist : ' + CurrentProject.Title;
       ThumbnailListBox.ItemIndex := CurrentProject.ItemIndex;
+      RecentList.AddFile(SaveDialog.FileName);
       finally
         ProgressForm.Hide;
       end;
@@ -1097,6 +1113,11 @@ begin
   CurrentProject.ViewerScale := ICanvas.Scale;
 end;
 
+procedure TMainForm.RecentMenuItemClick ( Sender: TObject ) ;
+begin
+  OpenProject(TMenuItem(Sender).Caption);
+end;
+
 procedure TMainForm.CancelScan(Sender: TObject);
 begin
   {$IFDEF HAS_LIBSANE}
@@ -1126,7 +1147,6 @@ end;
 
 procedure TMainForm.DeleteSelection(Sender: TObject);
 begin
-  writeln('delete selection');
   if CurrentProject<>nil then
      CurrentProject.CurrentPage.DeleteSelection(ICanvas.SelectionIndex(TSelector(Sender)));
 end;
@@ -1283,9 +1303,7 @@ begin
     OCRPanel.Visible := true;
     StatusBar.Panels[1].Text := '';
   except
-    {$IFDEF DEBUG}
-    writeln('Error in OCRPage');
-    {$ENDIF}
+    {$IFDEF DEBUG} writeln('Error in OCRPage'); {$ENDIF}
   end;
 end;
 
@@ -1350,7 +1368,6 @@ begin
   Result := 0;
   LanguageComboBox.Items.Clear;
   Filemask := OCRDatapath + '*.traineddata';
-  writeln (Filemask);
   If FindFirst (Filemask, (faAnyFile And Not faDirectory) , SearchResult) = 0 Then
      try
        token := ExtractFileNameWithoutExt(SearchResult.Name);
@@ -1364,6 +1381,24 @@ begin
        FindClose (SearchResult);
      end;
   Result := LanguageComboBox.Items.Count;
+end;
+
+procedure TMainForm.OpenProject ( fn: TFilename ) ;
+var
+  x: Integer;
+begin
+ NewProjectMenuItemClick(nil);
+ if CurrentProject.LoadfromFile(fn)=0 then
+   begin
+     ICanvas.Scale :=  CurrentProject.ViewerScale;
+     ThumbnailListBox.Clear;
+     for x := 0 to CurrentProject.PageCount-1 do
+        ThumbnailListBox.Items.AddObject( CurrentProject.Pages[x].Title, CurrentProject.Pages[x].Thumbnail );
+     ThumbnailListBox.ItemIndex := CurrentProject.ItemIndex;
+     ThumbnailListBoxClick(ThumbnailListBox);
+     Caption := 'Ocrivist : ' + CurrentProject.Title;
+     RecentList.AddFile(fn);
+   end;
 end;
 
 

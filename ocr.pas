@@ -200,8 +200,10 @@ var
     FLineCount := 0;
     SetLength(FLines, FLineCount);
   except
+    {$IFDEF DEBUG}
     if FTesseract=nil then
        writeln('tesseract_new failed :(')
+    {$ENDIF}
   end
   ;//else writeln('Unable to open ' + FDatapath + FLanguage + '.traineddata') ; //TODO: handle this better!
 

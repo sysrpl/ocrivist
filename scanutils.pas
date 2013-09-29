@@ -405,14 +405,12 @@ begin
         begin
           bytesread := bytesread + Str.Read(b[1], 1);
           if b[1] = #10 then Inc(ct);
-          writeln(Str.Size, ' : ', Str.Position, ' : ', bytesread, ' : ', b);
         end;
   for line := 0 to linecount-1 do
       for row := 0 to 20 do
           begin
             bytesread := bytesread + Str.Read(PixelRGB, 3);
             bmp.Canvas.Pixels[row, line] := RGBToColor(PixelRGB[0], PixelRGB[1], PixelRGB[2]);
-            writeln(Str.Size, ' : ', bytesread, ' : ', line, '/', linecount);
           end;
   Result := True;
   Application.ProcessMessages;
