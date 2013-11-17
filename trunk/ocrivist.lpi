@@ -1,0 +1,244 @@
+<?xml version="1.0"?>
+<CONFIG>
+  <ProjectOptions>
+    <Version Value="9"/>
+    <General>
+      <SessionStorage Value="InProjectDir"/>
+      <MainUnit Value="0"/>
+      <Title Value="Ocrivist"/>
+      <ResourceType Value="res"/>
+      <UseXPManifest Value="True"/>
+      <Icon Value="0"/>
+    </General>
+    <i18n>
+      <EnableI18N LFM="False"/>
+    </i18n>
+    <VersionInfo>
+      <StringTable ProductVersion=""/>
+    </VersionInfo>
+    <BuildModes Count="2">
+      <Item1 Name="default" Default="True"/>
+      <Item2 Name="release">
+        <CompilerOptions>
+          <Version Value="11"/>
+          <Target>
+            <Filename Value="ocrivist"/>
+          </Target>
+          <SearchPaths>
+            <IncludeFiles Value="$(ProjOutDir)"/>
+            <OtherUnitFiles Value="../leptonica;selector;../../Projects/PascalSane/sane;../../Projects/PascalSane/demo;../tesseract;Aspell"/>
+            <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
+          </SearchPaths>
+          <Linking>
+            <Debugging>
+              <DebugInfoType Value="dsStabs"/>
+            </Debugging>
+          </Linking>
+          <Other>
+            <CompilerMessages>
+              <UseMsgFile Value="True"/>
+            </CompilerMessages>
+            <CustomOptions Value="-dUseCThreads -dHAS_LIBSANE"/>
+            <CompilerPath Value="$(CompPath)"/>
+          </Other>
+        </CompilerOptions>
+      </Item2>
+    </BuildModes>
+    <PublishOptions>
+      <Version Value="2"/>
+      <DestinationDirectory Value="/media/disk/ocrivist2"/>
+      <IncludeFileFilter Value="*.(pas|pp|inc|lfm|lpr|lrs|lpi|lpk|sh|xml)"/>
+      <ExcludeFileFilter Value="*.(bak|ppu|ppw|o|so);*~;backup"/>
+    </PublishOptions>
+    <RunParams>
+      <local>
+        <FormatVersion Value="1"/>
+        <LaunchingApplication PathPlusParams="/usr/bin/xterm -T 'Lazarus Run Output' -e $(LazarusDir)/tools/runwait.sh $(TargetCmdLine)"/>
+      </local>
+    </RunParams>
+    <RequiredPackages Count="2">
+      <Item1>
+        <PackageName Value="SynEdit"/>
+        <MinVersion Major="1" Valid="True"/>
+      </Item1>
+      <Item2>
+        <PackageName Value="LCL"/>
+      </Item2>
+    </RequiredPackages>
+    <Units Count="21">
+      <Unit0>
+        <Filename Value="ocrivist.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ocrivist"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="MainUI.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="MainForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="MainUI"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="../leptonica/leptonica.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="leptonica"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="../leptonica/LibLeptUtils.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="LibLeptUtils"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="pageviewer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="pageviewer"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="OcrivistData.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="OcrivistData"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="selector/selector.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="selector"/>
+      </Unit6>
+      <Unit7>
+        <Filename Value="../../Projects/PascalSane/sane/sane.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Sane"/>
+      </Unit7>
+      <Unit8>
+        <Filename Value="../../Projects/PascalSane/demo/scanutils.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ScanUtils"/>
+      </Unit8>
+      <Unit9>
+        <Filename Value="DjvuUtils.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="DjvuUtils"/>
+      </Unit9>
+      <Unit10>
+        <Filename Value="scanner.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="ScannerForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="scanner"/>
+      </Unit10>
+      <Unit11>
+        <Filename Value="../../Projects/libtessc/tessintf.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="tessintf"/>
+      </Unit11>
+      <Unit12>
+        <Filename Value="ocr.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ocr"/>
+      </Unit12>
+      <Unit13>
+        <Filename Value="ocreditor.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ocreditor"/>
+      </Unit13>
+      <Unit14>
+        <Filename Value="frmSpell.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="SpellcheckForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="frmSpell"/>
+      </Unit14>
+      <Unit15>
+        <Filename Value="/media/data1/lazarus/ocrivist2/progress.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="ProgressForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="progress"/>
+      </Unit15>
+      <Unit16>
+        <Filename Value="about.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="AboutForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="about"/>
+      </Unit16>
+      <Unit17>
+        <Filename Value="threshold.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="ThresholdForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="threshold"/>
+      </Unit17>
+      <Unit18>
+        <Filename Value="../tesseract/tesseract.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="tesseract"/>
+      </Unit18>
+      <Unit19>
+        <Filename Value="Aspell/pasdoc_aspell.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="PasDoc_Aspell"/>
+      </Unit19>
+      <Unit20>
+        <Filename Value="historymenu.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="historymenu"/>
+      </Unit20>
+    </Units>
+  </ProjectOptions>
+  <CompilerOptions>
+    <Version Value="11"/>
+    <Target>
+      <Filename Value="ocrivist"/>
+    </Target>
+    <SearchPaths>
+      <IncludeFiles Value="$(ProjOutDir)"/>
+      <OtherUnitFiles Value="../leptonica;/media/data1/fpc-2.4.0-src/packages/aspell/src/;selector;../../Projects/PascalSane/sane;../../Projects/PascalSane/demo;../../Projects/libtessc"/>
+      <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
+    </SearchPaths>
+    <CodeGeneration>
+      <Checks>
+        <IOChecks Value="True"/>
+        <RangeChecks Value="True"/>
+        <OverflowChecks Value="True"/>
+        <StackChecks Value="True"/>
+      </Checks>
+      <Optimizations>
+        <OptimizationLevel Value="0"/>
+      </Optimizations>
+    </CodeGeneration>
+    <Linking>
+      <Debugging>
+        <DebugInfoType Value="dsStabs"/>
+      </Debugging>
+    </Linking>
+    <Other>
+      <CompilerMessages>
+        <UseMsgFile Value="True"/>
+      </CompilerMessages>
+      <CustomOptions Value="-dUseCThreads"/>
+      <CompilerPath Value="$(CompPath)"/>
+    </Other>
+  </CompilerOptions>
+  <Debugging>
+    <Exceptions Count="4">
+      <Item1>
+        <Name Value="EAbort"/>
+      </Item1>
+      <Item2>
+        <Name Value="ECodetoolError"/>
+      </Item2>
+      <Item3>
+        <Name Value="EFOpenError"/>
+      </Item3>
+      <Item4>
+        <Name Value="EReadError"/>
+      </Item4>
+    </Exceptions>
+  </Debugging>
+</CONFIG>
