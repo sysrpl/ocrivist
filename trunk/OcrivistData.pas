@@ -621,7 +621,9 @@ end;
 
 function TOcrivistPage.GetPageImage: PLPix;
 begin
+  {$IFDEF DEBUG}
   writeln('FImageFile: ', FImageFile);
+  {$ENDIF}
   if FPix = nil
      then FPix := LoadFromFile;
   Result := FPix;
@@ -659,7 +661,9 @@ procedure TOcrivistPage.SetPageImage ( const AValue: PLPix ) ;
 begin
   if AValue<>FPix then
         begin
+          {$IFDEF DEBUG}
           writeln('setting new pix in OctrivistPage');
+          {$ENDIF}
           FPix := AValue;  // Note: TOcrivistPage is not responsible for destroying previous PIX
           MakeThumbnail;
           SaveToFileBackground(Fpix, '');
@@ -777,18 +781,26 @@ var
 begin
   if FPix = nil then
       begin
+        {$IFDEF DEBUG}
         writeln('loading pix from ', FFilename, ' in background');
+        {$ENDIF}
         pixA := pixRead(PChar(FFilename));
         FPixAddr^ := pixA;
+        {$IFDEF DEBUG}
         if Pixa<>nil
            then writeln('pix loaded successfully')
            else writeln('failed to load pix');
+        {$ENDIF}
       end
   else
       begin
+        {$IFDEF DEBUG}
         writeln('writing pix to ', FFilename, ' in background');
+        {$ENDIF}
         SaveResult := pixWrite(PChar(FFilename), FPix, IFF_TIFF_LZW);
+        {$IFDEF DEBUG}
         writeln('Result of save is ', SaveResult);
+        {$ENDIF}
       end;
   if Assigned(FOnComplete)
      then FOnComplete(Self);
@@ -800,7 +812,9 @@ begin
   FreeOnTerminate := true;
   inherited Create(CreateSuspended);
   Fpix := nil;
+  {$IFDEF DEBUG}
   writeln('Created TPixFileThread');
+  {$ENDIF}
 end;
 
 procedure TPixFileThread.SaveToFile ( Pix: PLPix; Dest: TFilename ) ;

@@ -2,7 +2,7 @@
 {december 2001®, made by Gustavo Daud}
 
 {This unit contains general methods used by Delphi}
-{Twain component. Some of the methods bellow aren't}
+{Twain component. Some of the methods below aren't}
 {directly related to Twain, but are pieces needed}
 {to implement the component.}
 
@@ -92,9 +92,8 @@ function Fix32ToFloat(Value: TW_FIX32): Extended;
 function FloatToFix32 (floater: extended): TW_FIX32;
 
 implementation
-{$R DelphiTwain}
 
-{Units used bellow}
+{Units used below}
 uses
   Windows;
 

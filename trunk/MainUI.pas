@@ -363,7 +363,7 @@ begin
   {$IFDEF MSWINDOWS}
   OCRDatapath := 'C:\Program Files\Tesseract-OCR\tessdata\';
   {$ENDIF}
-  if PopulateLanguageList<1 then
+  if PopulateLanguageList<1 then  // no tesseract language files found
     begin
       TesseractButton.Enabled := false;
       OCRMenu.Enabled := false;
@@ -1364,6 +1364,7 @@ Var
    SearchResult : TSearchRec;
    Filemask: String;
    token: String;
+   lg: String;
 begin
   Result := 0;
   LanguageComboBox.Items.Clear;
@@ -1375,7 +1376,9 @@ begin
        While FindNext (SearchResult) = 0 Do
              Begin
              token := ExtractFileNameWithoutExt(SearchResult.Name);
-             LanguageComboBox.Items.Add(GetLanguageFromToken(token));
+             lg := GetLanguageFromToken(token);
+             if lg<>''
+              then LanguageComboBox.Items.Add(lg);
              End;
      finally
        FindClose (SearchResult);
