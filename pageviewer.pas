@@ -99,14 +99,18 @@ function ScaleRect ( aRect: TRect; scale: Single ) : TRect;
 var
   TempRect: TRect;
 begin
+  {$IFDEF DEBUG}
   writeln('scale is ', FormatFloat( '0.00', scale ));
   writeln( Format('Input rect: %d %d %d %d', [aRect.Top, aRect.Left, aRect.Bottom, aRect.Right]) );
+  {$ENDIF}
   TempRect.Top := Round(aRect.Top*scale);
   TempRect.Left := Round(aRect.Left*scale);
   TempRect.Bottom := Round(aRect.Bottom*scale);
   TempRect.Right := Round(aRect.Right*scale);
   Result := TempRect;
+  {$IFDEF DEBUG}
   writeln( Format('Output rect: %d %d %d %d', [TempRect.Top, TempRect.Left, TempRect.Bottom, TempRect.Right]) );
+  {$ENDIF}
 end;
 
 function ScaleRectToView ( aRect: TRect; viewfactor: single ) : TRect;
@@ -385,7 +389,9 @@ begin
                              end;
           end;
           ScaleToBitmap(FCurrentPagePix, FBitmap, FScale);
+          {$IFDEF DEBUG}
           writeln('w:', FPageWidth, '  h:', FPageHeight, ' scale:', FormatFloat('0.00', FScale));
+          {$ENDIF}
           SetupScrollbars;
           ResizeSelections;
           Invalidate;
@@ -404,7 +410,7 @@ begin
           FSelectRect.BottomRight := Point(X, Y);
         end;
   //inherited MouseDown ( Button, Shift, X, Y ) ;
-  writeln('MouseDown: ', x, #32, y);
+//  writeln('MouseDown: ', x, #32, y);
   Invalidate;
 end;
 
@@ -436,7 +442,9 @@ procedure TPageViewer.SelectionChange(Sender: TObject);
 begin
   if FSelectionMode=smSelect
      then FRealSelections[ SelectionIndex( TSelector(Sender) ) ] := UnScaleRect(TSelector(Sender).Selection, Scale);
+  {$IFDEF DEBUG}
   writeln('TPageViewer received SelectionChange from Selector index ', SelectionIndex( TSelector(Sender) ));
+  {$ENDIF}
 end;
 
 procedure TPageViewer.SelectionGrabFocus ( Sender: TObject ) ;
@@ -508,7 +516,9 @@ begin
   writeln(Selector.Name, '  ', Selector.Top);
   SetLength(Fselections, Length(Fselections)+1);
   Fselections[ Length( Fselections )-1 ] := Selector;
+  {$IFDEF DEBUG}
   writeln(Fselections[0].Selection.Top);
+  {$ENDIF}
 end;
 
 procedure TPageViewer.DeleteSelector ( SelIndex: Integer ) ;
@@ -525,9 +535,11 @@ begin
             end;
           SetLength(Fselections, Length(Fselections)-1);
           SetLength(FRealSelections, Length(Fselections));
+          {$IFDEF DEBUG}
           writeln('reconfigured selections');
+          {$ENDIF}
         end
-  else WriteLn(Format('Error in DeleteSelector: Index out of range (%d)', [SelIndex]));
+  else {$IFDEF DEBUG} WriteLn(Format('Error in DeleteSelector: Index out of range (%d)', [SelIndex])) {$ENDIF};
   //Raise Exception.CreateFmt('Error in DeleteSelector: Index out of range (%d)', [SelIndex]);
 end;
 
@@ -539,7 +551,9 @@ begin
   Result := nil;
   if JLReScale(FBitmap.Width, FBitmap.Height, w, h, TargetRect) then
         begin
+          {$IFDEF DEBUG}
           writeln( Format('Rect: %d %d %d %d ', [TargetRect.Left, TargetRect.Top, TargetRect.Right, TargetRect.Bottom]));
+          {$ENDIF}
           //now remove left and top borders if any
           TargetRect.Right := TargetRect.Right-TargetRect.Left;
           TargetRect.Left := 0;

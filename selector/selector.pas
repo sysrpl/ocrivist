@@ -170,7 +170,9 @@ destructor TSelector.Destroy;
 begin
   if Assigned(FOnDelete)
      then FOnDelete(Self);
+  {$IFDEF DEBUG}
   WriteLn('TSelector destroyed');
+  {$ENDIF}
   inherited Destroy;
 end;
 
@@ -178,7 +180,9 @@ procedure TSelector.SetFocus;
 begin
   fFocussed := true;
   Paint;
+  {$IFDEF DEBUG}
   writeln(fCaption, ' SetFocus');
+  {$ENDIF}
   if Assigned(FOnFocus) then FOnFocus(Self);
 end;
 
@@ -199,6 +203,7 @@ begin
    if PtInRect(fBottomRightHandle, MouseCoords)
       then fResizehandle := rhBottomRight;
 
+   {$IFDEF DEBUG}
    case fResizehandle of
         rhNone: writeln('rhNone');
         rhTopLeft: writeln('rhTopLeft');
@@ -206,6 +211,7 @@ begin
         rhTopRight: writeln('rhTopRight');
         rhBottomRight: writeln('rhBottomRight');
    end;
+   {$ENDIF}
    if fResizehandle<>rhNone
       then fResizing := true;
    fStartX := X;

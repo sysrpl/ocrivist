@@ -77,7 +77,7 @@ begin
          TwainSource.ShowUI := false;
          TwainSource.Loaded := true;
          try
-         x := TwainSource.GetCaps;
+//         x := TwainSource.GetCaps;
          x := TwainSource.GetIXResolution(xr, xr_range);
          if x = crSuccess then
             begin
