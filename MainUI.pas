@@ -785,12 +785,25 @@ var
   x: Integer;
    I: Integer;
 begin
-  if CurrentProject.Filename=''
-     then SaveAsMenuItemClick(Sender)
-  else
-    begin
-      CurrentProject.SaveToFile(CurrentProject.Filename);
-    end;
+  try
+    SaveButton.Enabled := false;
+    SaveAsMenuItem.Enabled := false;
+    SaveProjectMenuItem.Enabled := false;
+    if CurrentProject.Filename=''
+       then SaveAsMenuItemClick(Sender)
+    else
+      begin
+        ProgressForm.SetMainText( 'Saving project...' );
+        ProgressForm.Show(nil);
+        Application.ProcessMessages;
+        CurrentProject.SaveToFile(CurrentProject.Filename);
+      end;
+  finally
+    SaveButton.Enabled := true;
+    SaveAsMenuItem.Enabled := true;
+    SaveProjectMenuItem.Enabled := true;
+    ProgressForm.Hide;
+  end;
 end;
 
 procedure TMainForm.SaveTextMenuItemClick ( Sender: TObject ) ;
@@ -1105,7 +1118,7 @@ begin
   Enabled := false;
   ProgressForm.SetMainText('Reading page...');
   ProgressForm.SetUpdateText(' ');
-  ProgressForm.Show(nil);
+  //ProgressForm.Show(nil);
   try
     OCRPage(ThumbnailListBox.ItemIndex);
     Editor.OCRData := CurrentProject.CurrentPage.OCRData;
