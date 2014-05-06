@@ -25,11 +25,14 @@ unit LibLeptUtils;
 interface
 
 uses
-  Classes, SysUtils, Graphics, leptonica, sane, ScanUtils;
+  Classes, SysUtils, Graphics, leptonica
+  {$IFDEF HAS_LIBSANE}
+  , sane, ScanUtils
+  {$ENDIF};
 
 type
-  TProgressCallback = procedure(progress: Single) of object;
 
+  TProgressCallback = procedure(progress: Single) of object;
 
 const
   //BUFFERSIZE = 32768;
@@ -38,7 +41,9 @@ const
 function ScaleToBitmap( pix: PLPix;  bmp: TBitmap; scalexy: Single ): integer;
 function CropPix( pix: PLPix; cropRect: TRect ): PLPix;
 function CropPix( pix: PLPix; x, y, w, h: longint ): PLPix;
+{$IFDEF HAS_LIBSANE}
 function ScanToPix( h: SANE_Handle; progresscb: TProgressCallback ): PLPix;
+{$ENDIF}
 function BoxToRect( aBox: PLBox ): TRect;
 function StreamToPix( S: TMemoryStream ): PLPix;
 
@@ -58,7 +63,6 @@ begin
   if tempPix<>nil then
     if pixWriteMem(@buf, @bytecount, tempPix, IFF_BMP)=0 then
      try
-       writeln(bytecount);
        ms.Write(buf[0], bytecount);
        ms.Position := 0;
       if bmp <> nil then
@@ -93,6 +97,7 @@ begin
   boxDestroy(@BoxRect);
 end;
 
+{$IFDEF HAS_LIBSANE}
 function ScanToPix ( h: SANE_Handle; progresscb: TProgressCallback ) : PLPix;
 var
   fileheader: String;
@@ -109,7 +114,7 @@ begin
   data := nil;
      if h<>nil then
         try
-          writeln('start scan');
+          {$IFDEF DEBUG} writeln('start scan'); {$ENDIF}
           status := sane_start(h);  // start scanning
           if status = SANE_STATUS_GOOD then
              try
@@ -121,7 +126,7 @@ begin
                 for byt := 0 to Length(fileheader)-1 do
                     data[byt] := byte(fileheader[byt+1]);
                 byteswritten := byt+1;;
-                writeln('par format: ', par.format);
+                {$IFDEF DEBUG} writeln('par format: ', par.format); {$ENDIF}
                 while status = SANE_STATUS_GOOD do
                   begin
                     status := sane_read(h, @data[byteswritten], BUFFERSIZE, @l );    //read data stream from scanner
@@ -131,16 +136,15 @@ begin
              finally
                sane_cancel(h);
              end
-          else writeln('Scan failed: ' + sane_strstatus(status));
-          writeln('scan done');
+          {$IFDEF DEBUG} else writeln('Scan failed: ' + sane_strstatus(status)) {$ENDIF};
+          {$IFDEF DEBUG} writeln('scan done');  {$ENDIF}
           pixImage := pixReadMem(data, byteswritten);
-//          pixSetResolution(pixImage, resolution, resolution);
           Result := pixImage;
-          writeln('file loaded');
         finally
           if data<>nil then Freemem(data);
         end;
 end;
+{$ENDIF}
 
 function BoxToRect ( aBox: PLBox ) : TRect;
 var
@@ -163,8 +167,8 @@ begin
   bytecount := S.Size;
   Getmem(buf, bytecount);
   try
-    s.Position := 0;
-    writeln(S.Read(buf[0], bytecount));
+    S.Position := 0;
+    S.Read(buf[0], bytecount);
     tempPix := pixReadMem(buf, bytecount);
   finally
     Freemem(buf);

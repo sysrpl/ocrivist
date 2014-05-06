@@ -163,6 +163,15 @@ type
      pta:        array of PPta;     // pta ptr array
   end;
 
+  // String array: an array of C strings
+  PSArray = ^TSArray;
+  TSarray = record
+     nalloc:     Integer;           // size of allocated ptr array
+     n:          Integer;           // number of strings allocated
+     refcount:   Integer;           // reference count (1 if no clones)
+     strarray:   array of PChar;    // string array
+  end;
+
   PPixCmap = Pointer;
 
 {*-------------------------------------------------------------------------*
@@ -731,7 +740,11 @@ function pixConvertRGBToGrayFast( pixs: PLPix ): PLPix; cdecl; external LIBLEPT;
  *}
 function pixConvertTo32( pixs: PLPix): PLPix; cdecl; external LIBLEPT;
 
+{PIX* pixConvertTo8 	( 	PIX *  	pixs,
+		l_int32  	cmapflag
+	)    }
 
+function pixConvertTo8( pixs: PLPix; cmpflag: longint ): PLPix; cdecl; external LIBLEPT;
 
 {/*------------------------------------------------------------------*
  *                         Textline extraction                      *
@@ -768,6 +781,54 @@ function pixGenTextlineMask( pixs: PLPix; ppixvws: PPLPix; ptlfound: PInteger; d
  *          the dest will be 1; otherwise, it will be 0
  *}
 function pixThresholdToBinary( pixs: PLPix; thresh: Integer): PLPix; cdecl; external LIBLEPT;
+
+
+{
+00110 /*-------------------------------------------------------------*
+00111  *         Gamma TRC (tone reproduction curve) mapping         *
+00112  *-------------------------------------------------------------*/
+00113 /*!
+00114  *  pixGammaTRC()
+00115  *
+00116  *      Input:  pixd (<optional> null or equal to pixs)
+00117  *              pixs (8 or 32 bpp; or 2, 4 or 8 bpp with colormap)
+00118  *              gamma (gamma correction; must be > 0.0)
+00119  *              minval  (input value that gives 0 for output; can be < 0)
+00120  *              maxval  (input value that gives 255 for output; can be > 255)
+00121  *      Return: pixd always
+00122  *
+00123  *  Notes:
+00124  *      (1) pixd must either be null or equal to pixs.
+00125  *          For in-place operation, set pixd == pixs:
+00126  *             pixGammaTRC(pixs, pixs, ...);
+00127  *          To get a new image, set pixd == null:
+00128  *             pixd = pixGammaTRC(NULL, pixs, ...);
+00129  *      (2) If pixs is colormapped, the colormap is transformed,
+00130  *          either in-place or in a copy of pixs.
+00131  *      (3) We use a gamma mapping between minval and maxval.
+00132  *      (4) If gamma < 1.0, the image will appear darker;
+00133  *          if gamma > 1.0, the image will appear lighter;
+00134  *      (5) If gamma = 1.0 and minval = 0 and maxval = 255, no
+00135  *          enhancement is performed; return a copy unless in-place,
+00136  *          in which case this is a no-op.
+00137  *      (6) For color images that are not colormapped, the mapping
+00138  *          is applied to each component.
+00139  *      (7) minval and maxval are not restricted to the interval [0, 255].
+00140  *          If minval < 0, an input value of 0 is mapped to a
+00141  *          nonzero output.  This will turn black to gray.
+00142  *          If maxval > 255, an input value of 255 is mapped to
+00143  *          an output value less than 255.  This will turn
+00144  *          white (e.g., in the background) to gray.
+00145  *      (8) Increasing minval darkens the image.
+00146  *      (9) Decreasing maxval bleaches the image.
+00147  *      (10) Simultaneously increasing minval and decreasing maxval
+00148  *           will darken the image and make the colors more intense;
+00149  *           e.g., minval = 50, maxval = 200.
+00150  *      (11) See numaGammaTRC() for further examples of use.
+00151  */
+}
+function pixGammaTRC( pixd, pixs: PLPix; gamma: Single; minval, maxval: Integer ):  PLPix; cdecl; external LIBLEPT;
+
 
 
 {*!
@@ -1291,6 +1352,37 @@ function pixGetColormap( pix: PLPix ): PPixCmap; cdecl; external LIBLEPT;
  *}
 function pixcmapResetColor( cmap: PPixCmap; index, rval, gval, bval: Longint ): Longint; cdecl; external LIBLEPT;
 
+// ===  enhance.c  ===
+
+function pixContrastTRC(pixd, pixs: PLPix; factor: Single): PLPix; cdecl; external LIBLEPT;
+
+function pixUnsharpMasking ( pixs: PLPix; halfwidth: Longint; fract: Single): PLPix; cdecl; external LIBLEPT;
+
+const
+        L_JPEG_ENCODE  = 1;
+        L_G4_ENCODE    = 2;
+        L_FLATE_ENCODE = 3;
+
+ {*
+  *  saConvertFilesToPdf()
+  *
+  *      Input:  sarray (of pathnames for images)
+  *              res (input resolution of all images)
+  *              scalefactor (scaling factor applied to each image)
+  *              type (encoding type (L_JPEG_ENCODE, L_G4_ENCODE,
+  *                    L_FLATE_ENCODE, or 0 for default)
+  *              quality (used for JPEG only; 0 for default (75))
+  *              title (<optional> pdf title; if null, taken from the first
+  *                     image filename)
+  *              fileout (pdf file of all images)
+  *      Return: 0 if OK, 1 on error
+  *
+  *  Notes:
+  *      (1) The images are encoded with G4 if 1 bpp; JPEG if 8 bpp without
+  *          colormap and many colors, or 32 bpp; FLATE for anything else.
+  *}
+function saConvertFilesToPdf 	( sa: PSArray; res: longint; scalefactor: Single;
+                                        encoding, quality: longint; title, fileout: PChar): Longint; cdecl; external LIBLEPT;
 
 implementation
 
