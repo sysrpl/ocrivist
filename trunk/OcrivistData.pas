@@ -246,7 +246,6 @@ var
   aline: TLineData;
   wwords: Integer;
   memstream: TMemoryStream;
-  filesdirectory: String;
   aWord: TWordData;
   sel: Integer;
   aRect: TRect;
@@ -258,10 +257,6 @@ begin
   SaveZip.OnProgress := @DoProgress;
   SaveZip.FileName :=  aFileName + '.part';
   FSaveCount := 0;
-  filesdirectory := ChangeFileExt(aFileName, '') + '-files' + DirectorySeparator;
-
-  if not DirectoryExists(filesdirectory)
-         then ForceDirectories(filesdirectory);
   F := FileCreate(FWorkFolder + 'project');
   if F > 0 then
      try

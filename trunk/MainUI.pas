@@ -581,6 +581,10 @@ procedure TMainForm.PDFToolButtonClick(Sender: TObject);
 var
   sourcefiles: TSArray;
   p: Integer;
+  msk: String;
+  tmpfiles: TSearchRec;
+  dir: String;
+  dr: String;
 begin
   with SaveDialog do
        begin
@@ -597,12 +601,27 @@ begin
         sourcefiles.n := CurrentProject.PageCount+1;
         sourcefiles.nalloc := CurrentProject.PageCount;
         for p := 0 to CurrentProject.PageCount-1 do
-           sourcefiles.strarray[p] := PChar(CurrentProject.Pages[p].Filename);
-        saConvertFilesToPdf(@sourcefiles, 0, 1, 90,
+           begin
+             sourcefiles.strarray[p] := PChar(CurrentProject.Pages[p].Filename);
+             if not FileExists(CurrentProject.Pages[p].Filename)
+               then CurrentProject.ExtractPage(p);
+           end;
+        if saConvertFilesToPdf(@sourcefiles, 0, 1, L_JPEG_ENCODE, 75,
                              PChar(CurrentProject.Title),
-                             PChar(SaveDialog.FileName));
+                             PChar(SaveDialog.FileName))=0
+         then ShowMessage('PDF created successfully')
+         else ShowMessage('An error occurred when creating PDF');
       finally
         Enabled := True;
+        dr := ExtractFileDir(SaveDialog.FileName) + DirectorySeparator;
+        msk := dr + '*_*_temp.jpg';
+        if FindFirst (msk, faAnyFile, tmpfiles)=0 then
+          begin
+            repeat
+              DeleteFileUTF8(dr + tmpfiles.Name);
+            until FindNext(tmpfiles) <> 0;
+            FindClose(tmpfiles);
+          end;
       end;
 end;
 
