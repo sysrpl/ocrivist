@@ -713,6 +713,7 @@ begin
             messagetext := 'Processing page ' + IntToStr(x+1);
             ProgressForm.SetUpdateText( messagetext );
             if CurrentProject.Pages[x].OCRData <> nil then
+               if CurrentProject.Pages[x].OCRData.Linecount>0 then
                begin
                   data.Add(Format('(page 0 0 %d %d', [w, h]));
                   for lline := 0 to CurrentProject.Pages[x].OCRData.Linecount-1 do
