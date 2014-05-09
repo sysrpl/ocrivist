@@ -7,8 +7,21 @@ interface
 uses
   Classes, SysUtils, types, leptonica, LibLeptUtils, tesseract;
 
+type
+  TLanguageCode = record
+    AspellCode: string[8];
+    TessCode: string[8];
+    EngName: string;
+    NativeName: string;
+  end;
+
 const
   BIN_THRESHOLD = 150;
+
+  {LanguageData: array [0..2] of TLanguageCode =
+                (('', 'chi_tra', 'Chinese (Traditional)', ''),
+                 ['', 'chi_sim', 'Chinese (Simplified)', ''],
+                 ['id', 'ind', 'Indonesian', 'Bahasa Indonesia']);}
 
   LanguageTokens: array [0..32] of string = ('chi_tra',
                                             'chi_sim',
@@ -117,6 +130,7 @@ type
     constructor Create( PixIn: PLPix; data, lang: PChar );
     destructor Destroy; override;
     function RecognizeRect( inRect: TRect ): integer;
+    function RecognizeAll: integer;
     property Text: string read FText write FText;
     property OnOCRLine: TProgressCallback read FOnOCRLine write FOnOCRLine;
     property Lines[ lineIndex: Integer ]: TLineData read GetLines write SetLines;
@@ -422,6 +436,19 @@ begin
     if pa<>nil then ptaDestroy(@pa);
     if na<>nil then numaDestroy(@na);
     if TextRegion<>nil then pixDestroy(@TextRegion);
+end;
+
+function TTesseractPage.RecognizeAll: integer;
+var
+  R: TRect;
+  w, h, d: Integer;
+begin
+  pixGetDimensions(FPageImage, @w, @h, @d);
+  R.Left := 0;
+  R.Top := 0;
+  R.Right := w;
+  R.Bottom := h;
+  RecognizeRect(R);
 end;
 
 end.

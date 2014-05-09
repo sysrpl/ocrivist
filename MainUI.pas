@@ -1118,7 +1118,7 @@ begin
   Enabled := false;
   ProgressForm.SetMainText('Reading page...');
   ProgressForm.SetUpdateText(' ');
-  //ProgressForm.Show(nil);
+  ProgressForm.Show(nil);
   try
     OCRPage(ThumbnailListBox.ItemIndex);
     Editor.OCRData := CurrentProject.CurrentPage.OCRData;
@@ -1328,8 +1328,10 @@ begin
     OCRJob := TTesseractPage.Create(CurrentProject.Pages[pageindex].PageImage, PChar(OCRDatapath), PChar(OCRLanguage));
     OCRProgressCount := 0;
     OCRJob.OnOCRLine := @ShowOCRProgress;
-    for x := 0 to CurrentProject.Pages[pageindex].SelectionCount-1 do
-        OCRJob.RecognizeRect( CurrentProject.Pages[pageindex].Selection[x] );
+    if CurrentProject.Pages[pageindex].SelectionCount>0
+       then for x := 0 to CurrentProject.Pages[pageindex].SelectionCount-1 do
+            OCRJob.RecognizeRect( CurrentProject.Pages[pageindex].Selection[x] )
+       else OCRJob.RecognizeAll;
     CurrentProject.Pages[pageindex].OCRData := OCRJob;
     CurrentProject.Language := GetLanguageToken(LanguageComboBox.Text);
     OCRPanel.Visible := true;
