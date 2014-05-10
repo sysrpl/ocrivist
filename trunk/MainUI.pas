@@ -291,6 +291,8 @@ begin
                      end
                   else NewPage := -1;
                   ThumbnailListBox.Items.Delete(DelPage);
+                  Editor.Clear;
+                  Editor.OCRData := nil;
                   ThumbnailListBox.ItemIndex := NewPage;
                   CurrentProject.DeletePage(DelPage);
                   if ThumbnailListBox.Count>0
@@ -634,7 +636,7 @@ begin
              if not FileExists(CurrentProject.Pages[p].Filename)
                then CurrentProject.ExtractPage(p);
            end;
-        if saConvertFilesToPdf(@sourcefiles, 0, 1, L_JPEG_ENCODE, 75,
+        if saConvertFilesToPdf(@sourcefiles, 0, 1, 1, 75,
                              PChar(CurrentProject.Title),
                              PChar(SaveDialog.FileName))=0
          then ShowMessage('PDF created successfully')
@@ -1460,6 +1462,7 @@ begin
      ThumbnailListBoxClick(ThumbnailListBox);
      Caption := 'Ocrivist : ' + CurrentProject.Title;
      RecentList.AddFile(fn);
+     DelPageButton.Enabled := CurrentProject.PageCount>0;
    end;
 end;
 
