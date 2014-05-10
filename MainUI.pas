@@ -32,6 +32,9 @@ type
     FileExportMenu: TMenuItem;
     FileDjVuMenuItem: TMenuItem;
     FilePDFMenuItem: TMenuItem;
+    MenuItem5: TMenuItem;
+    MergeLeftMenuItem: TMenuItem;
+    MergeRightMenuItem: TMenuItem;
     OpenRecentMenuItem: TMenuItem;
     MenuItem6: TMenuItem;
     MenuItem7: TMenuItem;
@@ -130,6 +133,7 @@ type
     procedure AboutMenuItemClick ( Sender: TObject ) ;
     procedure CopyTextMenuItemClick ( Sender: TObject ) ;
     procedure CropButtonClick ( Sender: TObject ) ;
+    procedure DeleteLineMenuItemClick(Sender: TObject);
     procedure DelPageMenuItemClick ( Sender: TObject ) ;
     procedure DelSelectButtonClick ( Sender: TObject ) ;
     procedure ExitMenuItemClick ( Sender: TObject ) ;
@@ -141,6 +145,8 @@ type
     procedure ImportMenuItemClick ( Sender: TObject ) ;
     procedure LanguageComboBoxChange(Sender: TObject);
     procedure LoadModeOptionClick(Sender: TObject);
+    procedure MergeLeftMenuItemClick(Sender: TObject);
+    procedure MergeRightMenuItemClick(Sender: TObject);
     procedure miThresholdClick ( Sender: TObject ) ;
     procedure MenuItem6Click ( Sender: TObject ) ;
     procedure miAutoAllClick ( Sender: TObject ) ;
@@ -245,6 +251,11 @@ procedure TMainForm.CropButtonClick ( Sender: TObject ) ;
 begin
   ICanvas.SelectionMode := smCrop;
   StatusBar.Panels[0].Text := 'CROP';
+end;
+
+procedure TMainForm.DeleteLineMenuItemClick(Sender: TObject);
+begin
+  Editor.DeleteCurrentLine;
 end;
 
 procedure TMainForm.CopyTextMenuItemClick ( Sender: TObject ) ;
@@ -514,6 +525,16 @@ begin
   end;
   AddPageButton.ImageIndex := TMenuItem(Sender).ImageIndex;
   AddPageButton.Hint := TMenuItem(Sender).Hint;
+end;
+
+procedure TMainForm.MergeLeftMenuItemClick(Sender: TObject);
+begin
+  Editor.MergeLeft;
+end;
+
+procedure TMainForm.MergeRightMenuItemClick(Sender: TObject);
+begin
+  Editor.MergeRight;
 end;
 
 procedure TMainForm.miThresholdClick ( Sender: TObject ) ;

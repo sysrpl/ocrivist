@@ -4221,6 +4221,18 @@ object MainForm: TMainForm
     top = 392
     object DeleteLineMenuItem: TMenuItem
       Caption = 'Delete current line'
+      OnClick = DeleteLineMenuItemClick
+    end
+    object MergeLeftMenuItem: TMenuItem
+      Caption = 'Merge to left'
+      OnClick = MergeLeftMenuItemClick
+    end
+    object MergeRightMenuItem: TMenuItem
+      Caption = 'Merge to right'
+      OnClick = MergeRightMenuItemClick
+    end
+    object MenuItem5: TMenuItem
+      Caption = '-'
     end
     object CopyTextMenuItem: TMenuItem
       Caption = 'Copy page text'

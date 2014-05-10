@@ -45,6 +45,9 @@ type
     constructor Create ( AOwner: TComponent ) ; override;
     destructor Destroy; override;
     procedure DeleteLine ( lineindex: Integer ) ;
+    procedure DeleteCurrentLine;
+    procedure MergeLeft;
+    procedure MergeRight;
     procedure Spellcheck;
     procedure HighlightToken( aline, aword: Integer );
     property OCRData: TTesseractPage read FOCRData write SetOCRData;
@@ -97,7 +100,9 @@ begin
   for x := 0 to aword-1 do
       startpos := startpos+Length(FOCRData.Lines[aline].Words[x].Text+#32);
   Result := Copy(Lines[aline], startpos, endpos-startpos+1);
+  {$IFDEF DEBUG}
   writeln( 'GetUpdatedToken=', Result);
+  {$ENDIF}
 end;
 
 procedure TOcrivistEdit.SetText;
@@ -119,7 +124,9 @@ end;
 
 procedure TOcrivistEdit.KeyDown ( var Key: Word; Shift: TShiftState ) ;
 begin
+  {$IFDEF DEBUG}
   WriteLn('TOcrivistEdit.KeyDown ', Key);
+  {$ENDIF}
   if Key=8 then
      begin if Text[SelStart-1] in [#32, #10] then Key := 0; end   //TODO: change this later to permit token merging
   else if Key=46 then
@@ -134,7 +141,7 @@ begin
   if FOCRData=nil then Exit;
   with FOCRData.Lines[FCurrentToken.Y] do
      Words[FCurrentToken.X].Text := GetUpdatedToken(FCurrentToken.Y, FCurrentToken.X);
-  writeln(FOCRData.Lines[FCurrentToken.Y].Words[FCurrentToken.X].Text);
+  {$IFDEF DEBUG} writeln(FOCRData.Lines[FCurrentToken.Y].Words[FCurrentToken.X].Text); {$ENDIF}
   if CaretY<>FCurrentToken.Y+1 then SetCurrentToken(CaretY-1, CaretX);
 end;
 
@@ -142,9 +149,11 @@ procedure TOcrivistEdit.MouseDown ( Button: TMouseButton; Shift: TShiftState;
   X, Y: Integer ) ;
 begin
   inherited MouseDown ( Button, Shift, X, Y ) ;
+  {$IFDEF DEBUG}
   writeln('TOcrivistEdit.MouseDown');
   writeln(x, #32, CaretX );
   writeln(Y, #32, CaretY );
+  {$ENDIF}
   SetCurrentToken(CaretY-1, CaretX);
 end;
 
@@ -152,9 +161,11 @@ procedure TOcrivistEdit.MouseUp ( Button: TMouseButton; Shift: TShiftState; X,
   Y: Integer ) ;
 begin
   inherited MouseUp ( Button, Shift, X, Y ) ;
+  {$IFDEF DEBUG}
   writeln('TOcrivistEdit.MouseUp');
   writeln(x, #32, CaretX );
   writeln(Y, #32, CaretY );
+{$ENDIF}
   FStartToken := FCurrentToken;
   SetCurrentToken(CaretY-1, CaretX);
 end;
@@ -179,7 +190,7 @@ begin
   FCurrentToken.X := w;
   if Assigned(FOnChangeToken)
        then FOnChangeToken( lline, w );
-  writeln('Token= ', FOCRData.Lines[lline].Words[w].Text);
+  {$IFDEF DEBUG} writeln('Token= ', FOCRData.Lines[lline].Words[w].Text);    {$ENDIF}
   //TSynPositionHighlighter(Highlighter).AddToken(lline, 3,TextHighlight);
 end;
 
@@ -262,6 +273,56 @@ begin
   for x := lineindex to FOCRData.Linecount-2 do
       FOCRData.Lines[x] := FOCRData.Lines[x+1];
   FOCRData.Linecount := FOCRData.Linecount-1;
+  Lines.Delete(lineindex);
+end;
+
+procedure TOcrivistEdit.DeleteCurrentLine;
+begin
+  DeleteLine(FCurrentToken.Y);
+end;
+
+procedure TOcrivistEdit.MergeLeft;
+// Combine current token with the token on its left
+var
+  lineindex: LongInt;
+  wordindex: LongInt;
+begin
+  wordindex := FCurrentToken.X;
+  if wordindex>0 then
+     begin
+       FCurrentToken.X := FCurrentToken.X-1;
+       MergeRight;
+     end;
+end;
+
+procedure TOcrivistEdit.MergeRight;
+// Combine current token with the token on its right
+var
+  lineindex: LongInt;
+  wordindex: LongInt;
+  CurrentToken: TWordData;
+  NextToken: TWordData;
+  x: Integer;
+begin
+  lineindex := FCurrentToken.Y;
+  wordindex := FCurrentToken.X;
+  if wordindex+1 < OCRData.Lines[lineindex].WordCount then
+     begin
+       CurrentToken := OCRData.Lines[lineindex].Words[wordindex];
+       NextToken := OCRData.Lines[lineindex].Words[wordindex+1];
+       CurrentToken.Box.Right := NextToken.Box.Right;
+       CurrentToken.Length := CurrentToken.Length + NextToken.Length;
+       CurrentToken.Text := CurrentToken.Text + NextToken.Text;
+       with OCRData.Lines[lineindex] do
+          begin
+            Words[wordindex] := CurrentToken;
+            for x := wordindex+1 to WordCount-2 do
+             Words[x] := Words[x+1];
+            WordCount := WordCount-1;
+          end;
+       if Assigned(FOnChangeToken)
+           then FOnChangeToken( lineindex, wordindex ); // refresh original text view
+     end;
 end;
 
 procedure TOcrivistEdit.Spellcheck;
@@ -309,7 +370,7 @@ begin
        with FOCRData.Lines[lline]do
             for wword := 0 to WordCount-1 do
                begin
-                 writeln(Words[wword].Text, ': l w ', lline, #32, wword);
+                 {$IFDEF DEBUG} writeln(Words[wword].Text, ': l w ', lline, #32, wword); {$ENDIF}
                  w := TrimPunctuation( Words[wword].Text );
                  if length(w)>0 then
                     if (w[Length(w)]='-') and (wword=WordCount-1) then w:= '';  //TODO: deal with hyphens instead of skipping them
