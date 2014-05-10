@@ -118,6 +118,8 @@ type
     TextButton: TToolButton;
     ScanPageButton: TToolButton;
     ToolButton6: TToolButton;
+    ProcessPageButton: TToolButton;
+    OCRScreenButton: TToolButton;
     UnsharpMenuItem: TMenuItem;
     View25MenuItem: TMenuItem;
     View100MenuItem: TMenuItem;
@@ -152,6 +154,7 @@ type
     procedure miAutoAllClick ( Sender: TObject ) ;
     procedure miAutoProcessPageClick ( Sender: TObject ) ;
     procedure ModeChange ( Sender: TObject ) ;
+    procedure SetView( PageView: TObject );
     procedure NewProjectMenuItemClick ( Sender: TObject ) ;
     procedure PDFToolButtonClick(Sender: TObject);
     procedure RotateButtonClick ( Sender: TObject ) ;
@@ -577,16 +580,20 @@ end;
 
 procedure TMainForm.ModeChange ( Sender: TObject ) ;
 begin
-  TMenuItem(Sender).Checked := true;
-  if Sender=ProcessPageMenuItem then
-     begin
-       MainPanel.Visible := true;
-       OCRPanel.Visible := false;
-     end;
-  Application.ProcessMessages;
-  OCRPanel.Visible := OCRScreenMenuItem.Checked;
-  MainPanel.Visible := ProcessPageMenuItem.Checked;
+  if (Sender=ProcessPageButton) or (Sender=ProcessPageMenuItem)
+     then SetView(MainPanel)
+     else SetView(OCRPanel);
 end;
+
+procedure TMainForm.SetView ( PageView: TObject ) ;
+begin
+  MainPanel.Visible := (PageView=MainPanel);
+  OCRPanel.Visible := not MainPanel.Visible;
+  ProcessPageButton.Down := MainPanel.Visible;
+  OCRScreenButton.Down := OCRPanel.Visible;
+  ProcessPageMenuItem.Checked := MainPanel.Visible;
+  OCRScreenMenuItem.Checked := OCRPanel.Visible;
+ end;
 
 procedure TMainForm.NewProjectMenuItemClick ( Sender: TObject ) ;
 begin
@@ -1145,11 +1152,7 @@ begin
     OCRPage(ThumbnailListBox.ItemIndex);
     Editor.OCRData := CurrentProject.CurrentPage.OCRData;
     CurrentProject.Language := GetLanguageToken(LanguageComboBox.Text);
-    if not OCRPanel.Visible then
-       begin
-         OCRScreenMenuItem.Click;
-         OCRScreenMenuItem.Checked := True;
-       end;
+    SetView(OCRPanel);
   finally
     Enabled := true;
     ProgressForm.Hide;
