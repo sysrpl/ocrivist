@@ -116,13 +116,13 @@ end;
 function ScaleRectToView ( aRect: TRect; viewfactor: single ) : TRect;
 begin
   Result := ScaleRect( aRect, viewfactor/100 );
-  writeln('ScaleRectToView');
+  {$IFDEF DEBUG} writeln('ScaleRectToView'); {$ENDIF}
 end;
 
 function UnScaleRect ( aRect: TRect; viewfactor: Single ) : TRect;
 begin
   Result := ScaleRect( aRect, 1/viewfactor );
-  writeln('UnScaleRect');
+  {$IFDEF DEBUG} writeln('UnScaleRect'); {$ENDIF}
 end;
 
 function ScaleAndOffsetRect(ARect: TRect; scalexy: single; offsetX, offsetY: Integer): TRect;
@@ -236,7 +236,7 @@ begin
           FCurrentPagePix := AValue;
           if FCurrentPagePix<>nil then
              if pixGetDimensions(FCurrentPagePix, @FPageWidth, @FPageHeight, nil)<>0
-                then WriteLn('Error when getting image dimensions');
+                then {$IFDEF DEBUG} WriteLn('Error when getting image dimensions') {$ENDIF};
           For x := Length(FSelections)-1 downto 0 do
             FSelections[x].Free;
           SetLength(FSelections, 0);
@@ -513,7 +513,7 @@ end;
 
 procedure TPageViewer.AddSelector ( Selector: TSelector ) ;
 begin
-  writeln(Selector.Name, '  ', Selector.Top);
+  {$IFDEF DEBUG} writeln(Selector.Name, '  ', Selector.Top); {$ENDIF}
   SetLength(Fselections, Length(Fselections)+1);
   Fselections[ Length( Fselections )-1 ] := Selector;
   {$IFDEF DEBUG}
