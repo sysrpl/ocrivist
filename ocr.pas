@@ -196,30 +196,35 @@ end;
 constructor TTesseractPage.Create ( PixIn: PLPix; data, lang: Pchar ) ;
 var
   d: LongInt;
- begin
-  d := pixGetDepth(PixIn);
+begin
   FDatapath := data;
   FLanguage := lang;
-  if d = 32
-     then FPageImage := pixGenerateMaskByBand32(PixIn, BIN_THRESHOLD, BIN_THRESHOLD, BIN_THRESHOLD)
-  else if d >=4
-     then FPageImage := pixThresholdToBinary(PixIn, BIN_THRESHOLD)
-  else FPageImage := pixClone(PixIn);
-//  pixWrite('/tmp/testOCRimage.bmp', FPageImage, IFF_BMP);
-//  if FileExists(FDatapath + FLanguage + '.traineddata') then
+  FPageImage := nil;
+  if PixIn<>nil then
+     begin
+        d := pixGetDepth(PixIn);
+        if d = 32
+           then FPageImage := pixGenerateMaskByBand32(PixIn, BIN_THRESHOLD, BIN_THRESHOLD, BIN_THRESHOLD)
+        else if d >=4
+           then FPageImage := pixThresholdToBinary(PixIn, BIN_THRESHOLD)
+        else FPageImage := pixClone(PixIn);
+     end;
+
   try
     FTesseract := TessBaseAPICreate;
+    // TODO: FIX THIS!! Only 1 instance of TessBaseAPI is needed per project, not 1 per page!!
     TessBaseAPIInit3 (FTesseract, data, lang);
-    TessBaseAPISetImage2(FTesseract, FPageImage);
+    if FPageImage<>nil
+       then TessBaseAPISetImage2(FTesseract, FPageImage);
     FLineCount := 0;
     SetLength(FLines, FLineCount);
   except
     {$IFDEF DEBUG}
     if FTesseract=nil then
        writeln('tesseract_new failed :(')
+    //writeln('Unable to open ' + FDatapath + FLanguage + '.traineddata') ; //TODO: handle this better!
     {$ENDIF}
-  end
-  ;//else writeln('Unable to open ' + FDatapath + FLanguage + '.traineddata') ; //TODO: handle this better!
+  end;
 
 end;
 
