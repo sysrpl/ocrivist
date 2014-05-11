@@ -8,7 +8,7 @@ unit selector;
 interface
 
 uses
-  Classes, SysUtils, Controls, Graphics, types;
+  Classes, SysUtils, Controls, Graphics, types, LMessages;
 
 { TSelector }
 
@@ -50,6 +50,7 @@ TSelector = class (TGraphicControl)
     procedure SetFocussed ( AValue: Boolean ) ;
     procedure SetPenSize ( const AValue: Integer ) ;
     procedure SetSelection ( const AValue: TRect ) ;
+    procedure WMMouseLeave(var Msg: TLMessage); message CM_MOUSELEAVE;
   protected
     procedure SelectorMouseDown ( Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer ) ; virtual;
@@ -311,18 +312,21 @@ begin
                        HandleCollision(fTopLeftHandle, rhTopLeft);    }
                      end;
       end;
-   if PtInRect(fTopLeftHandle, MouseCoords)
-      then Cursor := crSizeNWSE
-   else if PtInRect(fTopRightHandle, MouseCoords)
-      then Cursor := crSizeNESW
-   else if PtInRect(fBottomLeftHandle, MouseCoords)
-      then Cursor := crSizeNESW
-   else if PtInRect(fBottomRightHandle, MouseCoords)
-      then Cursor := crSizeNWSE
-   else Cursor := crDefault;
    if (Width < (HANDLESIZE * 2)) or (Height < ((HANDLESIZE * 2) + CAPTIONPADDING + fCaptionHeight))
       then fResizing := false;
-     end;
+     end
+   else
+   begin
+    if PtInRect(fTopLeftHandle, MouseCoords)
+      then Cursor := crSizeNW
+   else if PtInRect(fTopRightHandle, MouseCoords)
+      then Cursor := crSizeNE
+   else if PtInRect(fBottomLeftHandle, MouseCoords)
+      then Cursor := crSizeSW
+   else if PtInRect(fBottomRightHandle, MouseCoords)
+      then Cursor := crSizeSE
+   else Cursor := crDefault;
+   end;
 
 
 end;
@@ -381,6 +385,11 @@ begin
   Left := AValue.Left;
   Height := AValue.Bottom - AValue.Top + fCaptionHeight + CAPTIONPADDING;
   Width := AValue.Right - AValue.Left;
+end;
+
+procedure TSelector.WMMouseLeave ( var Msg: TLMessage ) ;
+begin
+  Cursor := crDefault;
 end;
 
 
