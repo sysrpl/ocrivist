@@ -439,6 +439,7 @@ begin
     then FreeAndNil( CurrentProject );
   if DeleteDirectory(Folder,True)
       then RemoveDirUTF8(Folder);
+  Preferences.Free;
   {$IFDEF HAS_LIBSANE}
   if Assigned(ScannerHandle) then
       begin
@@ -1451,19 +1452,23 @@ procedure TMainForm.OpenProject ( fn: TFilename ) ;
 var
   x: Integer;
 begin
- NewProjectMenuItemClick(nil);
- if CurrentProject.LoadfromFile(fn)=0 then
+ if FileExistsUTF8(fn) then
    begin
-     ICanvas.Scale :=  CurrentProject.ViewerScale;
-     ThumbnailListBox.Clear;
-     for x := 0 to CurrentProject.PageCount-1 do
-        ThumbnailListBox.Items.AddObject( CurrentProject.Pages[x].Title, CurrentProject.Pages[x].Thumbnail );
-     ThumbnailListBox.ItemIndex := CurrentProject.ItemIndex;
-     ThumbnailListBoxClick(ThumbnailListBox);
-     Caption := 'Ocrivist : ' + CurrentProject.Title;
-     RecentList.AddFile(fn);
-     DelPageButton.Enabled := CurrentProject.PageCount>0;
-   end;
+     NewProjectMenuItemClick(nil);
+     if CurrentProject.LoadfromFile(fn)=0 then
+     begin
+       ICanvas.Scale :=  CurrentProject.ViewerScale;
+       ThumbnailListBox.Clear;
+       for x := 0 to CurrentProject.PageCount-1 do
+          ThumbnailListBox.Items.AddObject( CurrentProject.Pages[x].Title, CurrentProject.Pages[x].Thumbnail );
+       ThumbnailListBox.ItemIndex := CurrentProject.ItemIndex;
+       ThumbnailListBoxClick(ThumbnailListBox);
+       Caption := 'Ocrivist : ' + CurrentProject.Title;
+       RecentList.AddFile(fn);
+       DelPageButton.Enabled := CurrentProject.PageCount>0;
+     end;
+   end
+ else MessageDlg('File not found', mtError, [mbOK], 0);
 end;
 
 
