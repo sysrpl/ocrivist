@@ -706,7 +706,7 @@ destructor TOcrivistPage.Destroy;
 var
   c: Integer;
 begin
-  if Assigned(FOCRData) then FOCRData.Free;
+//  if Assigned(FOCRData) then FOCRData.Free; //This is now done in TOcrivistEdit.Clear;
   if Assigned(FThumbnail) then FThumbnail.Free;
   inherited Destroy;
 end;

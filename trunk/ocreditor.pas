@@ -49,6 +49,7 @@ type
     procedure MergeLeft;
     procedure MergeRight;
     procedure Spellcheck;
+    procedure Clear;
     procedure HighlightToken( aline, aword: Integer );
     property OCRData: TTesseractPage read FOCRData write SetOCRData;
     property Text: string read GetText;
@@ -411,6 +412,13 @@ begin
     suggestions.Free;
     Speller.Free;
   end;
+end;
+
+procedure TOcrivistEdit.Clear;
+begin
+  inherited Clear;
+  FOCRData.Free;
+  FOCRData := nil;
 end;
 
 procedure TOcrivistEdit.HighlightToken ( aline, aword: Integer ) ;
