@@ -216,6 +216,8 @@ begin
   DeleteDirectory(WorkFolder,True);
   for c := Length(FPages)-1 downto 0 do
     TOcrivistPage(FPages[c]).Free;
+  {$IFDEF DEBUG} writeln('***** Destroying TOCRIVISTPROJECT *****');  {$ENDIF}
+  if UnzipFile<>nil then UnzipFile.Free;
   inherited Destroy;
 end;
 
@@ -706,7 +708,7 @@ destructor TOcrivistPage.Destroy;
 var
   c: Integer;
 begin
-//  if Assigned(FOCRData) then FOCRData.Free; //This is now done in TOcrivistEdit.Clear;
+  if Assigned(FOCRData) then FOCRData.Free;
   if Assigned(FThumbnail) then FThumbnail.Free;
   inherited Destroy;
 end;
@@ -818,7 +820,7 @@ begin
      begin
        Fpix := Pix;
        FFilename := Dest;
-       Execute;
+       Start;
      end;
 end;
 
@@ -829,7 +831,7 @@ begin
         begin
           FFilename := Src;
           FPixAddr := Pix;
-          Execute;
+          Start;
         end;
 end;
 
