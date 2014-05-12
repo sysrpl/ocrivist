@@ -629,13 +629,14 @@ begin
         Enabled := false;
         sourcefiles.refcount := 1;
         SetLength(sourcefiles.strarray, CurrentProject.PageCount+1);
-        sourcefiles.n := CurrentProject.PageCount+1;
+        sourcefiles.n := CurrentProject.PageCount;
         sourcefiles.nalloc := CurrentProject.PageCount;
+        sourcefiles.refcount := 1;
         for p := 0 to CurrentProject.PageCount-1 do
            begin
              sourcefiles.strarray[p] := PChar(CurrentProject.Pages[p].Filename);
              if not FileExists(CurrentProject.Pages[p].Filename)
-               then CurrentProject.ExtractPage(p);
+               then CurrentProject.ExtractPage(CurrentProject.Pages[p].ImageID);
            end;
         if saConvertFilesToPdf(@sourcefiles, 0, 1, 1, 75,
                              PChar(CurrentProject.Title),
