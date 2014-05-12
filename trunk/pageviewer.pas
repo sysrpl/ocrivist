@@ -436,6 +436,8 @@ begin
             then FOnSelect( Self );
         end;
   FSelecting := false;
+  FSelectRect.TopLeft := Point(-1,-1);
+  FSelectRect.BottomRight := Point(-1,-1);
 end;
 
 procedure TPageViewer.SelectionChange(Sender: TObject);
