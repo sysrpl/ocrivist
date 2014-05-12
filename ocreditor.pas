@@ -211,7 +211,7 @@ begin
          while p>0 do
              begin
                SuggestionList.Items.Add(Copy(S, 1, p-1));
-               Delete(S, 1, p);
+               Delete(S, 1, p+1);
                p := Pos(',', S);
              end;
          if Length(S)>0 then SuggestionList.Items.Add(S);
