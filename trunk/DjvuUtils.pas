@@ -44,7 +44,7 @@ var
 begin
   Result := -1;
   Encoder := TProcess.Create(nil);
-  Encoder.Options := Encoder.Options + [poWaitOnExit];
+  Encoder.Options := Encoder.Options + [poWaitOnExit, poNoConsole];
   if ExtractFileExt(sourceimage)='.pnm'
      then encformat := encCJB2
      else encformat := encC44;
@@ -71,7 +71,7 @@ var
 begin
   Result := -1;
   Encoder := TProcess.Create(nil);
-  Encoder.Options := Encoder.Options + [poWaitOnExit];
+  Encoder.Options := Encoder.Options + [poWaitOnExit, poNoConsole];
   if FileExists(docname)
      then cmd := '"' + DjVuPath + 'djvm" -i "' + docname + '" "' + pagename + '"'
      else cmd := '"' + DjVuPath + 'djvm" -c "' + docname + '" "' + pagename + '"';
@@ -99,7 +99,7 @@ begin
   M := TMemoryStream.Create;
   BytesRead := 0;
   Decoder := TProcess.Create(nil);
-  Decoder.Options := Decoder.Options + [poUsePipes];
+  Decoder.Options := Decoder.Options + [poUsePipes, poNoConsole];
   Decoder.CommandLine := '"' + DjVuPath + 'djvudump" "' + doc + '"';
   Decoder.Execute;
   while Decoder.Running do
@@ -155,7 +155,7 @@ begin
   if not FileExists(doc)
      then raise Exception.Create(doc + ' not found in djvuExtractPage');
   Decoder := TProcess.Create(nil);
-  Decoder.Options := Decoder.Options + [poWaitOnExit];
+  Decoder.Options := Decoder.Options + [poWaitOnExit, poNoConsole];
   Decoder.CommandLine := '"' + DjVuPath + 'ddjvu" -format=tif -page=' + IntToStr(pageindex) + ' -1 "' + doc + '" ' + dest;
   Decoder.Execute;
   Result := Decoder.ExitStatus=0;
