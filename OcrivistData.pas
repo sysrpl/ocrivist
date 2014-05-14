@@ -77,12 +77,13 @@ type
     FLoadCount: integer;
     FSaveCount: integer;
     function GetCurrentPage: TOcrivistPage;
-    function GetLoadCount: integer;
+    function GetLoadCount: integer;   //TODO: What is LOadCount? Required?
     function GetPage ( aIndex: Integer ) : TOcrivistPage;
     function GetPageCount: Integer;
     // PutPage assigns a TOcrivistPage to FPages[aIndex]
     procedure PutPage ( aIndex: Integer; const AValue: TOcrivistPage ) ;
     procedure DoProgress ( Sender: TObject; const Pct: Double ) ;
+    procedure SetItemIndex ( AValue: integer ) ;
   protected
     UnzipFile: TUnZipper;
   public
@@ -100,7 +101,7 @@ type
     property Width: Integer read FPageWidth write FPageWidth;
     property Height: Integer read FPageHeight write FPageHeight;
     property CurrentPage: TOcrivistPage read GetCurrentPage;
-    property ItemIndex: integer read FcurrentPage write FcurrentPage;
+    property ItemIndex: integer read FcurrentPage write SetItemIndex;
     property PageCount: Integer read GetPageCount;
     property Filename: TFilename read FFilename;
     property ViewerScale: Single read FViewerScale write FViewerScale;
@@ -192,6 +193,16 @@ begin
   OverallProgress := ((FSaveCount-1)/allpages*100) + (Pct / allpages);
   if Assigned (FOnSaveProgress)
      then FOnSaveProgress(Sender, OverallProgress);
+end;
+
+procedure TOcrivistProject.SetItemIndex ( AValue: integer ) ;
+var
+  LastPage: Integer;
+begin
+  if FcurrentPage = AValue then Exit;
+  if FCurrentPage < 0 then Exit;;
+  Pages[FCurrentPage].Active := false;
+  FcurrentPage := AValue;
 end;
 
 constructor TOcrivistProject.Create;
@@ -641,6 +652,8 @@ begin
   else
      begin
        pixDestroy(@FPix);
+       FPix := nil;
+       {$IFDEF DEBUG} writeln('Pix for page imageID ', FImageID, ' destroyed'); {$ENDIF}
      end;
   FActive := AValue;
 end;
@@ -658,9 +671,7 @@ procedure TOcrivistPage.SetPageImage ( const AValue: PLPix ) ;
 begin
   if AValue<>FPix then
         begin
-          {$IFDEF DEBUG}
-          writeln('setting new pix in OctrivistPage');
-          {$ENDIF}
+          {$IFDEF DEBUG} writeln('setting new pix in OctrivistPage'); {$ENDIF}
           FPix := AValue;  // Note: TOcrivistPage is not responsible for destroying previous PIX
           MakeThumbnail;
           SaveToFileBackground(Fpix, '');
@@ -726,6 +737,7 @@ begin
           LoadThread.LoadFromFile(@PixL, FImageFile);
           Result := PixL;
           FActive := true;
+          {$IFDEF DEBUG} writeln('Image for page index ', FImageID, ' loaded in background'); {$ENDIF}
         end;
 end;
 
@@ -767,6 +779,7 @@ begin
   FPix := pixRead(PChar(FImageFile));
   FActive := FPix<>nil;
   Result := FPix;
+  {$IFDEF DEBUG} if Result<>nil then writeln('Image for page index ', FImageID, ' loaded'); {$ENDIF}
 end;
 
 { TPixFileThread }
