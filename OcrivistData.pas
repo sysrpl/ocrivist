@@ -200,9 +200,10 @@ var
   LastPage: Integer;
 begin
   if FcurrentPage = AValue then Exit;
-  if FCurrentPage < 0 then Exit;;
-  Pages[FCurrentPage].Active := false;
+  if FCurrentPage < 0 then Exit;
+  LastPage := FCurrentPage;
   FcurrentPage := AValue;
+  Pages[LastPage].Active := false;
 end;
 
 constructor TOcrivistProject.Create;
@@ -451,7 +452,7 @@ begin
            FileRead(F, bytes, SizeOf(bytes));                 //3 - Integer - length of string Text
            if bytes>0 then
               begin
-                aPage.FOCRData := TTesseractPage.Create(nil, nil, nil); // TODO: initialise language and datapath
+                aPage.FOCRData := TTesseractPage.Create(nil); // TODO: initialise language and datapath
                 if thisfileversion<2 then
                    begin
                      SetLength(strbuf, bytes);

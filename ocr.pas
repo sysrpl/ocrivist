@@ -127,10 +127,12 @@ type
     procedure SetLinecount ( const AValue: Integer ) ;
     procedure SetLines ( lineIndex: Integer ; const AValue: TLineData ) ;
   public
-    constructor Create( PixIn: PLPix; data, lang: PChar );
+    constructor Create( PixIn: PLPix );
     destructor Destroy; override;
     function RecognizeRect( inRect: TRect ): integer;
     function RecognizeAll: integer;
+    function Initialise( data, lang: PChar ): integer;
+    procedure Close;
     property Text: string read FText write FText;
     property OnOCRLine: TProgressCallback read FOnOCRLine write FOnOCRLine;
     property Lines[ lineIndex: Integer ]: TLineData read GetLines write SetLines;
@@ -193,12 +195,10 @@ begin
   FLines[lineIndex] := AValue;
 end;
 
-constructor TTesseractPage.Create ( PixIn: PLPix; data, lang: Pchar ) ;
+constructor TTesseractPage.Create ( PixIn: PLPix ) ;
 var
   d: LongInt;
 begin
-  FDatapath := data;
-  FLanguage := lang;
   FPageImage := nil;
   if PixIn<>nil then
      begin
@@ -210,28 +210,14 @@ begin
         else FPageImage := pixClone(PixIn);
      end;
 
-  try
-    FTesseract := TessBaseAPICreate;
-    // TODO: FIX THIS!! Only 1 instance of TessBaseAPI is needed per project, not 1 per page!!
-    TessBaseAPIInit3 (FTesseract, data, lang);
-    if FPageImage<>nil
-       then TessBaseAPISetImage2(FTesseract, FPageImage);
     FLineCount := 0;
     SetLength(FLines, FLineCount);
-  except
-    {$IFDEF DEBUG}
-    if FTesseract=nil then
-       writeln('tesseract_new failed :(')
-    //writeln('Unable to open ' + FDatapath + FLanguage + '.traineddata') ; //TODO: handle this better!
-    {$ENDIF}
-  end;
-
 end;
 
 destructor TTesseractPage.Destroy;
 begin
   if FPageImage<>nil then pixDestroy(@FPageImage);
-  TessBaseAPIDelete(FTesseract);
+  Close;
   boxaaDestroy(@FBoxes);
   inherited Destroy;
 end;
@@ -454,6 +440,33 @@ begin
   R.Right := w;
   R.Bottom := h;
   RecognizeRect(R);
+end;
+
+function TTesseractPage.Initialise ( data, lang: PChar ) : integer;
+begin
+  Result := -1;
+  FDatapath := data;
+  FLanguage := lang;
+  try
+    FTesseract := TessBaseAPICreate;
+    TessBaseAPIInit3 (FTesseract, data, lang);
+    if FPageImage<>nil
+       then TessBaseAPISetImage2(FTesseract, FPageImage);
+  except
+    {$IFDEF DEBUG}
+    if FTesseract=nil then
+       writeln('tesseract_new failed :(')
+    //writeln('Unable to open ' + FDatapath + FLanguage + '.traineddata') ; //TODO: handle this better!
+    {$ENDIF}
+  end;
+  if FTesseract<>nil then Result := 0;
+end;
+
+procedure TTesseractPage.Close;
+begin
+  if FTesseract<>nil
+    then TessBaseAPIDelete(FTesseract);
+  FTesseract := nil;
 end;
 
 end.
