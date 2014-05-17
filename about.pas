@@ -19,9 +19,11 @@ type
     Label2: TLabel;
     Label3: TLabel;
     Memo1: TMemo;
+    Memo2: TMemo;
     PageControl1: TPageControl;
     TabSheet1: TTabSheet;
     TabSheet2: TTabSheet;
+    TabSheet3: TTabSheet;
   private
     { private declarations }
   public
