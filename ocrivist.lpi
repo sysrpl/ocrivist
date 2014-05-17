@@ -17,8 +17,8 @@
       <StringTable ProductVersion=""/>
     </VersionInfo>
     <BuildModes Count="2">
-      <Item1 Name="default" Default="True"/>
-      <Item2 Name="release">
+      <Item1 Name="Linux devel" Default="True"/>
+      <Item2 Name="Linux release">
         <CompilerOptions>
           <Version Value="11"/>
           <Target>
@@ -29,10 +29,24 @@
             <OtherUnitFiles Value="../leptonica;selector;../../Projects/PascalSane/sane;../../Projects/PascalSane/demo;../tesseract;Aspell"/>
             <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
+          <CodeGeneration>
+            <SmartLinkUnit Value="True"/>
+            <Optimizations>
+              <OptimizationLevel Value="3"/>
+            </Optimizations>
+          </CodeGeneration>
           <Linking>
             <Debugging>
+              <GenerateDebugInfo Value="False"/>
               <DebugInfoType Value="dsStabs"/>
+              <StripSymbols Value="True"/>
             </Debugging>
+            <LinkSmart Value="True"/>
+            <Options>
+              <Win32>
+                <GraphicApplication Value="True"/>
+              </Win32>
+            </Options>
           </Linking>
           <Other>
             <CompilerMessages>
@@ -215,13 +229,14 @@
     <Linking>
       <Debugging>
         <DebugInfoType Value="dsStabs"/>
+        <UseHeaptrc Value="True"/>
       </Debugging>
     </Linking>
     <Other>
       <CompilerMessages>
         <UseMsgFile Value="True"/>
       </CompilerMessages>
-      <CustomOptions Value="-dUseCThreads"/>
+      <CustomOptions Value="-dUseCThreads -dHAS_LIBSANE -dDEBUG"/>
       <CompilerPath Value="$(CompPath)"/>
     </Other>
   </CompilerOptions>
