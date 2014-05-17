@@ -784,6 +784,7 @@ begin
             if DjvuCancelled then exit;
           finally
             StatusBar.Panels[1].Text := '';
+            CurrentProject.Pages[x].Active := x=CurrentProject.ItemIndex;
             data.Free;
             DeleteFileUTF8(fn);
             DeleteFileUTF8(HiddenText);
@@ -965,6 +966,7 @@ begin
   for X := CurrentProject.CurrentPage.SelectionCount-1 downto 0 do
     ICanvas.DeleteSelector(X);
   CurrentProject.ItemIndex := TListBox(Sender).ItemIndex;
+  ICanvas.Picture := nil;
   ICanvas.Picture := CurrentProject.CurrentPage.PageImage;
   Invalidate;
   for x := 0 to CurrentProject.CurrentPage.SelectionCount-1 do
@@ -1354,19 +1356,24 @@ var
 begin
   if (pageindex<0) or (pageindex>CurrentProject.PageCount-1) then Exit;
   try
-    OCRJob := TTesseractPage.Create(CurrentProject.Pages[pageindex].PageImage, PChar(OCRDatapath), PChar(OCRLanguage));
-    OCRProgressCount := 0;
-    OCRJob.OnOCRLine := @ShowOCRProgress;
-    if CurrentProject.Pages[pageindex].SelectionCount>0
-       then for x := 0 to CurrentProject.Pages[pageindex].SelectionCount-1 do
-            OCRJob.RecognizeRect( CurrentProject.Pages[pageindex].Selection[x] )
-       else OCRJob.RecognizeAll;
-    CurrentProject.Pages[pageindex].OCRData := OCRJob;
-    CurrentProject.Language := GetLanguageToken(LanguageComboBox.Text);
-    OCRPanel.Visible := true;
-    StatusBar.Panels[1].Text := '';
+    OCRJob := TTesseractPage.Create(CurrentProject.Pages[pageindex].PageImage);
+    if OCRJob.Initialise(PChar(OCRDatapath), PChar(OCRLanguage))=0 then
+       begin
+          OCRProgressCount := 0;
+          OCRJob.OnOCRLine := @ShowOCRProgress;
+          if CurrentProject.Pages[pageindex].SelectionCount>0
+             then for x := 0 to CurrentProject.Pages[pageindex].SelectionCount-1 do
+                  OCRJob.RecognizeRect( CurrentProject.Pages[pageindex].Selection[x] )
+             else OCRJob.RecognizeAll;
+          CurrentProject.Pages[pageindex].OCRData := OCRJob;
+          CurrentProject.Language := GetLanguageToken(LanguageComboBox.Text);
+          OCRPanel.Visible := true;
+          StatusBar.Panels[1].Text := '';
+       end;
+    OCRJob.Close;
   except
     {$IFDEF DEBUG} writeln('Error in OCRPage'); {$ENDIF}
+    OCRJob.Close;
   end;
 end;
 
