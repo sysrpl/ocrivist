@@ -381,7 +381,7 @@ begin
   {$ENDIF}
   if PopulateLanguageList<1 then  // no tesseract language files found
     begin
-      TesseractButton.Enabled := false;
+      TesseractButton.Tag := 0;
       OCRMenu.Enabled := false;
     end;
 
@@ -736,7 +736,6 @@ begin
             data.Add('# -------------------------------------');
             data.Add('select 1');
             data.Add('set-txt');
-
             p := CurrentProject.Pages[x].PageImage;
             pixGetDimensions(p, @w, @h, @d);
             if d=1
@@ -784,7 +783,7 @@ begin
             if DjvuCancelled then exit;
           finally
             StatusBar.Panels[1].Text := '';
-            CurrentProject.Pages[x].Active := x=CurrentProject.ItemIndex;
+            CurrentProject.Pages[x].Active := x=CurrentProject.ItemIndex; //unload page Pix if not Active page
             data.Free;
             DeleteFileUTF8(fn);
             DeleteFileUTF8(HiddenText);
@@ -1442,7 +1441,9 @@ begin
   If FindFirst (Filemask, (faAnyFile And Not faDirectory) , SearchResult) = 0 Then
      try
        token := ExtractFileNameWithoutExt(SearchResult.Name);
-       LanguageComboBox.Items.Add(GetLanguageFromToken(token));
+       lg := GetLanguageFromToken(token);
+       if lg<>''
+         then LanguageComboBox.Items.Add(lg);
        While FindNext (SearchResult) = 0 Do
              Begin
              token := ExtractFileNameWithoutExt(SearchResult.Name);
