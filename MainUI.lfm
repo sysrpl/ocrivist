@@ -1,11 +1,11 @@
 object MainForm: TMainForm
-  Left = 255
+  Left = 73
   Height = 722
-  Top = -14
+  Top = 118
   Width = 1028
   ActiveControl = ListboxPanel
   Caption = 'Ocrivist'
-  ClientHeight = 702
+  ClientHeight = 696
   ClientWidth = 1028
   Icon.Data = {
     BE1000000000010001002020000001002000A810000016000000280000002000
@@ -153,12 +153,12 @@ object MainForm: TMainForm
   WindowState = wsMaximized
   object ListboxPanel: TPanel
     Left = 0
-    Height = 637
+    Height = 634
     Top = 42
     Width = 179
     Align = alLeft
     Caption = 'ListboxPanel'
-    ClientHeight = 637
+    ClientHeight = 634
     ClientWidth = 179
     TabOrder = 1
     object ThumbnailListBox: TListBox
@@ -168,7 +168,7 @@ object MainForm: TMainForm
       AnchorSideRight.Side = asrBottom
       AnchorSideBottom.Control = pagecountLabel
       Left = 1
-      Height = 616
+      Height = 612
       Top = 1
       Width = 177
       Anchors = [akTop, akLeft, akRight, akBottom]
@@ -189,9 +189,9 @@ object MainForm: TMainForm
     end
     object pagecountLabel: TLabel
       Left = 8
-      Height = 16
-      Top = 617
-      Width = 4
+      Height = 17
+      Top = 613
+      Width = 5
       Anchors = [akLeft, akBottom]
       Caption = ' '
       ParentColor = False
@@ -199,7 +199,7 @@ object MainForm: TMainForm
   end
   object Splitter1: TSplitter
     Left = 179
-    Height = 637
+    Height = 634
     Top = 42
     Width = 5
   end
@@ -287,13 +287,13 @@ object MainForm: TMainForm
   end
   object MainPanel: TPanel
     Left = 184
-    Height = 637
+    Height = 634
     Top = 42
     Width = 669
     Align = alClient
     AutoSize = True
     Caption = 'MainPanel'
-    ClientHeight = 637
+    ClientHeight = 634
     ClientWidth = 669
     TabOrder = 3
     object PageToolBar: TToolBar
@@ -313,7 +313,7 @@ object MainForm: TMainForm
       object TesseractButton: TToolButton
         Tag = 1
         Left = 391
-        Hint = 'Read selected text'
+        Hint = 'Read text'
         Top = 2
         Caption = 'TesseractButton'
         ImageIndex = 19
@@ -327,6 +327,7 @@ object MainForm: TMainForm
         Caption = 'AutoselectButton'
         ImageIndex = 13
         OnClick = AnalyseButtonClick
+        Visible = False
       end
       object DeskewButton: TToolButton
         Tag = 1
@@ -436,8 +437,8 @@ object MainForm: TMainForm
   end
   object StatusBar: TStatusBar
     Left = 0
-    Height = 23
-    Top = 679
+    Height = 20
+    Top = 676
     Width = 1028
     Panels = <    
       item
@@ -522,12 +523,12 @@ object MainForm: TMainForm
       TabOrder = 0
       object LanguageComboBox: TComboBox
         Left = 13
-        Height = 23
+        Height = 28
         Hint = 'Set language for OCR'
         Top = 6
         Width = 148
         DropDownCount = 12
-        ItemHeight = 15
+        ItemHeight = 0
         Items.Strings = (
           ''
         )
@@ -584,7 +585,7 @@ object MainForm: TMainForm
   end
   object RightSidePanel: TPanel
     Left = 858
-    Height = 637
+    Height = 634
     Top = 42
     Width = 170
     Align = alRight
@@ -592,7 +593,7 @@ object MainForm: TMainForm
   end
   object Splitter2: TSplitter
     Left = 853
-    Height = 637
+    Height = 634
     Top = 42
     Width = 5
     Align = alRight
@@ -647,10 +648,12 @@ object MainForm: TMainForm
       end
       object ImportMenuItem: TMenuItem
         Caption = '&Import ...'
+        Visible = False
         OnClick = ImportMenuItemClick
       end
       object MenuItem3: TMenuItem
         Caption = '-'
+        Visible = False
       end
       object SetScannerMenuItem: TMenuItem
         Caption = 'Select Scanne&r'
@@ -739,9 +742,11 @@ object MainForm: TMainForm
       end
       object MenuItem7: TMenuItem
         Caption = '-'
+        Visible = False
       end
       object miThreshold: TMenuItem
         Caption = 'Threshold..'
+        Visible = False
         OnClick = miThresholdClick
       end
       object EnhanceMenuItem: TMenuItem
@@ -791,6 +796,7 @@ object MainForm: TMainForm
       Caption = '&OCR'
       object miAnalysePage: TMenuItem
         Caption = '&Analyse page'
+        Visible = False
         OnClick = AnalyseButtonClick
       end
       object miReadPage: TMenuItem
@@ -799,10 +805,12 @@ object MainForm: TMainForm
       end
       object miAutoProcessPage: TMenuItem
         Caption = 'Auto&process page'
+        Visible = False
         OnClick = miAutoProcessPageClick
       end
       object miAutoAll: TMenuItem
         Caption = 'Autoprocess a&ll'
+        Visible = False
         OnClick = miAutoAllClick
       end
     end
