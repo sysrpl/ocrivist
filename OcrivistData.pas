@@ -141,7 +141,7 @@ var
 
 const
 
-  FILEVERSION = #3;
+  FILEVERSION = #4;
 
 implementation
 
@@ -265,6 +265,8 @@ var
   aRect: TRect;
   tempTitle: String;
   SaveZip: TZipper;
+  fontcount: Integer;
+  x: Integer;
 begin
   tempTitle := ExtractFileNameOnly(aFileName);
   SaveZip := TZipper.Create;
@@ -338,6 +340,15 @@ begin
            if aPage.FOCRData <> nil then
               for llines := 0 to aPage.FOCRData.Linecount-1 do
               begin
+                //Font management added for file version 4
+                fontcount := aPage.FOCRData.Fonts.Count;
+                FileWrite(F, fontcount, SizeOf(fontcount));      //9a - Integer - number of fonts detected on page
+                for x := 0 to fontcount-1 do
+                  begin
+                    bytes := Length(aPage.FOCRData.Fonts[x]);
+                    Filewrite(F, bytes, SizeOf(bytes));          //9b - Integer - length of font name
+                    Filewrite(F, aPage.FOCRData.Fonts[x][1], bytes); //9c - array of char - font name
+                  end;
                 aline := aPage.FOCRData.Lines[llines];
                 FileWrite(F, aline.Box, SizeOf(aline.Box));
                 FileWrite(F, aline.WordCount, SizeOf(aline.WordCount));
@@ -392,11 +403,15 @@ var
   lline: Integer;
   wwords: Integer;
   aWord: TWordData;
+  aWordV3: TWordDataV3;
   aLine: TLineData;
   memstream: TMemoryStream;
   sel: Integer;
   aRect: TRect;
   sl: TStringList;
+  fontcount: Integer;
+  fontname: String;
+  x: Integer;
 begin
   Result := -1;
   if UnzipFile<>nil then FreeAndNil(UnzipFile);
@@ -493,6 +508,17 @@ begin
            if bytes>0 then
            begin
              aPage.FOCRData.Linecount := bytes;
+             if thisfileversion>3 then
+                begin
+                  FileRead(F, fontcount, SizeOf(fontcount));  //9a - Integer - number of fonts detected on page
+                  for x := 1 to fontcount do
+                    begin
+                      FileRead(F, bytes, SizeOf(bytes));
+                      SetLength(fontname, bytes);            //9b - Integer - length of font name
+                      FileRead(F, fontname[1], bytes);       //9c - array of char - font name
+                      aPage.FOCRData.Fonts.Add(fontname);
+                    end;
+                end;
              for lline := 0 to aPage.FOCRData.Linecount-1 do
                begin
                  aLine.Index := lline;
@@ -507,7 +533,12 @@ begin
                      SetLength(strbuf, bytes);
                      if bytes>0
                         then FileRead(F, strbuf[1], bytes);
-                     FileRead(F, aWord, SizeOf(aWord));
+                     if thisfileversion<4 then
+                        begin
+                          FileRead(F, aWord, SizeOf(aWordV3));
+                          aWord.FontID := -1;
+                        end
+                     else FileRead(F, aWord, SizeOf(aWord));
   //                   writeln('line #', lline, ' Word #', wwords, ' box.top=', aWord.Box.Top);
                      with aPage.FOCRData.Lines[lline] do
                          begin

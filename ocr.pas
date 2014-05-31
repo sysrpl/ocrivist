@@ -94,7 +94,23 @@ const
 type
    TConfidenceList = array of PInteger;
 
+   TFontAttrib = (faBold, faItalic, faSerif, faMonospace);
+   TFontAttributes = set of TFontAttrib;
+
    TWordData = record
+     Text: string;
+     Start: Integer;
+     Length: Integer;
+     Box: TRect;
+     Confidence: Byte;
+     FontID: Byte;
+     FontSize: Byte;
+     FontFlags: TFontAttributes;
+     isNumeric: Boolean;
+   end;
+
+   // TWordDataV3 is the record size used for file version =<3
+   TWordDataV3 = record
      Text: string;
      Start: Integer;
      Length: Integer;
@@ -119,10 +135,11 @@ type
     FPageImage: PLPix;
     FTesseract: TessAPIHandle;
     FBoxes: PBoxArrayArray;
-    FConfidenceRating: TConfidenceList;
-    FText: String;
+    //FConfidenceRating: TConfidenceList;
+    FText: String;      // Remove?
     FLines: array of TLineData;
     FLineCount: Integer;
+    FFontList: TStringList;
     function GetLines ( lineIndex: Integer ) : TLineData;
     procedure SetLinecount ( const AValue: Integer ) ;
     procedure SetLines ( lineIndex: Integer ; const AValue: TLineData ) ;
@@ -139,6 +156,7 @@ type
     property Linecount: Integer read FLineCount write SetLinecount;
     property Datapath: string read FDatapath;
     property Language: string read FLanguage;
+    property Fonts: TStringList read FFontList write FFontList;
   end;
 
   function GetLanguageFromToken(langtoken: string): string;
@@ -212,6 +230,7 @@ begin
 
     FLineCount := 0;
     SetLength(FLines, FLineCount);
+    FFontList := TStringList.Create;
 end;
 
 destructor TTesseractPage.Destroy;
@@ -219,6 +238,7 @@ begin
   if FPageImage<>nil then pixDestroy(@FPageImage);
   Close;
   boxaaDestroy(@FBoxes);
+  FFontList.Free;
   inherited Destroy;
 end;
 
@@ -252,6 +272,11 @@ var
   pixd: PLPix;
   cmap: Pointer;
   wordcount: Integer;
+  ri: TessResultIterator;
+  isBold, isItalic, isMonospace, isSerif, isSC, isUL: Boolean;
+  pointsize, fontid: Integer;
+  fontname: PChar;
+  fi: Integer;
 
   procedure AdjustToArea( abox: PLBox; lineref: integer );
   var
@@ -354,8 +379,25 @@ begin
                 {$ENDIF}
               end;
               n := length(Ftext);
-              if n>0
-                 then if FText[n]=#10 then SetLength(FText, n-1);
+              if n>0 then
+                 begin
+                   if FText[n]=#10 then SetLength(FText, n-1);
+                   ri := TessBaseAPIGetIterator(FTesseract);
+                   n := 0;
+                   if ri<>nil then
+                      repeat
+                        fontname := TessResultIteratorWordFontAttributes(ri, @isBold, @isItalic, @isUL, @isMonospace,
+                                    @isSerif, @isSC, @pointsize, @fontid);
+                        fi := FFontList.IndexOf(fontname);
+                        if fi<0 then
+                           begin FFontList.Add(fontname); fi := FFontList.Count-1; end;
+                        writeln(Format('line: %d %d %s %d id: %d ', [x, n, fontname, pointsize, fontid]));
+                        WriteLn(Format( 'Confidence: %d', [TessResultIteratorConfidence(ri, RIL_WORD)]));
+                        WriteLn(TessResultIteratorWordIsNumeric(ri));
+                        Inc(n);
+                      until not TessPageIteratorNext(ri,RIL_WORD);
+                   TessPageIteratorDelete(ri);
+                 end;
               wa := TessBaseAPIGetWords(FTesseract, @pixa);
 
               {  For debugging:
@@ -427,6 +469,8 @@ begin
     if pa<>nil then ptaDestroy(@pa);
     if na<>nil then numaDestroy(@na);
     if TextRegion<>nil then pixDestroy(@TextRegion);
+    for x := 0 to FFontList.Count-1 do
+         WriteLn(FFontList.Strings[x]);
 end;
 
 function TTesseractPage.RecognizeAll: integer;
