@@ -267,6 +267,7 @@ var
   SaveZip: TZipper;
   fontcount: Integer;
   x: Integer;
+  fontname: String;
 begin
   tempTitle := ExtractFileNameOnly(aFileName);
   SaveZip := TZipper.Create;
@@ -338,31 +339,35 @@ begin
               else bytes := 0;
            FileWrite(F, bytes, SizeOf(bytes));                   //9 - Integer - FOCRData exists: TRUE= >0
            if aPage.FOCRData <> nil then
-              for llines := 0 to aPage.FOCRData.Linecount-1 do
               begin
                 //Font management added for file version 4
                 fontcount := aPage.FOCRData.Fonts.Count;
                 FileWrite(F, fontcount, SizeOf(fontcount));      //9a - Integer - number of fonts detected on page
                 for x := 0 to fontcount-1 do
                   begin
-                    bytes := Length(aPage.FOCRData.Fonts[x]);
+                    fontname := aPage.FOCRData.Fonts.Strings[x];
+                    bytes := Length(fontname);
                     Filewrite(F, bytes, SizeOf(bytes));          //9b - Integer - length of font name
-                    Filewrite(F, aPage.FOCRData.Fonts[x][1], bytes); //9c - array of char - font name
+                    if bytes>0
+                       then Filewrite(F, fontname[1], bytes); //9c - array of char - font name
                   end;
-                aline := aPage.FOCRData.Lines[llines];
-                FileWrite(F, aline.Box, SizeOf(aline.Box));
-                FileWrite(F, aline.WordCount, SizeOf(aline.WordCount));
-                for wwords := 0 to aline.WordCount-1 do
-                    begin
-                      databuf := aline.Words[wwords].Text;
-                      bytes := Length(databuf);
-                      FileWrite(F, bytes, SizeOf(bytes));// Integer - length of aline.Words[wwords].Text
-                      if bytes>0 then
-                         FileWrite(F, databuf[1], bytes);// - array of char - = string Text
-                      aWord := aline.Words[wwords];
-                      aWord.Text := '';                  // set pointer to nil
-                      Filewrite(F, aWord, SizeOf(aWord));
-                     end;
+              for llines := 0 to aPage.FOCRData.Linecount-1 do
+                begin
+                  aline := aPage.FOCRData.Lines[llines];
+                  FileWrite(F, aline.Box, SizeOf(aline.Box));
+                  FileWrite(F, aline.WordCount, SizeOf(aline.WordCount));
+                  for wwords := 0 to aline.WordCount-1 do
+                      begin
+                        databuf := aline.Words[wwords].Text;
+                        bytes := Length(databuf);
+                        FileWrite(F, bytes, SizeOf(bytes));// Integer - length of aline.Words[wwords].Text
+                        if bytes>0 then
+                           FileWrite(F, databuf[1], bytes);// - array of char - = string Text
+                        aWord := aline.Words[wwords];
+                        aWord.Text := '';                  // set pointer to nil
+                        Filewrite(F, aWord, SizeOf(aWord));
+                       end;
+                end;
               end;
            bytes := aPage.SelectionCount;
            FileWrite(F, bytes, SizeOf(bytes));           // Integer - number of selections
@@ -539,16 +544,20 @@ begin
                           aWord.FontID := -1;
                         end
                      else FileRead(F, aWord, SizeOf(aWord));
-  //                   writeln('line #', lline, ' Word #', wwords, ' box.top=', aWord.Box.Top);
+                     {$IFDEF DEBUG} writeln('line #', lline, ' Word #', wwords, ' box.top=', aWord.Box.Top, ' fontid: ', aWord.FontID); {$ENDIF}
                      with aPage.FOCRData.Lines[lline] do
                          begin
                            Words[wwords].Start := aWord.Start;
                            Words[wwords].Length := aWord.Length;
                            Words[wwords].Box := aWord.Box;
                            Words[wwords].Confidence := aWord.Confidence;
+                           Words[wwords].FontID := aWord.FontID;
+                           Words[wwords].FontSize := aword.FontSize;
+                           Words[wwords].FontFlags := aWord.FontFlags;
+                           Words[wwords].isNumeric := aWord.isNumeric;
                            Words[wwords].Text := strbuf;
                          end;
-//                     writeln('Loaded word: ', aPage.FOCRData.Lines[lline].Words[wwords].Text);
+                     {$IFDEF DEBUG} writeln('Loaded word: ', aPage.FOCRData.Lines[lline].Words[wwords].Text); {$ENDIF}
                    end;
                end;
            end;
@@ -662,7 +671,7 @@ end;
 function TOcrivistPage.GetPageImage: PLPix;
 begin
   {$IFDEF DEBUG}
-  writeln('FImageFile: ', FImageFile);
+  writeln('GetPageImage FImageFile: ', FImageFile);
   {$ENDIF}
   if FPix = nil
      then FPix := LoadFromFile;
@@ -811,7 +820,7 @@ begin
   FPix := pixRead(PChar(FImageFile));
   FActive := FPix<>nil;
   Result := FPix;
-  {$IFDEF DEBUG} if Result<>nil then writeln('Image for page index ', FImageID, ' loaded'); {$ENDIF}
+  {$IFDEF DEBUG} if Result<>nil then writeln('Pix for page index ', FImageID, ' loaded'); {$ENDIF}
 end;
 
 { TPixFileThread }

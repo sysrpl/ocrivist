@@ -229,6 +229,11 @@ const
   TEMPFILE_SINGLEBIT_IMAGE = 'ocr-temp.pnm';
   TEMPFILE_MULTIBIT_IMAGE = 'ocr-temp.pbm';
 
+const
+   JUSTIFY_LEFT   = 0;
+   JUSTIFY_CENTER = 1;
+   JUSTIFY_RIGHT  = 2;
+
 var
   MainForm: TMainForm;
   ICanvas : TPageViewer;
