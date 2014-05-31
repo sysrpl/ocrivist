@@ -103,7 +103,7 @@ type
      Length: Integer;
      Box: TRect;
      Confidence: Byte;
-     FontID: Byte;
+     FontID: Integer;
      FontSize: Byte;
      FontFlags: TFontAttributes;
      isNumeric: Boolean;
@@ -382,35 +382,40 @@ begin
               if n>0 then
                  begin
                    if FText[n]=#10 then SetLength(FText, n-1);
-                   ri := TessBaseAPIGetIterator(FTesseract);
-                   n := 0;
-                   if ri<>nil then
-                      repeat
-                        fontname := TessResultIteratorWordFontAttributes(ri, @isBold, @isItalic, @isUL, @isMonospace,
-                                    @isSerif, @isSC, @pointsize, @fontid);
-                        fi := FFontList.IndexOf(fontname);
-                        if fi<0 then
-                           begin FFontList.Add(fontname); fi := FFontList.Count-1; end;
-                        writeln(Format('line: %d %d %s %d id: %d ', [x, n, fontname, pointsize, fontid]));
-                        WriteLn(Format( 'Confidence: %d', [TessResultIteratorConfidence(ri, RIL_WORD)]));
-                        WriteLn(TessResultIteratorWordIsNumeric(ri));
-                        Inc(n);
-                      until not TessPageIteratorNext(ri,RIL_WORD);
+                   wa := TessBaseAPIGetWords(FTesseract, @pixa);
+
+                   {  For debugging:
+                   // Display each component as a random color in cmapped 8 bpp.
+                   // Background is color 0; it is set to white. */
+               pixd := pixaDisplayRandomCmap(pixa, pixGetWidth(TextRegion), pixGetHeight(TextRegion));
+               cmap := pixGetColormap(pixd);
+               pixcmapResetColor(cmap, 0, 255, 255, 255);  // reset background to white */
+               pixDisplayWrite(pixd, 1);     }
+
+                   wordcount := boxaGetCount(wa);
+                   SetLength(FLines[FLineCount + x].Words, wordcount);
+                   FLines[FLineCount + x].Wordcount := wordcount;
+                     ri := TessBaseAPIGetIterator(FTesseract);
+                     n := 0;
+                     deletedtokens := 0;
+                     if ri<>nil then
+                        repeat
+                          fontname := TessResultIteratorWordFontAttributes(ri, @isBold, @isItalic, @isUL, @isMonospace,
+                                      @isSerif, @isSC, @pointsize, @fontid);
+                          fi := FFontList.IndexOf(fontname);
+                          if fi<0 then
+                             begin FFontList.Add(fontname); fi := FFontList.Count-1; end;
+                          {$IFDEF DEBUG}
+                          writeln(Format('line: %d %d %s %d id: %d ', [x, n, fontname, pointsize, fontid]));
+                          WriteLn(Format( 'Confidence: %g', [TessResultIteratorConfidence(ri, RIL_WORD)]));
+                          {$ENDIF}
+                          FLines[FLineCount + x].Words[n-deletedtokens].FontID := fi;
+                          FLines[FLineCount + x].Words[n-deletedtokens].isNumeric := TessResultIteratorWordIsNumeric(ri);
+                          FLines[FLineCount + x].Words[n-deletedtokens].FontSize := pointsize;
+                          Inc(n);
+                        until not TessPageIteratorNext(ri,RIL_WORD);
                    TessPageIteratorDelete(ri);
                  end;
-              wa := TessBaseAPIGetWords(FTesseract, @pixa);
-
-              {  For debugging:
-              // Display each component as a random color in cmapped 8 bpp.
-              // Background is color 0; it is set to white. */
-          pixd := pixaDisplayRandomCmap(pixa, pixGetWidth(TextRegion), pixGetHeight(TextRegion));
-          cmap := pixGetColormap(pixd);
-          pixcmapResetColor(cmap, 0, 255, 255, 255);  // reset background to white */
-          pixDisplayWrite(pixd, 1);     }
-
-              wordcount := boxaGetCount(wa);
-              SetLength(FLines[FLineCount + x].Words, wordcount);
-              FLines[FLineCount + x].Wordcount := wordcount;
               wordpos := 1;
               wordend := 1;
               if wa<>nil then
