@@ -1,11 +1,11 @@
 object MainForm: TMainForm
-  Left = 73
-  Height = 722
-  Top = 118
+  Left = 246
+  Height = 718
+  Top = 388
   Width = 1028
   ActiveControl = ListboxPanel
   Caption = 'Ocrivist'
-  ClientHeight = 696
+  ClientHeight = 698
   ClientWidth = 1028
   Icon.Data = {
     BE1000000000010001002020000001002000A810000016000000280000002000
@@ -153,12 +153,12 @@ object MainForm: TMainForm
   WindowState = wsMaximized
   object ListboxPanel: TPanel
     Left = 0
-    Height = 634
+    Height = 633
     Top = 42
     Width = 179
     Align = alLeft
     Caption = 'ListboxPanel'
-    ClientHeight = 634
+    ClientHeight = 633
     ClientWidth = 179
     TabOrder = 1
     object ThumbnailListBox: TListBox
@@ -189,9 +189,9 @@ object MainForm: TMainForm
     end
     object pagecountLabel: TLabel
       Left = 8
-      Height = 17
+      Height = 16
       Top = 613
-      Width = 5
+      Width = 4
       Anchors = [akLeft, akBottom]
       Caption = ' '
       ParentColor = False
@@ -199,7 +199,7 @@ object MainForm: TMainForm
   end
   object Splitter1: TSplitter
     Left = 179
-    Height = 634
+    Height = 633
     Top = 42
     Width = 5
   end
@@ -287,13 +287,13 @@ object MainForm: TMainForm
   end
   object MainPanel: TPanel
     Left = 184
-    Height = 634
+    Height = 633
     Top = 42
     Width = 669
     Align = alClient
     AutoSize = True
     Caption = 'MainPanel'
-    ClientHeight = 634
+    ClientHeight = 633
     ClientWidth = 669
     TabOrder = 3
     object PageToolBar: TToolBar
@@ -437,8 +437,8 @@ object MainForm: TMainForm
   end
   object StatusBar: TStatusBar
     Left = 0
-    Height = 20
-    Top = 676
+    Height = 23
+    Top = 675
     Width = 1028
     Panels = <    
       item
@@ -523,12 +523,12 @@ object MainForm: TMainForm
       TabOrder = 0
       object LanguageComboBox: TComboBox
         Left = 13
-        Height = 28
+        Height = 23
         Hint = 'Set language for OCR'
         Top = 6
         Width = 148
         DropDownCount = 12
-        ItemHeight = 0
+        ItemHeight = 15
         Items.Strings = (
           ''
         )
@@ -585,7 +585,7 @@ object MainForm: TMainForm
   end
   object RightSidePanel: TPanel
     Left = 858
-    Height = 634
+    Height = 633
     Top = 42
     Width = 170
     Align = alRight
@@ -593,7 +593,7 @@ object MainForm: TMainForm
   end
   object Splitter2: TSplitter
     Left = 853
-    Height = 634
+    Height = 633
     Top = 42
     Width = 5
     Align = alRight
@@ -823,7 +823,7 @@ object MainForm: TMainForm
     end
     object DebugMenuItem: TMenuItem
       Caption = 'Debug'
-      Visible = False
+      OnClick = DebugMenuItemClick
     end
   end
   object SaveDialog: TSaveDialog

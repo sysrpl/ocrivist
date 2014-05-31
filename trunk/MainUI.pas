@@ -11,7 +11,7 @@ uses
   OcrivistData, selector,
   {$IFDEF HAS_LIBSANE} Sane, scansane,{$ENDIF}
   {$IFDEF MSWINDOWS} DelphiTwain, scantwain,{$ENDIF}
-  ocreditor, historymenu, IniFiles;
+  ocreditor, historymenu, IniFiles, hpdf, hpdf_types;
 
 { command line for converting pdf pages to tiff:
   convert -density 300x300 -compress lzw <source>.pdf[0] <output>.tiff
@@ -135,6 +135,7 @@ type
     procedure AboutMenuItemClick ( Sender: TObject ) ;
     procedure CopyTextMenuItemClick ( Sender: TObject ) ;
     procedure CropButtonClick ( Sender: TObject ) ;
+    procedure DebugMenuItemClick(Sender: TObject);
     procedure DeleteLineMenuItemClick(Sender: TObject);
     procedure DelPageMenuItemClick ( Sender: TObject ) ;
     procedure DelSelectButtonClick ( Sender: TObject ) ;
@@ -241,9 +242,60 @@ var
 
   AutoDeskewOnScan: Boolean;
 
+  procedure DrawText( canvas: HPDF_Page; x, y, w: Double; fontName: HPDF_Font; fontsize: Integer; txt: PChar; justify: Integer; underline:Boolean);
+  procedure HandleHPDFError(error_no: HPDF_STATUS; detail_no: HPDF_STATUS;
+                user_data: Pointer); cdecl;
+
+
  implementation
 
-  uses DjvuUtils, scanner, {$IFDEF HAS_LIBSANE} scanselect, {$ENDIF} ocr, Clipbrd, progress, about{, threshold};
+  uses DjvuUtils, scanner, {$IFDEF HAS_LIBSANE} scanselect, {$ENDIF} ocr, Clipbrd, progress, about{, threshold}
+    ;
+
+  procedure DrawText ( canvas: HPDF_Page; x, y, w: Double; fontName: HPDF_Font;
+  fontsize: Integer; txt: PChar; justify: Integer; underline: Boolean ) ;
+var
+  ln: Integer;
+  rw: Single;
+  lx: Double;
+begin
+  lx := x;
+  // Set font
+  HPDF_Page_SetFontAndSize(canvas, fontName, fontSize);
+
+  HPDF_Page_BeginText(canvas);
+
+  // Truncate the text to max col width
+  ln := HPDF_Page_MeasureText(canvas, txt, w, 0, @rw);
+//  MID$(txt, ln+1) = CHR$(0)
+
+  // Justify
+  IF justify = JUSTIFY_RIGHT THEN
+      // Right justify the text
+      lx := x + (w - rw)
+  ELSE IF justify = JUSTIFY_CENTER THEN
+      // Center justify the text
+      lx := x + (w - rw) / 2;
+
+  // Draw the text
+  HPDF_Page_MoveTextPos(canvas, lx, y);
+  HPDF_Page_ShowText(canvas, txt);
+  HPDF_Page_EndText(canvas);
+
+  // Underline the text if flag is set
+  IF underline THEN
+      begin
+      HPDF_Page_MoveTo(canvas, x, y-1);
+      HPDF_Page_LineTo(canvas, x + w, y-1);
+      HPDF_Page_Stroke(canvas);
+      end;
+end;
+
+procedure HandleHPDFError ( error_no: HPDF_STATUS; detail_no: HPDF_STATUS;
+  user_data: Pointer ) ; cdecl;
+begin
+  {$IFDEF DEBUG} WriteLn('HPDF Error ', error_no, ' - detail ', detail_no); {$ENDIF}
+end;
 
   {$R *.lfm}
 
@@ -254,6 +306,115 @@ procedure TMainForm.CropButtonClick ( Sender: TObject ) ;
 begin
   ICanvas.SelectionMode := smCrop;
   StatusBar.Panels[0].Text := 'CROP';
+end;
+
+procedure TMainForm.DebugMenuItemClick(Sender: TObject);
+const
+   DEFAULT_FONTSIZE = 10;
+   PAGE_MARGIN = 60;
+var
+  pdf: HPDF_Doc;
+  page: HPDF_Page;
+  createdate: THPDF_Date;
+  pages: TList;
+  samp_text: String;
+  afont: HPDF_Font;
+  aheight: HPDF_REAL;
+  awidth: HPDF_REAL;
+  def_font: HPDF_Font;
+  tw: HPDF_REAL;
+  page_title: String;
+  i: Integer;
+  SQL: String;
+  tx: String;
+  tab0: Integer;
+  tab1: Integer;
+  tab2: Integer;
+  x: Integer;
+  line_y: Single;
+  bold_font: HPDF_Font;
+  sometext: String;
+  line_y1: Single;
+  contactname: String;
+  r: Integer;
+  createtime: TDateTime;
+  IM: HPDF_Image;
+  f: String;
+  lline: Integer;
+  lin: TLineData;
+  wword: Integer;
+  w: LongInt;
+  sc: HPDF_REAL;
+  h: LongInt;
+  hsc: HPDF_REAL;
+  wsc: HPDF_REAL;
+
+  procedure NewPage;
+  begin
+    page := HPDF_AddPage (pdf);
+    pages.Add(page);
+    line_y := aheight-100;
+    DrawText(page, tab0, line_y, awidth-PAGE_MARGIN-tab0, bold_font, DEFAULT_FONTSIZE+1, PChar('Item Ref.'), JUSTIFY_LEFT, false);
+    DrawText(page, tab1, line_y, 100, bold_font, DEFAULT_FONTSIZE+1, PChar('Item'), JUSTIFY_LEFT, false);
+    DrawText(page, tab2, line_y, 90, bold_font, DEFAULT_FONTSIZE+1, PChar('Quantity'), JUSTIFY_CENTER, false);
+    line_y := line_y-20;
+  end;
+
+begin
+  pages := TList.Create;
+  pdf := HPDF_New(@HandleHPDFError, nil);
+  HPDF_SetCompressionMode (pdf, $0F);
+  def_font := HPDF_GetFont(pdf, PChar('Helvetica'), nil);
+  bold_font := HPDF_GetFont(pdf, PChar('Helvetica-Bold'), nil);
+  //x := HPDF_SetInfoAttr(pdf, HPDF_INFO_CREATOR, PChar('Creator'));
+  //x := HPDF_SetInfoAttr(pdf, HPDF_INFO_AUTHOR, PChar('Author'));
+  createtime := Now;
+  with createdate do
+  begin
+    year := StrToInt(FormatDateTime('yyyy', createtime));
+    month := StrToInt(FormatDateTime('m', createtime));
+    day := StrToInt(FormatDateTime('d', createtime));
+    hour:= StrToInt(FormatDateTime('h', createtime));
+    minutes := StrToInt(FormatDateTime('n', createtime));
+    seconds := StrToInt(FormatDateTime('s', createtime));
+    ind := '+';
+    off_hour := 0;
+    off_minutes := 0;
+  end;
+  //x := HPDF_SetInfoDateAttr(pdf, HPDF_INFO_CREATION_DATE, createdate);
+  //x := HPDF_SetInfoAttr(pdf, HPDF_INFO_TITLE, PChar('Document Title Here'));
+
+  page := HPDF_AddPage (pdf);
+  HPDF_Page_SetFontAndSize (page, bold_font, 18);
+  f := 'C:\Temp\temp.jpg';
+  w := pixGetWidth(CurrentProject.CurrentPage.PageImage);
+  h := pixGetHeight(CurrentProject.CurrentPage.PageImage);
+  hsc := aheight / h;
+  wsc := awidth / w;
+  if CurrentProject.CurrentPage.OCRData.Linecount>0 then
+    for lline := 0 to CurrentProject.CurrentPage.OCRData.Linecount-1 do
+      begin
+      if CurrentProject.CurrentPage.OCRData.Lines[lline].WordCount>0 then
+      begin
+        lin := CurrentProject.CurrentPage.OCRData.Lines[lline];
+        for wword := 0 to lin.WordCount-1 do
+          DrawText(page, lin.Words[wword].Box.Left * wsc, aheight - (lin.Words[wword].Box.Bottom * hsc),
+          (lin.Words[wword].Box.Right - lin.Words[wword].Box.Left)*wsc, def_font, 12, PChar(lin.Words[wword].Text), JUSTIFY_LEFT, false);
+      end;
+
+      end;
+
+  x :=  pixWrite(PChar(f), CurrentProject.CurrentPage.PageImage, IFF_JFIF_JPEG);
+
+
+  IM := HPDF_LoadJpegImageFromFile (pdf, PChar(f));
+  if IM <> nil then
+  HPDF_Page_DrawImage (page, IM, 0,0, awidth, aheight) ;
+
+  x := HPDF_SaveToFile(pdf, PChar('C:\temp\test.pdf'));
+  pages.Free;
+  HPDF_FreeDocAll(pdf);
+        ShowMessage('PDF created ' + Inttostr(x));
 end;
 
 procedure TMainForm.DeleteLineMenuItemClick(Sender: TObject);

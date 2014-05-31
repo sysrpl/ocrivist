@@ -13,8 +13,8 @@ uses
   {$ENDIF}
   {$IFDEF MSWINDOWS} DelphiTwain, scantwain, {$ENDIF}
   MainUI, LibLeptUtils, leptonica, pageviewer, OcrivistData, selector,
-  DjvuUtils, ocr, ocreditor, frmSpell, progress, about, historymenu,  tesseract,
-  PasDoc_Aspell
+  DjvuUtils, ocr, ocreditor, frmSpell, progress, about, historymenu, hpdf,
+  tesseract, PasDoc_Aspell
   { you can add units after this };
 
 {$R *.res}
