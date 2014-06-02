@@ -92,7 +92,7 @@ const
                                         'English');
 
 type
-   TConfidenceList = array of PInteger;
+   //TConfidenceList = array of PInteger;
 
    TFontAttrib = (faBold, faItalic, faSerif, faMonospace);
    TFontAttributes = set of TFontAttrib;
@@ -102,6 +102,7 @@ type
      Start: Integer;
      Length: Integer;
      Box: TRect;
+     Baseline:integer;
      Confidence: Byte;
      FontID: Integer;
      FontSize: Byte;
@@ -248,6 +249,7 @@ var
   ba: PBoxArray;
   wa: PBoxArray;
   na: PNumArray;
+  baseline: PPointArray;
   x: Integer;
   lineindex: integer;
   lncount: Integer;
@@ -304,6 +306,7 @@ begin
     ba := nil;
     pa := nil;
     na := nil;
+    baseline := nil;
     TextRegion := CropPix(FPageImage, inRect);
     //pixWrite('/tmp/textregion.bmp', TextRegion, IFF_BMP);
     pixGetWordsInTextlines(TextRegion, 1, 5, 20, inRect.Right-inRect.Left, 200, @ba, @pa, @na);
@@ -348,6 +351,7 @@ begin
      writeln('Lncount: ', lncount);
      writeln('FLineCount: ', FLineCount);
      {$ENDIF}
+     pixFindBaselines(TextRegion, @baseline, 0);
 
       // --------- OCR inRect one line at a time to allow for progress callback --------
      for x := 0 to lncount-1 do
@@ -359,7 +363,8 @@ begin
                                                  inRect.Top + R.Top,
                                                  R.Right-R.Left,
                                                  R.Bottom-R.Top);
-            //writeln(Format('ra(%d): %d %d %d %d', [x, R.Left, R.Top, R.Right, R.Bottom]));
+            writeln(Format('ra(%d): %d %d %d %d', [x, R.Left, R.Top, R.Right, R.Bottom]));
+            writeln(Format('baseline: %g', [baseline^.y[x*2]]));
             if RectIsValid(R) then
               begin
               {$IFDEF DEBUG}
@@ -378,9 +383,11 @@ begin
                 writeln('error in GetUTF8Text');
                 {$ENDIF}
               end;
-              n := length(Ftext);
+              n := length(UTF8Text);
               if n>0 then
                  begin
+                   wordpos := 1;
+                   wordend := 1;
                    if FText[n]=#10 then SetLength(FText, n-1);
                    wa := TessBaseAPIGetWords(FTesseract, @pixa);
 
@@ -395,10 +402,13 @@ begin
                    wordcount := boxaGetCount(wa);
                    SetLength(FLines[FLineCount + x].Words, wordcount);
                    FLines[FLineCount + x].Wordcount := wordcount;
-                     ri := TessBaseAPIGetIterator(FTesseract);
-                     n := 0;
-                     deletedtokens := 0;
-                     if ri<>nil then
+                   {$IFDEF DEBUG}
+                   writeln('Tesseract wordcount: ', wordcount);
+                   {$ENDIF}
+                   ri := TessBaseAPIGetIterator(FTesseract);
+                   n := 0;
+                   deletedtokens := 0;
+                   if ri<>nil then
                         repeat
                           fontname := TessResultIteratorWordFontAttributes(ri, @isBold, @isItalic, @isUL, @isMonospace,
                                       @isSerif, @isSC, @pointsize, @fontid);
@@ -406,58 +416,36 @@ begin
                           if fi<0 then
                              begin FFontList.Add(fontname); fi := FFontList.Count-1; end;
                           {$IFDEF DEBUG}
-                          writeln(Format('line: %d %d %s %d id: %d ', [x, n, fontname, pointsize, fontid]));
-                          WriteLn(Format( 'Confidence: %g', [TessResultIteratorConfidence(ri, RIL_WORD)]));
+                     //     writeln(Format('line: %d %d %s %d id: %d ', [x, n, fontname, pointsize, fontid]));
+                     //     WriteLn(Format( 'Confidence: %g', [TessResultIteratorConfidence(ri, RIL_WORD)]));
                           {$ENDIF}
+                          b := boxaGetBox(wa, n, L_COPY);
+                          if b<>nil then
+                          begin
+                            AdjustToArea(b, x);
+                            boxaReplaceBox(wa, n, b);
+                          end;
+                          FLines[FLineCount + x].Words[n-deletedtokens].Box := BoxToRect(b);
+                          FLines[FLineCount + x].Words[n-deletedtokens].Baseline := inRect.Top + trunc( baseline^.y[x*2] );
+                          FLines[FLineCount + x].Words[n-deletedtokens].Confidence := Trunc( TessResultIteratorConfidence(ri, RIL_WORD) );
                           FLines[FLineCount + x].Words[n-deletedtokens].FontID := fi;
                           FLines[FLineCount + x].Words[n-deletedtokens].isNumeric := TessResultIteratorWordIsNumeric(ri);
                           FLines[FLineCount + x].Words[n-deletedtokens].FontSize := pointsize;
+                          FLines[FLineCount + x].Words[n-deletedtokens].Text := TessResultIteratorGetUTF8Text(ri, RIL_WORD);
+                          FLines[FLineCount + x].Words[n-deletedtokens].Start := wordpos;
+                          FLines[FLineCount + x].Words[n-deletedtokens].Length := Length(FLines[FLineCount + x].Words[n-deletedtokens].Text);
+                          if isBold then FLines[FLineCount + x].Words[n-deletedtokens].FontFlags := FLines[FLineCount + x].Words[n-deletedtokens].FontFlags + [faBold];
+                          if isItalic then FLines[FLineCount + x].Words[n-deletedtokens].FontFlags := FLines[FLineCount + x].Words[n-deletedtokens].FontFlags + [faItalic];
+                          if isSerif then FLines[FLineCount + x].Words[n-deletedtokens].FontFlags := FLines[FLineCount + x].Words[n-deletedtokens].FontFlags + [faSerif];
+                          if isMonospace then FLines[FLineCount + x].Words[n-deletedtokens].FontFlags := FLines[FLineCount + x].Words[n-deletedtokens].FontFlags + [faMonospace];
+                          wordend := wordend + FLines[FLineCount + x].Words[n-deletedtokens].Length;
+                          wordpos := wordend + 1;
                           Inc(n);
                         until not TessPageIteratorNext(ri,RIL_WORD);
                    TessPageIteratorDelete(ri);
                  end;
-              wordpos := 1;
-              wordend := 1;
-              if wa<>nil then
-                //TODO: I can't remember what this is doing. Analyse and comment this code
-                  begin
-                     {$IFDEF DEBUG}
-                     writeln('Tesseract wordcount: ', wordcount);
-                     {$ENDIF}
-                     deletedtokens := 0;
-                     conf := TessBaseAPIAllWordConfidences(FTesseract);
-                    //writeln( boxaWrite(Pchar('/tmp/tessboxes' + IntToStr(x) + '.txt'), wa));
-                     for n := 0 to wordcount-1 do
-                          begin
-                            {$IFDEF DEBUG}
-                            writeln('confidence ', conf^[n]);
-                            {$ENDIF}
-                            b := boxaGetBox(wa, n, L_COPY);
-                            if b<>nil then
-                            begin
-                              AdjustToArea(b, x);
-                              boxaReplaceBox(wa, n, b);
-                            end;
-                            FLines[FLineCount + x].Words[n-deletedtokens].Confidence := conf^[n];
-                            FLines[FLineCount + x].Words[n-deletedtokens].Box := BoxToRect(b);
-                            while UTF8Text[wordend]>#32 do Inc(wordend);
-                            Inc(wordend);
-                            FLines[FLineCount + x].Words[n-deletedtokens].Start := wordpos;
-                            FLines[FLineCount + x].Words[n-deletedtokens].Length := wordend-wordpos;
-                            FLines[FLineCount + x].Words[n-deletedtokens].Text := Copy(UTF8Text, wordpos, wordend-wordpos);
-                            while UTF8Text[wordend]<=#32 do Inc(wordend);
-                            wordpos := wordend+1;
-                            if Length(Trim(UTF8Text))=0 then
-                               begin
-                                 Inc (deletedtokens);
-                                 FLines[FLineCount + x].WordCount := FLines[FLineCount + x].WordCount-1;
-                               end;
-                          end;
-                     //writeln( boxaWrite(Pchar('/tmp/adjusted-tessboxes' + IntToStr(x) + '.txt'), wa));
-
-                     TessDeleteIntArray(conf);
-                     boxaDestroy(@wa);
-                  end;
+              if wa<>nil
+                 then boxaDestroy(@wa);
               TessDeleteText(UTF8Text);
               if Assigned(FOnOCRLine)
                  then FOnOCRLine(1);
@@ -473,6 +461,7 @@ begin
     if ba<>nil then boxaDestroy(@ba);
     if pa<>nil then ptaDestroy(@pa);
     if na<>nil then numaDestroy(@na);
+    if baseline<>nil then ptaDestroy(@baseline);
     if TextRegion<>nil then pixDestroy(@TextRegion);
     for x := 0 to FFontList.Count-1 do
          WriteLn(FFontList.Strings[x]);

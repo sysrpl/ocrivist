@@ -260,7 +260,7 @@ var
   procedure DrawText ( canvas: HPDF_Page; x, y, w: Double; fontName: HPDF_Font;
   fontsize: Integer; txt: PChar; justify: Integer; underline: Boolean ) ;
 var
-  ln: Integer;
+  ln: integer;
   rw: Single;
   lx: Double;
 begin
@@ -314,9 +314,6 @@ begin
 end;
 
 procedure TMainForm.DebugMenuItemClick(Sender: TObject);
-const
-   DEFAULT_FONTSIZE = 10;
-   PAGE_MARGIN = 60;
 var
   pdf: HPDF_Doc;
   page: HPDF_Page;
@@ -353,16 +350,12 @@ var
   h: LongInt;
   hsc: HPDF_REAL;
   wsc: HPDF_REAL;
+  baseline: Integer;
 
   procedure NewPage;
   begin
     page := HPDF_AddPage (pdf);
     pages.Add(page);
-    line_y := aheight-100;
-    DrawText(page, tab0, line_y, awidth-PAGE_MARGIN-tab0, bold_font, DEFAULT_FONTSIZE+1, PChar('Item Ref.'), JUSTIFY_LEFT, false);
-    DrawText(page, tab1, line_y, 100, bold_font, DEFAULT_FONTSIZE+1, PChar('Item'), JUSTIFY_LEFT, false);
-    DrawText(page, tab2, line_y, 90, bold_font, DEFAULT_FONTSIZE+1, PChar('Quantity'), JUSTIFY_CENTER, false);
-    line_y := line_y-20;
   end;
 
 begin
@@ -375,23 +368,26 @@ begin
   //x := HPDF_SetInfoAttr(pdf, HPDF_INFO_AUTHOR, PChar('Author'));
   createtime := Now;
   with createdate do
-  begin
-    year := StrToInt(FormatDateTime('yyyy', createtime));
-    month := StrToInt(FormatDateTime('m', createtime));
-    day := StrToInt(FormatDateTime('d', createtime));
-    hour:= StrToInt(FormatDateTime('h', createtime));
-    minutes := StrToInt(FormatDateTime('n', createtime));
-    seconds := StrToInt(FormatDateTime('s', createtime));
-    ind := '+';
-    off_hour := 0;
-    off_minutes := 0;
-  end;
-  //x := HPDF_SetInfoDateAttr(pdf, HPDF_INFO_CREATION_DATE, createdate);
-  //x := HPDF_SetInfoAttr(pdf, HPDF_INFO_TITLE, PChar('Document Title Here'));
+    begin
+      year := StrToInt(FormatDateTime('yyyy', createtime));
+      month := StrToInt(FormatDateTime('m', createtime));
+      day := StrToInt(FormatDateTime('d', createtime));
+      hour:= StrToInt(FormatDateTime('h', createtime));
+      minutes := StrToInt(FormatDateTime('n', createtime));
+      seconds := StrToInt(FormatDateTime('s', createtime));
+      ind := '+';
+      off_hour := 0;
+      off_minutes := 0;
+    end;
+  x := HPDF_SetInfoDateAttr(pdf, HPDF_INFO_CREATION_DATE, createdate);
+  if Length(CurrentProject.Title) > 0
+     then x := HPDF_SetInfoAttr(pdf, HPDF_INFO_TITLE, PChar(CurrentProject.Title));
 
   page := HPDF_AddPage (pdf);
+  aheight := HPDF_Page_GetHeight(page);
+  awidth := HPDF_Page_GetWidth(page);
   HPDF_Page_SetFontAndSize (page, bold_font, 18);
-  f := 'C:\Temp\temp.jpg';
+  f := '/tmp/temp.jpg';
   w := pixGetWidth(CurrentProject.CurrentPage.PageImage);
   h := pixGetHeight(CurrentProject.CurrentPage.PageImage);
   hsc := aheight / h;
@@ -400,12 +396,17 @@ begin
     for lline := 0 to CurrentProject.CurrentPage.OCRData.Linecount-1 do
       begin
       if CurrentProject.CurrentPage.OCRData.Lines[lline].WordCount>0 then
-      begin
-        lin := CurrentProject.CurrentPage.OCRData.Lines[lline];
-        for wword := 0 to lin.WordCount-1 do
-          DrawText(page, lin.Words[wword].Box.Left * wsc, aheight - (lin.Words[wword].Box.Bottom * hsc),
-          (lin.Words[wword].Box.Right - lin.Words[wword].Box.Left)*wsc, def_font, 12, PChar(lin.Words[wword].Text), JUSTIFY_LEFT, false);
-      end;
+        begin
+          lin := CurrentProject.CurrentPage.OCRData.Lines[lline];
+          for wword := 0 to lin.WordCount-1 do
+            begin
+              if faSerif in lin.Words[wword].FontFlags
+                 then def_font := HPDF_GetFont(pdf, PChar('Times-Roman'), nil)
+                 else def_font := HPDF_GetFont(pdf, PChar('Helvetica'), nil);
+              DrawText(page, lin.Words[wword].Box.Left * wsc, aheight - (lin.Words[wword].Baseline * hsc),
+              (lin.Words[wword].Box.Right - lin.Words[wword].Box.Left)*wsc, def_font, lin.Words[wword].FontSize, PChar(lin.Words[wword].Text), JUSTIFY_LEFT, false);
+            end;
+        end;
 
       end;
 
@@ -416,7 +417,7 @@ begin
   if IM <> nil then
   HPDF_Page_DrawImage (page, IM, 0,0, awidth, aheight) ;
 
-  x := HPDF_SaveToFile(pdf, PChar('C:\temp\test.pdf'));
+  x := HPDF_SaveToFile(pdf, PChar('/tmp/test.pdf'));
   pages.Free;
   HPDF_FreeDocAll(pdf);
         ShowMessage('PDF created ' + Inttostr(x));
@@ -776,12 +777,43 @@ end;
 
 procedure TMainForm.PDFToolButtonClick(Sender: TObject);
 var
-  sourcefiles: TSArray;
+  pdf: HPDF_Doc;
+  page: HPDF_Page;
+  createdate: THPDF_Date;
+  pages: TList;
+  samp_text: String;
+  afont: HPDF_Font;
+  aheight: HPDF_REAL;
+  awidth: HPDF_REAL;
+  def_font: HPDF_Font;
+  tw: HPDF_REAL;
+  page_title: String;
+  i: Integer;
+  SQL: String;
+  tx: String;
+  tab0: Integer;
+  tab1: Integer;
+  tab2: Integer;
+  x: Integer;
+  line_y: Single;
+  bold_font: HPDF_Font;
+  sometext: String;
+  line_y1: Single;
+  contactname: String;
+  r: Integer;
+  createtime: TDateTime;
+  IM: HPDF_Image;
+  f: String;
+  lline: Integer;
+  lin: TLineData;
+  wword: Integer;
+  w: LongInt;
+  sc: HPDF_REAL;
+  h: LongInt;
+  hsc: HPDF_REAL;
+  wsc: HPDF_REAL;
+  baseline: Integer;
   p: Integer;
-  msk: String;
-  tmpfiles: TSearchRec;
-  dir: String;
-  dr: String;
 begin
   with SaveDialog do
        begin
@@ -793,33 +825,68 @@ begin
   if SaveDialog.Execute then
       try
         Enabled := false;
-        sourcefiles.refcount := 1;
-        SetLength(sourcefiles.strarray, CurrentProject.PageCount+1);
-        sourcefiles.n := CurrentProject.PageCount;
-        sourcefiles.nalloc := CurrentProject.PageCount;
-        sourcefiles.refcount := 1;
+        pdf := HPDF_New(@HandleHPDFError, nil);
+        HPDF_SetCompressionMode (pdf, $0F);
+        def_font := HPDF_GetFont(pdf, PChar('Helvetica'), nil);
+        bold_font := HPDF_GetFont(pdf, PChar('Helvetica-Bold'), nil);
+        //x := HPDF_SetInfoAttr(pdf, HPDF_INFO_CREATOR, PChar('Creator'));
+        //x := HPDF_SetInfoAttr(pdf, HPDF_INFO_AUTHOR, PChar('Author'));
+        createtime := Now;
+        with createdate do
+          begin
+            year := StrToInt(FormatDateTime('yyyy', createtime));
+            month := StrToInt(FormatDateTime('m', createtime));
+            day := StrToInt(FormatDateTime('d', createtime));
+            hour:= StrToInt(FormatDateTime('h', createtime));
+            minutes := StrToInt(FormatDateTime('n', createtime));
+            seconds := StrToInt(FormatDateTime('s', createtime));
+            ind := '+';
+            off_hour := 0;
+            off_minutes := 0;
+          end;
+        x := HPDF_SetInfoDateAttr(pdf, HPDF_INFO_CREATION_DATE, createdate);
+        if Length(CurrentProject.Title) > 0
+           then x := HPDF_SetInfoAttr(pdf, HPDF_INFO_TITLE, PChar(CurrentProject.Title));
         for p := 0 to CurrentProject.PageCount-1 do
            begin
-             sourcefiles.strarray[p] := PChar(CurrentProject.Pages[p].Filename);
-             if not FileExists(CurrentProject.Pages[p].Filename)
-               then CurrentProject.ExtractPage(CurrentProject.Pages[p].ImageID);
+             page := HPDF_AddPage (pdf);
+             aheight := HPDF_Page_GetHeight(page);
+             awidth := HPDF_Page_GetWidth(page);
+             HPDF_Page_SetFontAndSize (page, bold_font, 18);
+             f := '/tmp/temp.jpg';
+             w := pixGetWidth(CurrentProject.Pages[p].PageImage);
+             h := pixGetHeight(CurrentProject.Pages[p].PageImage);
+             hsc := aheight / h;
+             wsc := awidth / w;
+             CurrentProject.Pages[p].OCRData<>nil then
+             if CurrentProject.Pages[p].OCRData.Linecount>0 then
+               for lline := 0 to CurrentProject.Pages[p].OCRData.Linecount-1 do
+                 begin
+                 if CurrentProject.Pages[p].OCRData.Lines[lline].WordCount>0 then
+                   begin
+                     lin := CurrentProject.Pages[p].OCRData.Lines[lline];
+                     for wword := 0 to lin.WordCount-1 do
+                       begin
+                         if faSerif in lin.Words[wword].FontFlags
+                            then def_font := HPDF_GetFont(pdf, PChar('Times-Roman'), nil)
+                            else def_font := HPDF_GetFont(pdf, PChar('Helvetica'), nil);
+                         DrawText(page, lin.Words[wword].Box.Left * wsc, aheight - (lin.Words[wword].Baseline * hsc),
+                         (lin.Words[wword].Box.Right - lin.Words[wword].Box.Left)*wsc, def_font, lin.Words[wword].FontSize, PChar(lin.Words[wword].Text), JUSTIFY_LEFT, false);
+                       end;
+                   end;
+
+                 end;
+
+             x :=  pixWrite(PChar(f), CurrentProject.Pages[p].PageImage, IFF_JFIF_JPEG);
+             IM := HPDF_LoadJpegImageFromFile (pdf, PChar(f));
+             if IM <> nil then
+             HPDF_Page_DrawImage (page, IM, 0,0, awidth, aheight) ;
            end;
-        if saConvertFilesToPdf(@sourcefiles, 0, 1, 1, 75,
-                             PChar(CurrentProject.Title),
-                             PChar(SaveDialog.FileName))=0
-         then ShowMessage('PDF created successfully')
-         else ShowMessage('An error occurred when creating PDF');
+        x := HPDF_SaveToFile(pdf, PChar('/tmp/test.pdf'));
+        HPDF_FreeDocAll(pdf);
+              ShowMessage('PDF created ' + Inttostr(x));
       finally
         Enabled := True;
-        dr := ExtractFileDir(SaveDialog.FileName) + DirectorySeparator;
-        msk := dr + '*_*_temp.jpg';
-        if FindFirst (msk, faAnyFile, tmpfiles)=0 then
-          begin
-            repeat
-              DeleteFileUTF8(dr + tmpfiles.Name);
-            until FindNext(tmpfiles) <> 0;
-            FindClose(tmpfiles);
-          end;
       end;
 end;
 

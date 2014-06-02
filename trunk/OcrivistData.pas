@@ -460,15 +460,12 @@ begin
            FileRead(F, bytes, SizeOf(bytes));                 //1 - Integer - length of string Title
            SetLength(apage.FTitle, bytes);
            if bytes>0 then
-              FileRead(F, apage.FTitle[1], bytes);            //2 - array of char - string Title
-//           if thisfileversion>1 then
-              begin
-               FileRead(F, bytes, SizeOf(bytes));                 //2a - Integer - length of string FImageSource
-               SetLength(apage.FImageSource, bytes);
-               if bytes>0 then
-                  FileRead(F, apage.FImageSource[1], bytes);      //2b - array of char - string FImageSource
+           FileRead(F, apage.FTitle[1], bytes);            //2 - array of char - string Title
+           FileRead(F, bytes, SizeOf(bytes));                 //2a - Integer - length of string FImageSource
+           SetLength(apage.FImageSource, bytes);
+           if bytes>0 then
+              FileRead(F, apage.FImageSource[1], bytes);      //2b - array of char - string FImageSource
 
-              end;
            FileRead(F, bytes, SizeOf(bytes));                 //3 - Integer - length of string Text
            if bytes>0 then
               begin
@@ -487,9 +484,7 @@ begin
            if bytes>0 then
               begin
                 FileRead(F, strbuf[1], bytes);                //6 - array of char - = string FtempFile
-                //if thisfileversion>2 then
-                   aPage.FImageFile := FWorkFolder + Format('%.3d', [aPage.FImageID]) + '.tif';
-               // else aPage.FImageFile := FWorkFolder + strbuf;
+                aPage.FImageFile := FWorkFolder + Format('%.3d', [aPage.FImageID]) + '.tif';
                 if page=FcurrentPage
                    then aPage.PageImage := aPage.LoadFromFileBackground;
               end;
@@ -544,7 +539,7 @@ begin
                           aWord.FontID := -1;
                         end
                      else FileRead(F, aWord, SizeOf(aWord));
-                     {$IFDEF DEBUG} writeln('line #', lline, ' Word #', wwords, ' box.top=', aWord.Box.Top, ' fontid: ', aWord.FontID); {$ENDIF}
+//                     {$IFDEF DEBUG} writeln('line #', lline, ' Word #', wwords, ' box.top=', aWord.Box.Top, ' fontsize: ', aWord.FontSize); {$ENDIF}
                      with aPage.FOCRData.Lines[lline] do
                          begin
                            Words[wwords].Start := aWord.Start;
