@@ -315,112 +315,86 @@ end;
 
 procedure TMainForm.DebugMenuItemClick(Sender: TObject);
 var
-  pdf: HPDF_Doc;
-  page: HPDF_Page;
-  createdate: THPDF_Date;
-  pages: TList;
-  samp_text: String;
-  afont: HPDF_Font;
-  aheight: HPDF_REAL;
-  awidth: HPDF_REAL;
-  def_font: HPDF_Font;
-  tw: HPDF_REAL;
-  page_title: String;
-  i: Integer;
-  SQL: String;
-  tx: String;
-  tab0: Integer;
-  tab1: Integer;
-  tab2: Integer;
-  x: Integer;
-  line_y: Single;
-  bold_font: HPDF_Font;
-  sometext: String;
-  line_y1: Single;
-  contactname: String;
-  r: Integer;
-  createtime: TDateTime;
-  IM: HPDF_Image;
-  f: String;
-  lline: Integer;
-  lin: TLineData;
-  wword: Integer;
-  w: LongInt;
-  sc: HPDF_REAL;
-  h: LongInt;
-  hsc: HPDF_REAL;
-  wsc: HPDF_REAL;
-  baseline: Integer;
-
-  procedure NewPage;
-  begin
-    page := HPDF_AddPage (pdf);
-    pages.Add(page);
-  end;
-
+  segment_mask_sequence: String;
+  segment_seed_sequence: String;
+  segment_dilation_sequence: String;
+  Pixb: PLPix;
+  Piximg: PLPix;
 begin
-  pages := TList.Create;
-  pdf := HPDF_New(@HandleHPDFError, nil);
-  HPDF_SetCompressionMode (pdf, $0F);
-  def_font := HPDF_GetFont(pdf, PChar('Helvetica'), nil);
-  bold_font := HPDF_GetFont(pdf, PChar('Helvetica-Bold'), nil);
-  //x := HPDF_SetInfoAttr(pdf, HPDF_INFO_CREATOR, PChar('Creator'));
-  //x := HPDF_SetInfoAttr(pdf, HPDF_INFO_AUTHOR, PChar('Author'));
-  createtime := Now;
-  with createdate do
-    begin
-      year := StrToInt(FormatDateTime('yyyy', createtime));
-      month := StrToInt(FormatDateTime('m', createtime));
-      day := StrToInt(FormatDateTime('d', createtime));
-      hour:= StrToInt(FormatDateTime('h', createtime));
-      minutes := StrToInt(FormatDateTime('n', createtime));
-      seconds := StrToInt(FormatDateTime('s', createtime));
-      ind := '+';
-      off_hour := 0;
-      off_minutes := 0;
-    end;
-  x := HPDF_SetInfoDateAttr(pdf, HPDF_INFO_CREATION_DATE, createdate);
-  if Length(CurrentProject.Title) > 0
-     then x := HPDF_SetInfoAttr(pdf, HPDF_INFO_TITLE, PChar(CurrentProject.Title));
+  segment_mask_sequence := 'r11';
+  segment_seed_sequence := 'r1143 + o4.4 + x4';
+  segment_dilation_sequence := 'd3.3';
 
-  page := HPDF_AddPage (pdf);
-  aheight := HPDF_Page_GetHeight(page);
-  awidth := HPDF_Page_GetWidth(page);
-  HPDF_Page_SetFontAndSize (page, bold_font, 18);
-  f := '/tmp/temp.jpg';
-  w := pixGetWidth(CurrentProject.CurrentPage.PageImage);
-  h := pixGetHeight(CurrentProject.CurrentPage.PageImage);
-  hsc := aheight / h;
-  wsc := awidth / w;
-  if CurrentProject.CurrentPage.OCRData.Linecount>0 then
-    for lline := 0 to CurrentProject.CurrentPage.OCRData.Linecount-1 do
-      begin
-      if CurrentProject.CurrentPage.OCRData.Lines[lline].WordCount>0 then
-        begin
-          lin := CurrentProject.CurrentPage.OCRData.Lines[lline];
-          for wword := 0 to lin.WordCount-1 do
-            begin
-              if faSerif in lin.Words[wword].FontFlags
-                 then def_font := HPDF_GetFont(pdf, PChar('Times-Roman'), nil)
-                 else def_font := HPDF_GetFont(pdf, PChar('Helvetica'), nil);
-              DrawText(page, lin.Words[wword].Box.Left * wsc, aheight - (lin.Words[wword].Baseline * hsc),
-              (lin.Words[wword].Box.Right - lin.Words[wword].Box.Left)*wsc, def_font, lin.Words[wword].FontSize, PChar(lin.Words[wword].Text), JUSTIFY_LEFT, false);
-            end;
-        end;
+  Pixb := pixThresholdToBinary(CurrentProject.CurrentPage.PageImage, 127);
+  Piximg := pixClone(CurrentProject.CurrentPage.PageImage);
 
-      end;
+  pixmask4 := PixMorphSequence(Pixb, PChar(segment_mask_sequence), 0);
+  pixseed4 := pixMorphSequence(pixb, (char *) segment_seed_sequence, 0);
+  pixsf4 := pixSeedfillBinary(nil, pixseed4, pixmask4, 8);
+  pixd4 := pixMorphSequence(pixsf4, PChar(segment_dilation_sequence), 0);
 
-  x :=  pixWrite(PChar(f), CurrentProject.CurrentPage.PageImage, IFF_JFIF_JPEG);
+  pixd := pixExpandBinaryPower2(pixd4, 4);
 
+    pixDestroy(&pixd4);
+  pixDestroy(&pixsf4);
+  pixDestroy(&pixseed4);
+  pixDestroy(&pixmask4);
 
-  IM := HPDF_LoadJpegImageFromFile (pdf, PChar(f));
-  if IM <> nil then
-  HPDF_Page_DrawImage (page, IM, 0,0, awidth, aheight) ;
+  pixSubtract(pixb, pixb, pixd);
 
-  x := HPDF_SaveToFile(pdf, PChar('/tmp/test.pdf'));
-  pages.Free;
-  HPDF_FreeDocAll(pdf);
-        ShowMessage('PDF created ' + Inttostr(x));
+  // now see what we got from the segmentation
+  static l_int32 *tab = NULL;
+  if (tab == NULL) tab = makePixelSumTab8();
+
+  // if no image portion was found, set the image pointer to NULL and return
+  l_int32  pcount;
+  pixCountPixels(pixd, &pcount, tab);
+  if (verbose) fprintf(stderr, "pixel count of graphics image: %u\n", pcount);
+  if (pcount < 100) {
+    pixDestroy(&pixd);
+    return NULL;
+  }
+
+  // if no text portion found, set the binary pointer to NULL
+  pixCountPixels(pixb, &pcount, tab);
+  if (verbose) fprintf(stderr, "pixel count of binary image: %u\n", pcount);
+  if (pcount < 100) {
+    pixDestroy(&pixb);
+  }
+
+  PIX *piximg1;
+  if (piximg->d == 1 || piximg->d == 8 || piximg->d == 32) {
+    piximg1 = pixClone(piximg);
+  } else if (piximg->d > 8) {
+    piximg1 = pixConvertTo32(piximg);
+  } else {
+    piximg1 = pixConvertTo8(piximg, FALSE);
+  }
+
+  PIX *pixd1;
+  if (piximg1->d == 32) {
+    pixd1 = pixConvertTo32(pixd);
+  } else if (piximg1->d == 8) {
+    pixd1 = pixConvertTo8(pixd, FALSE);
+  } else {
+    pixd1 = pixClone(pixd);
+  }
+  pixDestroy(&pixd);
+
+  if (verbose) {
+    pixInfo(pixd1, "binary mask image:");
+    pixInfo(piximg1, "graphics image:");
+  }
+  pixRasteropFullImage(pixd1, piximg1, PIX_SRC | PIX_DST);
+
+  pixDestroy(&piximg1);
+  if (verbose) {
+    pixInfo(pixb, "segmented binary text image:");
+    pixInfo(pixd1, "segmented graphics image:");
+  }
+
+  return pixd1;
+
 end;
 
 procedure TMainForm.DeleteLineMenuItemClick(Sender: TObject);
