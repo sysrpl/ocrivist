@@ -320,81 +320,89 @@ var
   segment_dilation_sequence: String;
   Pixb: PLPix;
   Piximg: PLPix;
+  pixmask4: PLPix;
+  pixseed4: PLPix;
+  pixsf4: PLPix;
+  pixd4: PLPix;
+  pixd: PLPix;
+  pixd1: PLPix;
+  pixImg1: PLPix;
+  ttab: PInteger;
+  Pcount: Integer;
 begin
+  ttab := nil;
   segment_mask_sequence := 'r11';
   segment_seed_sequence := 'r1143 + o4.4 + x4';
   segment_dilation_sequence := 'd3.3';
 
-  Pixb := pixThresholdToBinary(CurrentProject.CurrentPage.PageImage, 127);
+  Pixb := pixThresholdToBinary(CurrentProject.CurrentPage.PageImage, 180);
   Piximg := pixClone(CurrentProject.CurrentPage.PageImage);
 
   pixmask4 := PixMorphSequence(Pixb, PChar(segment_mask_sequence), 0);
-  pixseed4 := pixMorphSequence(pixb, (char *) segment_seed_sequence, 0);
+  pixseed4 := pixMorphSequence(pixb, PChar(segment_seed_sequence), 0);
   pixsf4 := pixSeedfillBinary(nil, pixseed4, pixmask4, 8);
   pixd4 := pixMorphSequence(pixsf4, PChar(segment_dilation_sequence), 0);
 
   pixd := pixExpandBinaryPower2(pixd4, 4);
 
-    pixDestroy(&pixd4);
-  pixDestroy(&pixsf4);
-  pixDestroy(&pixseed4);
-  pixDestroy(&pixmask4);
+  pixWrite('/tmp/pixsf4.tif', pixsf4, IFF_TIFF);
+  pixWrite('/tmp/pixd4.tif', pixd4, IFF_TIFF);
+  pixWrite('/tmp/pixeed4.tif', pixseed4, IFF_TIFF);
+  pixWrite('/tmp/pixmask4.tif', pixmask4, IFF_TIFF);
+  pixDestroy(@pixd4);
+  pixDestroy(@pixsf4);
+  pixDestroy(@pixseed4);
+  pixDestroy(@pixmask4);
 
   pixSubtract(pixb, pixb, pixd);
 
   // now see what we got from the segmentation
-  static l_int32 *tab = NULL;
-  if (tab == NULL) tab = makePixelSumTab8();
+  if (ttab = nil) then ttab := makePixelSumTab8;
 
   // if no image portion was found, set the image pointer to NULL and return
-  l_int32  pcount;
-  pixCountPixels(pixd, &pcount, tab);
-  if (verbose) fprintf(stderr, "pixel count of graphics image: %u\n", pcount);
-  if (pcount < 100) {
-    pixDestroy(&pixd);
-    return NULL;
-  }
+  pixCountPixels(pixd, @pcount, ttab);
+  if (pcount < 100)  then
+     begin
+       pixDestroy(@pixd);
+       writeln('Exiting: PCount = ', Pcount);
+       exit;
+     end;
+
+pixWrite('/tmp/pixb.tif', pixb, IFF_TIFF);
 
   // if no text portion found, set the binary pointer to NULL
-  pixCountPixels(pixb, &pcount, tab);
-  if (verbose) fprintf(stderr, "pixel count of binary image: %u\n", pcount);
-  if (pcount < 100) {
-    pixDestroy(&pixb);
-  }
+  pixCountPixels(pixb, @pcount, ttab);
+   if (pcount < 100) then
+     begin
+       pixDestroy(@pixb);
+     end;
 
-  PIX *piximg1;
-  if (piximg->d == 1 || piximg->d == 8 || piximg->d == 32) {
-    piximg1 = pixClone(piximg);
-  } else if (piximg->d > 8) {
-    piximg1 = pixConvertTo32(piximg);
-  } else {
-    piximg1 = pixConvertTo8(piximg, FALSE);
-  }
 
-  PIX *pixd1;
-  if (piximg1->d == 32) {
-    pixd1 = pixConvertTo32(pixd);
-  } else if (piximg1->d == 8) {
-    pixd1 = pixConvertTo8(pixd, FALSE);
-  } else {
-    pixd1 = pixClone(pixd);
-  }
-  pixDestroy(&pixd);
+  if (pixGetDepth(piximg) = 1) or  (pixGetDepth(piximg) = 8) or (pixGetDepth(piximg) = 32)
+    then piximg1 := pixClone(piximg)
+  else if (pixGetDepth(piximg) > 8)
+    then piximg1 := pixConvertTo32(piximg)
+  else piximg1 := pixConvertTo8(piximg, 0);
 
-  if (verbose) {
-    pixInfo(pixd1, "binary mask image:");
-    pixInfo(piximg1, "graphics image:");
-  }
-  pixRasteropFullImage(pixd1, piximg1, PIX_SRC | PIX_DST);
+  if pixGetDepth(piximg1) = 32
+     then pixd1 := pixConvertTo32(pixd)
+  else if pixGetDepth(piximg1) = 8
+     then pixd1 := pixConvertTo8(pixd, 0)
+  else pixd1 := pixClone(pixd);
 
-  pixDestroy(&piximg1);
-  if (verbose) {
-    pixInfo(pixb, "segmented binary text image:");
-    pixInfo(pixd1, "segmented graphics image:");
-  }
+  pixRasteropFullImage(pixd1, piximg1, PIX_SRC or PIX_DST);
 
-  return pixd1;
+  pixWrite('/tmp/piximg1.tif', pixImg1, IFF_TIFF);
+  pixDestroy(@piximg1);
 
+  pixWrite('/tmp/pixd.tif', pixd, IFF_TIFF);
+
+//  return pixd1;
+  pixDestroy(@pixd);
+
+  pixWrite('/tmp/pixd1.tif', pixd1, IFF_TIFF);
+
+  pixDestroy(@pixd1);
 end;
 
 procedure TMainForm.DeleteLineMenuItemClick(Sender: TObject);
@@ -832,24 +840,24 @@ begin
              h := pixGetHeight(CurrentProject.Pages[p].PageImage);
              hsc := aheight / h;
              wsc := awidth / w;
-             CurrentProject.Pages[p].OCRData<>nil then
-             if CurrentProject.Pages[p].OCRData.Linecount>0 then
-               for lline := 0 to CurrentProject.Pages[p].OCRData.Linecount-1 do
-                 begin
-                 if CurrentProject.Pages[p].OCRData.Lines[lline].WordCount>0 then
+             if CurrentProject.Pages[p].OCRData<>nil then
+               if CurrentProject.Pages[p].OCRData.Linecount>0 then
+                 for lline := 0 to CurrentProject.Pages[p].OCRData.Linecount-1 do
                    begin
-                     lin := CurrentProject.Pages[p].OCRData.Lines[lline];
-                     for wword := 0 to lin.WordCount-1 do
-                       begin
-                         if faSerif in lin.Words[wword].FontFlags
-                            then def_font := HPDF_GetFont(pdf, PChar('Times-Roman'), nil)
-                            else def_font := HPDF_GetFont(pdf, PChar('Helvetica'), nil);
-                         DrawText(page, lin.Words[wword].Box.Left * wsc, aheight - (lin.Words[wword].Baseline * hsc),
-                         (lin.Words[wword].Box.Right - lin.Words[wword].Box.Left)*wsc, def_font, lin.Words[wword].FontSize, PChar(lin.Words[wword].Text), JUSTIFY_LEFT, false);
-                       end;
-                   end;
+                   if CurrentProject.Pages[p].OCRData.Lines[lline].WordCount>0 then
+                     begin
+                       lin := CurrentProject.Pages[p].OCRData.Lines[lline];
+                       for wword := 0 to lin.WordCount-1 do
+                         begin
+                           if faSerif in lin.Words[wword].FontFlags
+                              then def_font := HPDF_GetFont(pdf, PChar('Times-Roman'), nil)
+                              else def_font := HPDF_GetFont(pdf, PChar('Helvetica'), nil);
+                           DrawText(page, lin.Words[wword].Box.Left * wsc, aheight - (lin.Words[wword].Baseline * hsc),
+                           (lin.Words[wword].Box.Right - lin.Words[wword].Box.Left)*wsc, def_font, lin.Words[wword].FontSize, PChar(lin.Words[wword].Text), JUSTIFY_LEFT, false);
+                         end;
+                     end;
 
-                 end;
+                   end;
 
              x :=  pixWrite(PChar(f), CurrentProject.Pages[p].PageImage, IFF_JFIF_JPEG);
              IM := HPDF_LoadJpegImageFromFile (pdf, PChar(f));
