@@ -118,6 +118,7 @@ begin
           status := sane_start(h);  // start scanning
           if status = SANE_STATUS_GOOD then
              try
+                if Assigned(progresscb) then progresscb( 0 );
                 if sane_get_parameters(h, @par) = SANE_STATUS_GOOD then // we know the image dimensions and depth
                   SetPNMHeader(par.depth, par.pixels_per_line, par.lines, par.format, fileheader);
                 pixeltotal := par.lines * par.pixels_per_line * par.depth div 8;

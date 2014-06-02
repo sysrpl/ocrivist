@@ -72,6 +72,12 @@ const
       REMOVE_CMAP_TO_FULL_COLOR = 2;
       REMOVE_CMAP_BASED_ON_SRC  = 3;
 
+      PIX_CLR                   = $0;
+      PIX_SET                   = $1e;
+      PIX_SRC                   = $18;
+      PIX_DST                   = $14;
+
+
 type
 
   PLPix = ^TLPix;
@@ -226,7 +232,10 @@ const
         L_CLEAR_PIXELS = 2;            // set all bits in each pixel to 0
         L_FLIP_PIXELS  = 3;            // flip all bits in each pixel
 
-
+        COLOR_RED       = 0;
+        OLOR_GREEN      = 1;
+        COLOR_BLUE      = 2;
+        L_ALPHA_CHANNEL = 3;
 
 
   function pixRead ( filename: PChar ): PLPix; cdecl; external LIBLEPT;
@@ -1352,6 +1361,9 @@ function pixGetColormap( pix: PLPix ): PPixCmap; cdecl; external LIBLEPT;
  *}
 function pixcmapResetColor( cmap: PPixCmap; index, rval, gval, bval: Longint ): Longint; cdecl; external LIBLEPT;
 
+function saConvertFilesToPdf( sa: PSarray; res: longint; scalefactor: Single; quality: Longint;
+                               title, fileout: PChar): Longint; cdecl; external LIBLEPT;
+
 // ===  enhance.c  ===
 
 function pixContrastTRC(pixd, pixs: PLPix; factor: Single): PLPix; cdecl; external LIBLEPT;
@@ -1383,6 +1395,213 @@ const
   *}
 function saConvertFilesToPdf 	( sa: PSArray; res: longint; scalefactor: Single;
                                         encoding, quality: longint; title, fileout: PChar): Longint; cdecl; external LIBLEPT;
+
+//  ===  binexpand.c  ==
+
+{*------------------------------------------------------------------*
+ *                      Power of 2 expansion                        *
+ *------------------------------------------------------------------*/
+ *!
+ *  pixExpandBinaryPower2()
+ *
+ *      Input:  pixs (1 bpp)
+ *              factor (expansion factor: 1, 2, 4, 8, 16)
+ *      Return: pixd (expanded 1 bpp by replication), or null on error
+ *}
+function pixExpandBinaryPower2(pixs: PLPix; factor: longint): PLPix; cdecl; external LIBLEPT;
+
+//  === morphseq.c  ===
+{*-------------------------------------------------------------------------*
+ *         Run a sequence of binary rasterop morphological operations      *
+ *-------------------------------------------------------------------------*}
+
+{*!
+ *  pixMorphSequence()
+ *
+ *      Input:  pixs
+ *              sequence (string specifying sequence)
+ *              dispsep (controls debug display of each result in the sequence:
+ *                       0: no output
+ *                       > 0: gives horizontal separation in pixels between
+ *                            successive displays
+ *                       < 0: pdf output; abs(dispsep) is used for naming)
+ *      Return: pixd, or null on error
+ *
+ *  Notes:
+ *      (1) This does rasterop morphology on binary images.
+ *      (2) This runs a pipeline of operations; no branching is allowed.
+ *      (3) This only uses brick Sels, which are created on the fly.
+ *          In the future this will be generalized to extract Sels from
+ *          a Sela by name.
+ *      (4) A new image is always produced; the input image is not changed.
+ *      (5) This contains an interpreter, allowing sequences to be
+ *          generated and run.
+ *      (6) The format of the sequence string is defined below.
+ *      (7) In addition to morphological operations, rank order reduction
+ *          and replicated expansion allow operations to take place
+ *          downscaled by a power of 2.
+ *      (8) Intermediate results can optionally be displayed.
+ *      (9) Thanks to Dar-Shyang Lee, who had the idea for this and
+ *          built the first implementation.
+ *      (10) The sequence string is formatted as follows:
+ *            - An arbitrary number of operations,  each separated
+ *              by a '+' character.  White space is ignored.
+ *            - Each operation begins with a case-independent character
+ *              specifying the operation:
+ *                 d or D  (dilation)
+ *                 e or E  (erosion)
+ *                 o or O  (opening)
+ *                 c or C  (closing)
+ *                 r or R  (rank binary reduction)
+ *                 x or X  (replicative binary expansion)
+ *                 b or B  (add a border of 0 pixels of this size)
+ *            - The args to the morphological operations are bricks of hits,
+ *              and are formatted as a.b, where a and b are horizontal and
+ *              vertical dimensions, rsp.
+ *            - The args to the reduction are a sequence of up to 4 integers,
+ *              each from 1 to 4.
+ *            - The arg to the expansion is a power of two, in the set
+ *              {2, 4, 8, 16}.
+ *      (11) An example valid sequence is:
+ *               "b32 + o1.3 + C3.1 + r23 + e2.2 + D3.2 + X4"
+ *           In this example, the following operation sequence is carried out:
+ *             * b32: Add a 32 pixel border around the input image
+ *             * o1.3: Opening with vert sel of length 3 (e.g., 1 x 3)
+ *             * C3.1: Closing with horiz sel of length 3  (e.g., 3 x 1)
+ *             * r23: Two successive 2x2 reductions with rank 2 in the first
+ *                    and rank 3 in the second.  The result is a 4x reduced pix.
+ *             * e2.2: Erosion with a 2x2 sel (origin will be at x,y: 0,0)
+ *             * d3.2: Dilation with a 3x2 sel (origin will be at x,y: 1,0)
+ *             * X4: 4x replicative expansion, back to original resolution
+ *      (12) The safe closing is used.  However, if you implement a
+ *           closing as separable dilations followed by separable erosions,
+ *           it will not be safe.  For that situation, you need to add
+ *           a sufficiently large border as the first operation in
+ *           the sequence.  This will be removed automatically at the
+ *           end.  There are two cautions:
+ *              - When computing what is sufficient, remember that if
+ *                reductions are carried out, the border is also reduced.
+ *              - The border is removed at the end, so if a border is
+ *                added at the beginning, the result must be at the
+ *                same resolution as the input!
+ *}
+function pixMorphSequence(pixs: PLPix; sequence: PChar; dispsep: longint): PLPix;  cdecl; external LIBLEPT;
+
+
+//  === seedfill.c  ===
+
+{*!
+ *  pixSeedfillBinary()
+ *
+ *      Input:  pixd  (<optional>; this can be null, equal to pixs,
+ *                     or different from pixs; 1 bpp)
+ *              pixs  (1 bpp seed)
+ *              pixm  (1 bpp filling mask)
+ *              connectivity  (4 or 8)
+ *      Return: pixd always
+ *
+ *  Notes:
+ *      (1) This is for binary seedfill (aka "binary reconstruction").
+ *      (2) There are 3 cases:
+ *            (a) pixd == null (make a new pixd)
+ *            (b) pixd == pixs (in-place)
+ *            (c) pixd != pixs
+ *      (3) If you know the case, use these patterns for clarity:
+ *            (a) pixd = pixSeedfillBinary(NULL, pixs, ...);
+ *            (b) pixSeedfillBinary(pixs, pixs, ...);
+ *            (c) pixSeedfillBinary(pixd, pixs, ...);
+ *      (4) The resulting pixd contains the filled seed.  For some
+ *          applications you want to OR it with the inverse of
+ *          the filling mask.
+ *      (5) The input seed and mask images can be different sizes, but
+ *          in typical use the difference, if any, would be only
+ *          a few pixels in each direction.  If the sizes differ,
+ *          the clipping is handled by the low-level function
+ *          seedfillBinaryLow().
+ *}
+function pixSeedfillBinary(pixd, pixs, pixm: PLPix; connectivity: longint): PLPix; cdecl; external LIBLEPT;
+
+
+//  === pix3.c  ===
+
+{*!
+ *  pixSubtract()
+ *
+ *      Input:  pixd  (<optional>; this can be null, equal to pixs1,
+ *                     equal to pixs2, or different from both pixs1 and pixs2)
+ *              pixs1 (can be == pixd)
+ *              pixs2 (can be == pixd)
+ *      Return: pixd always
+ *
+ *  Notes:
+ *      (1) This gives the set subtraction of two images with equal depth,
+ *          aligning them to the the UL corner.  pixs1 and pixs2
+ *          need not have the same width and height.
+ *      (2) Source pixs2 is always subtracted from source pixs1.
+ *          The result is
+ *                  pixs1 \ pixs2 = pixs1 & (~pixs2)
+ *      (3) There are 4 cases:
+ *            (a) pixd == null,   (src1 - src2) --> new pixd
+ *            (b) pixd == pixs1,  (src1 - src2) --> src1  (in-place)
+ *            (c) pixd == pixs2,  (src1 - src2) --> src2  (in-place)
+ *            (d) pixd != pixs1 && pixd != pixs2),
+ *                                 (src1 - src2) --> input pixd
+ *      (4) For clarity, if the case is known, use these patterns:
+ *            (a) pixd = pixSubtract(NULL, pixs1, pixs2);
+ *            (b) pixSubtract(pixs1, pixs1, pixs2);
+ *            (c) pixSubtract(pixs2, pixs1, pixs2);
+ *            (d) pixSubtract(pixd, pixs1, pixs2);
+ *      (5) The size of the result is determined by pixs1.
+ *      (6) The depths of pixs1 and pixs2 must be equal.
+ *}
+function pixSubtract(pixd, pixs1, pixs2: PLPix): PLPix; cdecl; external LIBLEPT;
+
+{/*!
+ *  makePixelSumTab8()
+ *
+ *      Input:  void
+ *      Return: table of 256 l_int32, or null on error
+ *
+ *  Notes:
+ *      (1) This table of integers gives the number of 1 bits
+ *          in the 8 bit index.
+ *}
+function makePixelSumTab8: plongint;  cdecl; external LIBLEPT;
+
+{*!
+ *  pixCountPixels()
+ *
+ *      Input:  pix (1 bpp)
+ *              &count (<return> count of ON pixels)
+ *              tab8  (<optional> 8-bit pixel lookup table)
+ *      Return: 0 if OK; 1 on error
+ *}
+function pixCountPixels(pix: PLPix; pcount, tab8: plongint): Longint; cdecl; external LIBLEPT;
+
+//  === rop.c ===
+
+{*--------------------------------------------------------------------*
+ *                 Full image rasterop with no shifts                 *
+ *--------------------------------------------------------------------*/
+/*!
+ *  pixRasteropFullImage()
+ *
+ *      Input:  pixd
+ *              pixs
+ *              op (any of the op-codes)
+ *      Return: 0 if OK; 1 on error
+ *
+ *  Notes:
+ *      - this is a wrapper for a common 2-image raster operation
+ *      - both pixs and pixd must be defined
+ *      - the operation is performed with aligned UL corners of pixs and pixd
+ *      - the operation clips to the smallest pix; if the width or height
+ *        of pixd is larger than pixs, some pixels in pixd will be unchanged
+ *}
+function pixRasteropFullImage(pixd, pixs: PLPix; op: longint): longint; cdecl; external LIBLEPT;
+
+
+
 
 implementation
 
