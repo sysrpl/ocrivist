@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <Version Value="9"/>
+    <BuildModes Active="Default"/>
+    <Units Count="13">
+      <Unit0>
+        <Filename Value="cornertest.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
+        <TopLine Value="45"/>
+        <CursorPos Y="59"/>
+        <UsageCount Value="22"/>
+        <Loaded Value="True"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="/media/malcolm/DATA1/Projects/leptonica-1.69/prog/cornertest.c"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="29"/>
+        <CursorPos Y="98"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="C++"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="/media/malcolm/DATA1/Projects/leptonica-1.69/src/fpix1.c"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="96"/>
+        <CursorPos X="29" Y="54"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="C++"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="/media/malcolm/DATA1/Projects/leptonica-1.69/src/pix2.c"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="211"/>
+        <CursorPos X="130" Y="545"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="C++"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="../leptonica.pas"/>
+        <UnitName Value="leptonica"/>
+        <EditorIndex Value="4"/>
+        <TopLine Value="262"/>
+        <CursorPos X="9" Y="277"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="../pix2.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="200"/>
+        <CursorPos X="99" Y="223"/>
+        <UsageCount Value="10"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="/media/malcolm/DATA1/Projects/leptonica-1.69/src/ptafunc1.c"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="844"/>
+        <CursorPos X="39" Y="856"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="C++"/>
+      </Unit6>
+      <Unit7>
+        <Filename Value="../ptafunc.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="115"/>
+        <CursorPos Y="144"/>
+        <UsageCount Value="10"/>
+      </Unit7>
+      <Unit8>
+        <Filename Value="/media/malcolm/DATA1/Projects/leptonica-1.69/src/ptabasic.c"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="429"/>
+        <CursorPos X="24" Y="453"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="C++"/>
+      </Unit8>
+      <Unit9>
+        <Filename Value="../ptabasic.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="106"/>
+        <CursorPos X="106" Y="131"/>
+        <UsageCount Value="10"/>
+      </Unit9>
+      <Unit10>
+        <Filename Value="/media/malcolm/DATA1/Projects/leptonica-1.69/src/graphics.c"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="105"/>
+        <CursorPos X="28" Y="938"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="C++"/>
+      </Unit10>
+      <Unit11>
+        <Filename Value="../graphics.inc"/>
+        <EditorIndex Value="5"/>
+        <TopLine Value="83"/>
+        <CursorPos Y="101"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit11>
+      <Unit12>
+        <Filename Value="/media/malcolm/DATA1/Projects/leptonica-1.69/src/pix.h"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="648"/>
+        <CursorPos X="5" Y="663"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="C++"/>
+      </Unit12>
+    </Units>
+    <JumpHistory Count="24" HistoryIndex="23">
+      <Position1>
+        <Filename Value="cornertest.lpr"/>
+        <Caret Line="51" Column="14" TopLine="29"/>
+      </Position1>
+      <Position2>
+        <Filename Value="../leptonica.pas"/>
+        <Caret Line="303" TopLine="283"/>
+      </Position2>
+      <Position3>
+        <Filename Value="../leptonica.pas"/>
+        <Caret Line="302" Column="11" TopLine="283"/>
+      </Position3>
+      <Position4>
+        <Filename Value="cornertest.lpr"/>
+        <Caret Line="51" Column="14" TopLine="29"/>
+      </Position4>
+      <Position5>
+        <Filename Value="cornertest.lpr"/>
+        <Caret Line="55" Column="4" TopLine="33"/>
+      </Position5>
+      <Position6>
+        <Filename Value="../leptonica.pas"/>
+        <Caret Line="312" Column="17" TopLine="289"/>
+      </Position6>
+      <Position7>
+        <Filename Value="cornertest.lpr"/>
+        <Caret Line="55" Column="29" TopLine="33"/>
+      </Position7>
+      <Position8>
+        <Filename Value="cornertest.lpr"/>
+        <Caret Line="57" Column="4" TopLine="34"/>
+      </Position8>
+      <Position9>
+        <Filename Value="cornertest.lpr"/>
+        <Caret Line="48" Column="3" TopLine="33"/>
+      </Position9>
+      <Position10>
+        <Filename Value="cornertest.lpr"/>
+        <Caret Line="59" Column="8" TopLine="33"/>
+      </Position10>
+      <Position11>
+        <Filename Value="cornertest.lpr"/>
+        <Caret Line="60" Column="61" TopLine="35"/>
+      </Position11>
+      <Position12>
+        <Filename Value="cornertest.lpr"/>
+        <Caret Line="63" Column="3" TopLine="51"/>
+      </Position12>
+      <Position13>
+        <Filename Value="cornertest.lpr"/>
+        <Caret Line="63" Column="19" TopLine="48"/>
+      </Position13>
+      <Position14>
+        <Filename Value="cornertest.lpr"/>
+        <Caret Line="67" Column="16" TopLine="48"/>
+      </Position14>
+      <Position15>
+        <Filename Value="/media/malcolm/DATA1/Projects/leptonica-1.69/src/graphics.c"/>
+      </Position15>
+      <Position16>
+        <Filename Value="/media/malcolm/DATA1/Projects/leptonica-1.69/src/graphics.c"/>
+        <Caret Line="52" Column="38" TopLine="37"/>
+      </Position16>
+      <Position17>
+        <Filename Value="/media/malcolm/DATA1/Projects/leptonica-1.69/src/graphics.c"/>
+        <Caret Line="565" Column="14" TopLine="541"/>
+      </Position17>
+      <Position18>
+        <Filename Value="/media/malcolm/DATA1/Projects/leptonica-1.69/src/graphics.c"/>
+        <Caret Line="52" Column="38" TopLine="37"/>
+      </Position18>
+      <Position19>
+        <Filename Value="/media/malcolm/DATA1/Projects/leptonica-1.69/src/graphics.c"/>
+        <Caret Line="53" Column="38" TopLine="37"/>
+      </Position19>
+      <Position20>
+        <Filename Value="/media/malcolm/DATA1/Projects/leptonica-1.69/src/graphics.c"/>
+        <Caret Line="54" Column="38" TopLine="37"/>
+      </Position20>
+      <Position21>
+        <Filename Value="/media/malcolm/DATA1/Projects/leptonica-1.69/src/graphics.c"/>
+        <Caret Line="706" Column="57" TopLine="682"/>
+      </Position21>
+      <Position22>
+        <Filename Value="cornertest.lpr"/>
+        <Caret Line="69" Column="20" TopLine="52"/>
+      </Position22>
+      <Position23>
+        <Filename Value="/media/malcolm/DATA1/Projects/leptonica-1.69/src/pix.h"/>
+      </Position23>
+      <Position24>
+        <Filename Value="cornertest.lpr"/>
+        <Caret Line="73" Column="14" TopLine="59"/>
+      </Position24>
+    </JumpHistory>
+  </ProjectSession>
+</CONFIG>

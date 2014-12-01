@@ -111,6 +111,10 @@ const
 
 type
 
+  L_BMF = Pointer;
+  PPSingle = ^PSingle;
+  PPLongWord = ^PLongWord;
+
   PLPix = ^TLPix;
   TLPix = record
      w:             Integer;           // width in pixels
@@ -129,6 +133,22 @@ type
   end;
 
   PPLPix = ^PLPix;
+
+  PixColormap = record
+      RGBAarray: Pointer;              // colormap table (array of RGBA_QUAD)
+      depth: LongInt;                  // of pix (1, 2, 4 or 8 bpp)
+      nalloc: LongInt;                 // number of color entries allocated
+      n: LongInt;                      // number of color entries used
+  end;
+  PPixCmap = ^PixColormap;
+  PPPixCmap = ^PPixCmap;
+
+  RGBA_Quad = record
+    blue: Byte;
+    green: Byte;
+    red: Byte;
+    reserved: Byte;
+  end;
 
   PPLBox = ^PLBox;
   PLBox = ^TLBox;
@@ -176,6 +196,7 @@ type
 
 
   PNumArray = ^TNumArray;
+  PPNumArray = ^PNumArray;
   TNumArray = record
     nalloc:         Integer;           //* size of allocated number array
     n:              Integer;           //* number of numbers saved
@@ -209,7 +230,17 @@ type
      strarray:   array of PChar;    // string array
   end;
 
-  PPixCmap = Pointer;
+
+  {*-------------------------------------------------------------------------*
+   *                    Flags for adding text to a pix                       *
+   *-------------------------------------------------------------------------*}
+ const
+      L_ADD_ABOVE = 1;           // Add text above the image
+      L_ADD_AT_TOP = 2;          // Add text over the top of the image
+      L_ADD_AT_BOTTOM = 3;       // Add text over the bottom of the image
+      L_ADD_BELOW = 4;           // Add text below the image
+
+
 
 {*-------------------------------------------------------------------------*
  *                         Access and storage flags                        *
@@ -263,42 +294,59 @@ const
         L_CLEAR_PIXELS = 2;            // set all bits in each pixel to 0
         L_FLIP_PIXELS  = 3;            // flip all bits in each pixel
 
-{$I numabasic.inc}
-{$I pixabasic.inc}
-{$I ptabasic.inc}
-{$I pix1.inc}
-{$I pix3.inc}
-{$I pix5.inc}
-{$I readfile.inc}
-{$I writefile.inc}
-{$I rotateorth.inc}
-{$I scale.inc}
-{$I boxbasic.inc}
+{$I adaptmap.inc}
+{$I affine.inc}
+{$I affinecompose.inc}
+{$I arithlow.inc}
+{$I arrayaccess.inc}
 {$I baseline.inc}
-
-{$I pdfio.inc}
-{$I enhance.inc}
+{$I bilinear.inc}
+{$I binarize.inc}
 {$I binexpand.inc}
-{$I pageseg.inc}
+{$I binreduce.inc}
+{$I bmf.inc}
+{$I boxbasic.inc}
+{$I boxfunc1.inc}
+{$I classapp.inc}
 {$I colormap.inc}
+{$I colorseg.inc}
+{$I compare.inc}
+{$I conncomp.inc}
+{$I dewarp.inc}
 
+{$I edge.inc}
+{$I enhance.inc}
+{$I graphics.inc}
+{$I graymorph.inc}
+{$I grayquant.inc}
+{$I morph.inc}
 {$I morphseq.inc}
+{$I numabasic.inc}
+{$I pageseg.inc}
+{$I pix1.inc}
 
-{$I seedfill.inc}
+{$I pix2.inc}
+{$I pix3.inc}
+{$I pix4.inc}
+{$I pix5.inc}
+{$I pdfio.inc}
+{$I pixabasic.inc}
+{$I pixafunc2.inc}
+{$I pixarith.inc}
+{$I pixconv.inc}
+{$I ptabasic.inc}
+{$I ptafunc.inc}
+{$I readfile.inc}
 
 {$I rop.inc}
-{$I morph.inc}
-{$I graymorph.inc}
-{$I pixarith.inc}
-{$I pixafunc2.inc}
-{$I boxfunc1.inc}
-{$I grayquant.inc}
-{$I pixconv.inc}
+{$I rotate.inc}
+{$I rotateorth.inc}
+{$I rotateshear.inc}
+{$I scale.inc}
+{$I seedfill.inc}
 {$I skew.inc}
-{$I edge.inc}
-{$I conncomp.inc}
-{$I classapp.inc}
-{$I graphics.inc}
+{$I textops.inc}
+{$I writefile.inc}
 
 
 
