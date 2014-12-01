@@ -31,7 +31,30 @@ uses
   {$ENDIF};
 
 type
+  TWinBMPFileHeader = packed record
+    FileType: Word;     // File type, always 4D42h ("BM")
+    FileSize: DWord;     // Size of the file in bytes
+    Reserved: Word;    // Always 0
+    Reserved2: Word;    // Always 0
+    BitmapOffset: DWord; // Starting position of image data in bytes
+  end;
 
+  TWin3xBitmapHeader = packed record
+    Size: DWord;            // Size of this header in bytes
+    Width: LongInt;           // Image width in pixels
+    Height: LongInt;          // Image height in pixels
+    Planes: Word;          // Number of color planes
+    BitsPerPixel: Word;    // Number of bits per pixel
+    Compression: DWord;     // Compression methods used
+    SizeOfBitmap: DWord;    // Size of bitmap in bytes
+    HorzResolution: LongInt;  // Horizontal resolution in pixels per meter
+    VertResolution: LongInt;  // Vertical resolution in pixels per meter
+    ColorsUsed: DWord;      // Number of colors in the image
+    ColorsImportant: DWord; // Minimum number of important colors
+  end;
+
+
+type
   TProgressCallback = procedure(progress: Single) of object;
 
 const
@@ -46,8 +69,13 @@ function ScanToPix( h: SANE_Handle; progresscb: TProgressCallback ): PLPix;
 {$ENDIF}
 function BoxToRect( aBox: PLBox ): TRect;
 function StreamToPix( S: TMemoryStream ): PLPix;
+function PixToBitmap( P: PLPix ): TBitmap;
+procedure LoadPixToBitmap( P: PLPix; BMP: TBitmap );
+
 
 implementation
+
+uses FPimage, FPWriteBMP, FPReadTiff;
 
 function ScaleToBitmap ( pix: PLPix;  bmp: TBitmap; scalexy: Single ) : integer;
 var
@@ -55,16 +83,32 @@ var
   tempPix: PLPix;
   buf: PByte;
   bytecount: Integer;
+  fpim: TFPMemoryImage;
+  writer: TFPWriterBMP;
+  Reader: TFPReaderTiff;
 begin
   Result := 1;
   if pix = nil then Exit;
   ms := TMemoryStream.Create;
   tempPix := pixScaleSmooth(pix, scalexy, scalexy);
   if tempPix<>nil then
-    if pixWriteMem(@buf, @bytecount, tempPix, IFF_BMP)=0 then
+    // pixWriteMem does not work in Windows
+    if pixWriteMem(@buf, @bytecount, tempPix, {$IFDEF MSWINDOWS} IFF_TIFF {$ELSE} IFF_BMP {$ENDIF})=0 then
      try
        ms.Write(buf[0], bytecount);
        ms.Position := 0;
+       {$IFDEF MSWINDOWS}
+       fpim := TFPMemoryImage.create(pixGetWidth(tempPix), pixGetHeight(tempPix));
+       Reader := TFPReaderTiff.Create;
+       fpim.LoadFromStream(ms, Reader);
+       ms.Clear;
+       writer := TFPWriterBMP.Create;
+       fpim.SaveToStream(ms, writer);
+       Reader.Free;
+       writer.Free;
+       fpim.Free;
+       ms.Position := 0;
+       {$ENDIF}
       if bmp <> nil then
        bmp.LoadFromStream(ms) else Raise Exception.Create('bitmap is nil in ScaleToBitmap');
      finally
@@ -85,13 +129,14 @@ var
   pixB: PLPix;
 begin
 //  writeln( Format('box: %d %d %d %d', [x, y, w, h]) );
+  pixB := nil;
   BoxRect := boxCreateValid(x, y, w, h);
   if BoxRect <> nil then
      pixB := pixClipRectangle( pix, BoxRect, nil);
   if pixB <> nil then
      begin
        Result := pixB;
-       pixWrite('/tmp/croppedpix.bmp', pixB, IFF_BMP);
+//       pixWrite('/tmp/croppedpix.bmp', pixB, IFF_BMP);
      end
   else Result := pix;
   boxDestroy(@BoxRect);
@@ -118,6 +163,7 @@ begin
           status := sane_start(h);  // start scanning
           if status = SANE_STATUS_GOOD then
              try
+                {$IFDEF DEBUG} writeln('sane_start=SANE_STATUS_GOOD'); {$ENDIF}
                 if Assigned(progresscb) then progresscb( 0 );
                 if sane_get_parameters(h, @par) = SANE_STATUS_GOOD then // we know the image dimensions and depth
                   SetPNMHeader(par.depth, par.pixels_per_line, par.lines, par.format, fileheader);
@@ -126,7 +172,7 @@ begin
                 Getmem(data, Length(fileheader)+pixeltotal+1);
                 for byt := 0 to Length(fileheader)-1 do
                     data[byt] := byte(fileheader[byt+1]);
-                byteswritten := byt+1;;
+                byteswritten := byt+1;
                 {$IFDEF DEBUG} writeln('par format: ', par.format); {$ENDIF}
                 while status = SANE_STATUS_GOOD do
                   begin
@@ -136,11 +182,14 @@ begin
                   end;
              finally
                sane_cancel(h);
+               {$IFDEF DEBUG} writeln('scan done');  {$ENDIF}
+               if status=SANE_STATUS_EOF then
+                 begin
+                   pixImage := pixReadMem(data, byteswritten);
+                   Result := pixImage;
+                 end;
              end
           {$IFDEF DEBUG} else writeln('Scan failed: ' + sane_strstatus(status)) {$ENDIF};
-          {$IFDEF DEBUG} writeln('scan done');  {$ENDIF}
-          pixImage := pixReadMem(data, byteswritten);
-          Result := pixImage;
         finally
           if data<>nil then Freemem(data);
         end;
@@ -175,6 +224,138 @@ begin
     Freemem(buf);
     Result := tempPix;
   end;
+end;
+
+function PixToBitmap ( P: PLPix ) : TBitmap;
+var
+  Bitmap: TBitmap;
+begin
+  Result := nil;
+  Bitmap := TBitmap.Create;
+  if Bitmap<>nil
+      then LoadPixToBitmap(P, Bitmap);
+  Result := Bitmap;
+end;
+
+procedure LoadPixToBitmap ( P: PLPix; BMP: TBitmap ) ;
+var
+  aWord: LongWord;
+  pB:PByteArray;
+  ColorPalette: array of Longword;
+  D: Pointer;
+  FileHeader: TWinBMPFileHeader;
+  BMPHeader: TWin3xBitmapHeader;
+  x: Integer;
+  w: Integer;
+  h: Integer;
+  Stream: TMemoryStream;
+  line: LongInt;
+  pixcount: Integer;
+  CMap: PPixCmap;
+  nullbyte: byte;
+begin
+  nullbyte := 0;
+  if P=nil then
+     begin
+       exit;
+     end;
+  with FileHeader do
+       begin
+         FileType := 19778;
+         FileSize := 0;
+         Reserved := 0;
+         Reserved2 :=0;
+         BitmapOffset := SizeOf(FileHeader) + SizeOf(BMPHeader);
+       end;
+  with BMPHeader do
+       begin
+         Size := SizeOf(BMPHeader);
+         Width := pixGetWidth(P);
+         Height := pixGetHeight(P);
+         Planes := 1;
+         if pixGetDepth(P)>8 then
+            begin
+              BitsPerPixel := 24;
+              ColorsUsed := 0;
+            end
+         else
+            begin
+              BitsPerPixel := pixGetDepth(P);
+              ColorsUsed := 1 shl BitsPerPixel;
+            end;
+         Compression := 0;
+         SizeOfBitmap := pixGetHeight(P) * pixGetWidth(P) * BitsPerPixel div 8;
+         HorzResolution := 3779 *  pixGetXRes(P) div 100;
+         VertResolution := 3779 *  pixGetYRes(P) div 100;
+         ColorsImportant := 0;
+       end;
+
+  CMap := pixGetColormap(P);
+    if (CMap=nil) and not (pixGetDepth(P) in [1,8,32]) then
+     begin
+       exit;
+     end;
+
+  if CMap<>nil then
+     begin
+       BMPHeader.ColorsUsed := pixcmapGetCount(CMap);
+       SetLength(ColorPalette, BMPHeader.ColorsUsed);
+       for x := 0 to BMPHeader.ColorsUsed-1 do
+         if pixcmapGetColor32(CMap, x, @aWord)=0
+             then ColorPalette[x] := aWord shr 8;
+     end
+  else
+  case pixGetDepth(P) of
+       1: begin
+            SetLength(ColorPalette, BMPHeader.ColorsUsed);
+                  ColorPalette[0] := $00FFFFFF ;
+                  ColorPalette[1] := $00000000 ;
+          end;
+       8: begin
+            SetLength(ColorPalette, BMPHeader.ColorsUsed);
+            for x := 0 to BMPHeader.ColorsUsed-1 do
+                  ColorPalette[x] := $00000000+($00010101*x)
+          end;
+  end;
+  FileHeader.BitmapOffset := FileHeader.BitmapOffset + DWord(Length(ColorPalette)*4);
+
+  Stream := TMemoryStream.Create;
+  Stream.Write(FileHeader, SizeOf(FileHeader));
+  Stream.Write(BMPHeader, SizeOf(BMPHeader));
+  if Length(ColorPalette)>0 then Stream.Write(ColorPalette[0], Length(ColorPalette)*4);
+
+  case pixGetDepth(P) of
+       1,4,8: for h := pixGetHeight(p)-1 downto 0 do
+            begin
+              line := 0;
+              D := pixGetData(P) + h*pixGetWpl(P);
+              for w := 0 to pixGetWpl(p)-1 do
+                begin
+                  aWord := SwapEndian( LongWord((D + (4*w))^));
+                  line := line + Stream.Write(aWord, SizeOf(aWord));
+                end;
+            end;
+       32: for h := pixGetHeight(p)-1 downto 0 do
+            begin
+              line := 0;
+              pB := PByteArray(pixGetData(P) + h*pixGetWpl(P));
+              pixcount := 0;
+              for w := 0 to pixGetWidth(p)-1 do
+                begin
+                  line := line + Stream.Write(pB^[pixcount+1], 3);
+                  Inc(pixcount, 4);
+                end;
+              if (line div 4)*4<line then
+                 while (line div 4)*4<line do
+                   line := line + Stream.Write(nullbyte, 1);
+            end;
+  end;
+  FileHeader.FileSize := Stream.Position;
+  Stream.Position := 0;
+  Stream.Write(FileHeader, SizeOf(FileHeader));
+  Stream.Position := 0;
+  BMP.LoadFromStream(Stream);
+  Stream.Free;
 end;
 
 end.
