@@ -312,7 +312,7 @@ const
 {$I colorseg.inc}
 {$I compare.inc}
 {$I conncomp.inc}
-{$I dewarp.inc}
+//{$I dewarp.inc}
 
 {$I edge.inc}
 {$I enhance.inc}
@@ -335,7 +335,7 @@ const
 {$I pixarith.inc}
 {$I pixconv.inc}
 {$I ptabasic.inc}
-{$I ptafunc.inc}
+//{$I ptafunc.inc}
 {$I readfile.inc}
 
 {$I rop.inc}
@@ -345,7 +345,7 @@ const
 {$I scale.inc}
 {$I seedfill.inc}
 {$I skew.inc}
-{$I textops.inc}
+//{$I textops.inc}
 {$I writefile.inc}
 
 
